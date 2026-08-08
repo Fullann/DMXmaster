@@ -1,0 +1,31 @@
+{
+  "manufacturer": "Generic",
+  "model": "Moving Head Basic",
+  "mode": "4-channel",
+  "channels": [
+    {
+      "number": 1,
+      "name": "Pan",
+      "type": "Pan",
+      "defaultValue": 128
+    },
+    {
+      "number": 2,
+      "name": "Tilt",
+      "type": "Tilt",
+      "defaultValue": 128
+    },
+    {
+      "number": 3,
+      "name": "Dimmer",
+      "type": "Intensity",
+      "defaultValue": 0
+    },
+    {
+      "number": 4,
+      "name": "Speed",
+      "type": "Speed",
+      "defaultValue": 0
+    }
+  ]
+}

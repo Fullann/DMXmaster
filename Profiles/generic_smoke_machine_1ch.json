@@ -1,0 +1,13 @@
+{
+  "manufacturer": "Generic",
+  "model": "Smoke Machine",
+  "mode": "1-channel",
+  "channels": [
+    {
+      "number": 1,
+      "name": "Smoke Output",
+      "type": "Smoke",
+      "defaultValue": 0
+    }
+  ]
+}

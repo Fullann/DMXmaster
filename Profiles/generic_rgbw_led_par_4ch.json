@@ -1,0 +1,31 @@
+{
+  "manufacturer": "Generic",
+  "model": "RGBW LED Par",
+  "mode": "4-channel",
+  "channels": [
+    {
+      "number": 1,
+      "name": "Red",
+      "type": "Red",
+      "defaultValue": 0
+    },
+    {
+      "number": 2,
+      "name": "Green",
+      "type": "Green",
+      "defaultValue": 0
+    },
+    {
+      "number": 3,
+      "name": "Blue",
+      "type": "Blue",
+      "defaultValue": 0
+    },
+    {
+      "number": 4,
+      "name": "White",
+      "type": "White",
+      "defaultValue": 0
+    }
+  ]
+}

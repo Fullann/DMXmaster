@@ -1,0 +1,37 @@
+{
+  "manufacturer": "Generic",
+  "model": "LED Par 5ch",
+  "mode": "5-channel",
+  "channels": [
+    {
+      "number": 1,
+      "name": "Dimmer",
+      "type": "Intensity",
+      "defaultValue": 0
+    },
+    {
+      "number": 2,
+      "name": "Red",
+      "type": "Red",
+      "defaultValue": 0
+    },
+    {
+      "number": 3,
+      "name": "Green",
+      "type": "Green",
+      "defaultValue": 0
+    },
+    {
+      "number": 4,
+      "name": "Blue",
+      "type": "Blue",
+      "defaultValue": 0
+    },
+    {
+      "number": 5,
+      "name": "Effect",
+      "type": "Effect",
+      "defaultValue": 0
+    }
+  ]
+}
