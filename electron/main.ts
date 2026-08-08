@@ -12,7 +12,7 @@ import { NetworkManager } from './networkManager'
 import { PixelEngine }    from './pixelEngine'
 import { TimelineManager} from './timelineManager'
 import { ShowManager }    from './showManager'
-import { registerIpcHandlers, pushUniverseUpdate } from './ipcHandlers'
+import { registerIpcHandlers, pushUniverseUpdate } from './ipc/index'
 
 // ── Core services (singletons for app lifetime) ───────────────────────────────
 const serialManager  = new SerialManager()

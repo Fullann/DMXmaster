@@ -1,0 +1,35 @@
+import { ipcMain } from 'electron'
+import type { FixtureManager } from '../fixtureManager'
+import type { FixtureProfile, ChannelType } from '../fixtureTypes'
+import { handle } from './ipcUtils'
+
+export function registerFixtureIpc(fixture: FixtureManager): void {
+  // Profiles
+  handle('fixture:getProfiles', () => ({ profiles: fixture.getProfiles() }))
+  handle('fixture:reloadProfiles', async () => { await fixture.loadProfiles(); return { profiles: fixture.getProfiles() } })
+  handle('fixture:saveProfile', async (e, p) => ({ key: await fixture.saveProfile(p as FixtureProfile) }))
+  handle('fixture:deleteProfile', (e, id) => fixture.deleteProfile(id as string))
+
+  // Patch
+  handle('fixture:getPatch', () => ({ patch: fixture.getPatch() }))
+  handle('fixture:savePatch', (e, p) => fixture.savePatch(p as any))
+  handle('fixture:patchFixture',    (key, addr, label, uIdx) => ({ fixture: fixture.patchFixture(key as string, addr as number, label as string, uIdx as number) }))
+  handle('fixture:removePatch',     (id)                  => { fixture.removePatchedFixture(id as string) })
+  handle('fixture:setPosition',     async (id, pos)       => { await fixture.setFixturePosition(id as string, pos as [number, number, number]) })
+  handle('fixture:setUniverse',     async (id, uIdx)      => { await fixture.setFixtureUniverse(id as string, uIdx as number) })
+
+  // Groups
+  handle('fixture:getGroups', () => ({ groups: fixture.getGroups() }))
+  handle('fixture:saveGroups', (e, g) => fixture.saveGroups(g as any))
+  
+  // Fire-and-forget (ipcRenderer.send in preload) — do NOT use handle() here
+  ipcMain.on('fixture:setGrandMaster', (_e, level) => { fixture.setGrandMaster(level as number) })
+  ipcMain.on('fixture:setSubmaster',   (_e, groupId, level) => { fixture.setSubmaster(groupId as string, level as number) })
+
+  // Logical commands
+  handle('fixture:sendCommand', (id, type, val) => { fixture.sendCommand(id as string, type as ChannelType, val as number) })
+  handle('fixture:sendColor',   (id, r, g, b, w) => { fixture.sendColor(id as string, r as number, g as number, b as number, (w as number) ?? 0) })
+  handle('fixture:getStates',   ()               => ({ states: fixture.getFixtureStates() }))
+  handle('fixture:clearAll',    ()               => { fixture.clearAll() })
+  handle('fixture:setStates',   (statesMap)      => { fixture.setLogicalStates(statesMap as Record<string, Record<string, number>>) })
+}
