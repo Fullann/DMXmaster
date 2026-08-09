@@ -80,6 +80,6 @@
     "fsevents@2.3.3": true,
     "electron-winstaller@5.4.0": true,
     "esbuild@0.28.2": true,
-    "electron@31.7.6": true
+    "electron@31.7.7": true
   }
 }
