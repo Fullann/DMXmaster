@@ -7,7 +7,9 @@ export interface FxState {
   error: string | null
 
   loadEffects: () => Promise<void>
-  addEffect: (config: FxConfig) => Promise<void>
+  addEffect: (cfg: FxConfig) => Promise<string | null>
+  updateEffect: (id: string, cfg: FxConfig) => Promise<void>
+  setPaused: (id: string, paused: boolean) => Promise<void>
   removeEffect: (id: string) => Promise<void>
   clearAll: () => Promise<void>
   refresh: () => Promise<void>
@@ -26,11 +28,17 @@ export const useFxStore = create<FxState>((set, get) => ({
     else set({ error: res.error ?? 'Failed to load effects', isLoading: false })
   },
 
-  addEffect: async (config) => {
-    set({ error: null })
-    const res = await window.fxAPI.addEffect(config)
-    if (res.success) await get().loadEffects()
-    else set({ error: res.error ?? 'Failed to add effect' })
+  addEffect: async (cfg) => {
+    const res = await window.fxAPI.addEffect(cfg)
+    return res.id ?? null
+  },
+
+  updateEffect: async (id, cfg) => {
+    await window.fxAPI.updateEffect(id, cfg)
+  },
+
+  setPaused: async (id, paused) => {
+    await window.fxAPI.setPaused(id, paused)
   },
 
   removeEffect: async (id) => {

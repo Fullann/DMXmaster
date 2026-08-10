@@ -109,7 +109,10 @@ export function ChannelSlider({
       </div>
 
       {/* Fader track area */}
-      <div className="slider-track-wrapper">
+      <div 
+        className="slider-track-wrapper"
+        style={{ '--fill-pct': `${fillPercent}%` } as React.CSSProperties}
+      >
         {/* Level fill bar (decorative, behind the range input) */}
         <div
           className="slider-fill-bar"

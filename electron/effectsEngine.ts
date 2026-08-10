@@ -31,9 +31,24 @@ export class EffectsEngine {
       id,
       config,
       runTimeSecs: 0,
+      isPaused: false,
     })
     console.log(`[FX Engine] Added effect ${config.shape} on ${config.target} (${config.fixtureIds.length} fixtures)`)
     return id
+  }
+
+  updateEffect(id: string, config: FxConfig): void {
+    const fx = this.activeEffects.get(id)
+    if (fx) {
+      fx.config = config
+    }
+  }
+
+  setEffectPaused(id: string, paused: boolean): void {
+    const fx = this.activeEffects.get(id)
+    if (fx) {
+      fx.isPaused = paused
+    }
   }
 
   removeEffect(id: string): void {
@@ -79,7 +94,9 @@ export class EffectsEngine {
   tick(deltaMs: number): void {
     const deltaSecs = deltaMs / 1000
     for (const fx of this.activeEffects.values()) {
-      fx.runTimeSecs += deltaSecs
+      if (!fx.isPaused) {
+        fx.runTimeSecs += deltaSecs
+      }
     }
   }
 
@@ -99,6 +116,8 @@ export class EffectsEngine {
 
     // Evaluate each effect
     for (const fx of this.activeEffects.values()) {
+      if (fx.isPaused) continue
+
       const { shape, target, fixtureIds } = fx.config
 
       // Apply audio modulations for this tick (temporary overrides)

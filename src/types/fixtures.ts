@@ -38,6 +38,8 @@ export interface PatchedFixture {
   universeIndex?: number
   /** 3D world position [x, y, z] for the stage visualizer. */
   position3d?:  [number, number, number]
+  /** 3D world rotation [x, y, z] for the stage visualizer (Euler angles). */
+  rotation3d?:  [number, number, number]
 }
 
 export interface FixtureLogicalState {

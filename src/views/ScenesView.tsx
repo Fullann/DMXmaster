@@ -11,10 +11,10 @@ export function ScenesView() {
   const history = useHistoryStore()
   
   // Custom save scene handler that hooks into history
-  const handleSaveScene = async (name: string, fadeMs: number, filterMask: ParameterGroup) => {
+  const handleSaveScene = async (name: string, fadeMs: number, filterMask: ParameterGroup, includeFx: boolean) => {
     const states = useFixturesStore.getState().states
     history.push(`Record "${name}"`, states as any)
-    await sceneState.saveCurrentAsScene(name, fadeMs, filterMask)
+    await sceneState.saveCurrentAsScene(name, fadeMs, filterMask, includeFx)
   }
 
   return (

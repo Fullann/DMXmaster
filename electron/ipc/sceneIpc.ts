@@ -11,11 +11,12 @@ export function registerSceneIpc(scene: SceneManager): void {
     return { scene: s }
   })
 
-  handle('scene:saveCurrentAsScene', async (name, fadeTimeMs, filterMask) => {
+  handle('scene:saveCurrentAsScene', async (name, fadeTimeMs, filterMask, includeFx) => {
     const s = await scene.saveCurrentAsScene(
       name as string,
       fadeTimeMs as number,
       (filterMask as ParameterGroup | undefined) ?? 'all',
+      includeFx as boolean,
     )
     return { scene: s }
   })

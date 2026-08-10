@@ -55,12 +55,14 @@ export function FixtureBuilder({ onSave }: FixtureBuilderProps) {
     }
     setIsSaving(true)
     setSavedKey(null)
-    await onSave(profile)
+    const key = await onSave(profile)
     setIsSaving(false)
-    setSavedKey(`${profile.manufacturer} ${profile.model} (${profile.mode})`)
-    // Reset form
-    setManufacturer(''); setModel(''); setMode('')
-    setChannels([emptyChannel(1)])
+    if (key) {
+      setSavedKey(`${profile.manufacturer} ${profile.model} (${profile.mode})`)
+      // Reset form
+      setManufacturer(''); setModel(''); setMode('')
+      setChannels([emptyChannel(1)])
+    }
   }, [manufacturer, model, mode, channels, onSave])
 
   const canSave = manufacturer.trim() && model.trim() && mode.trim() &&

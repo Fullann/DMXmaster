@@ -12,6 +12,8 @@ export function FxView() {
         patch={fixtures.patch}
         activeEffects={fxState.activeEffects}
         onAddEffect={fxState.addEffect}
+        onUpdateEffect={fxState.updateEffect}
+        onSetPaused={fxState.setPaused}
         onRemoveEffect={fxState.removeEffect}
       />
     </div>

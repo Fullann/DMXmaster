@@ -8,7 +8,7 @@ import { PARAMETER_GROUP_LABELS } from '@/types/scenes'
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface SceneRecorderProps {
-  onSave:  (name: string, fadeTimeMs: number, filterMask: ParameterGroup) => Promise<void>
+  onSave:  (name: string, fadeTimeMs: number, filterMask: ParameterGroup, includeFx: boolean) => Promise<void>
   onClear: () => Promise<void>
 }
 
@@ -34,6 +34,7 @@ export function SceneRecorder({ onSave, onClear }: SceneRecorderProps) {
   const [name,       setName]       = useState('')
   const [fadeSecs,   setFadeSecs]   = useState('2')
   const [filterMask, setFilterMask] = useState<ParameterGroup>('all')
+  const [includeFx,  setIncludeFx]  = useState(true)
   const [isSaving,   setIsSaving]   = useState(false)
   const [savedMsg,   setSavedMsg]   = useState<string | null>(null)
 
@@ -42,7 +43,7 @@ export function SceneRecorder({ onSave, onClear }: SceneRecorderProps) {
     setIsSaving(true)
     setSavedMsg(null)
     const fadeMs = Math.max(0, Math.round(parseFloat(fadeSecs || '0') * 1000))
-    await onSave(name.trim(), fadeMs, filterMask)
+    await onSave(name.trim(), fadeMs, filterMask, includeFx)
     setIsSaving(false)
     setSavedMsg(`✓ Saved "${name.trim()}" [${filterMask}]`)
     setName('')
@@ -104,6 +105,16 @@ export function SceneRecorder({ onSave, onClear }: SceneRecorderProps) {
           value={fadeSecs}
           onChange={e => setFadeSecs(e.target.value)}
         />
+      </div>
+
+      <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', cursor: 'pointer' }} onClick={() => setIncludeFx(!includeFx)}>
+        <input 
+          type="checkbox" 
+          checked={includeFx} 
+          onChange={(e) => setIncludeFx(e.target.checked)} 
+          style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }} 
+        />
+        <label className="form-label" style={{ margin: 0, cursor: 'pointer' }}>Include Active Effects (FX)</label>
       </div>
 
       <div className="scene-recorder-actions">

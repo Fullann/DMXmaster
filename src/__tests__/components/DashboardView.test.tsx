@@ -27,9 +27,12 @@ describe('DashboardView', () => {
     expect(screen.getByTestId('serial-panel')).toBeInTheDocument()
     expect(screen.getByTestId('midi-monitor')).toBeInTheDocument()
     
-    const sliders = screen.getAllByTestId('channel-slider')
-    expect(sliders).toHaveLength(4)
-    expect(sliders[0]).toHaveTextContent('Channel 1')
+    // Check that it renders 512 channels
+    // The channel elements just contain the text "1", "2", etc.
+    expect(screen.getByText('Universe 1 — 512 Channels')).toBeInTheDocument()
+    // Find channel 1 and channel 512
+    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('512')).toBeInTheDocument()
   })
 
   it('should render blackout button', () => {

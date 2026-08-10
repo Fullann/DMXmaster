@@ -31,7 +31,10 @@ export class SceneManager {
   private scenes    = new Map<string, Scene>()
   private activeFade: ActiveFade | null = null
 
-  constructor(private readonly fixtureManager: FixtureManager) {}
+  constructor(
+    private readonly fixtureManager: FixtureManager,
+    private readonly effectsEngine: import('./effectsEngine').EffectsEngine
+  ) {}
 
   // ── Initialization ──────────────────────────────────────────────────────────
 
@@ -91,6 +94,7 @@ export class SceneManager {
     name:        string,
     fadeTimeMs:  number,
     filterMask:  ParameterGroup = 'all',
+    includeFx:   boolean = false
   ): Promise<Scene> {
     const patch     = this.fixtureManager.getPatch()
     const allStates = this.fixtureManager.getFixtureStates()
@@ -118,6 +122,13 @@ export class SceneManager {
       fixtureStates,
       createdAt:     new Date().toISOString(),
       filterMask,
+    }
+
+    if (includeFx) {
+      // Clone the array of active effects so we don't store references to the engine's map
+      scene.fxState = {
+        activeEffects: JSON.parse(JSON.stringify(this.effectsEngine.getEffects()))
+      }
     }
 
     this.scenes.set(scene.id, scene)
@@ -158,22 +169,33 @@ export class SceneManager {
       }
       this.activeFade = null
       console.log(`[SceneManager] Recalled "${scene.name}" (snap).`)
-      return
+    } else {
+      // Capture current state as fade source
+      const allStates  = this.fixtureManager.getFixtureStates()
+      const sourceStates: Record<string, FixtureSnapshot> = {}
+
+      for (const fixtureId of Object.keys(scene.fixtureStates)) {
+        const current = allStates[fixtureId]
+        if (current) sourceStates[fixtureId] = { ...current }
+      }
+
+      // Build a virtual scene copy with the overridden fade time
+      const virtualScene: Scene = { ...scene, fadeTimeMs: fadeMs }
+      this.activeFade = { scene: virtualScene, sourceStates, elapsedMs: 0 }
+      console.log(`[SceneManager] Recalling "${scene.name}" over ${fadeMs}ms.`)
     }
 
-    // Capture current state as fade source
-    const allStates  = this.fixtureManager.getFixtureStates()
-    const sourceStates: Record<string, FixtureSnapshot> = {}
-
-    for (const fixtureId of Object.keys(scene.fixtureStates)) {
-      const current = allStates[fixtureId]
-      if (current) sourceStates[fixtureId] = { ...current }
+    // Handle FX restoration
+    if (scene.fxState) {
+      this.effectsEngine.clearAll()
+      for (const fx of scene.fxState.activeEffects) {
+        const id = this.effectsEngine.addEffect(fx.config)
+        if (fx.isPaused) {
+          this.effectsEngine.setEffectPaused(id, true)
+        }
+      }
+      console.log(`[SceneManager] Restored ${scene.fxState.activeEffects.length} FX from scene "${scene.name}".`)
     }
-
-    // Build a virtual scene copy with the overridden fade time
-    const virtualScene: Scene = { ...scene, fadeTimeMs: fadeMs }
-    this.activeFade = { scene: virtualScene, sourceStates, elapsedMs: 0 }
-    console.log(`[SceneManager] Recalling "${scene.name}" over ${fadeMs}ms.`)
   }
 
 

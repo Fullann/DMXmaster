@@ -31,6 +31,8 @@ export interface ActiveEffect {
   id:          string
   /** The configuration driving this effect */
   config:      FxConfig
-  /** Internal accumulator: running time in seconds to calculate phase */
+  /** The time the effect has been running (used to calculate phase) */
   runTimeSecs: number
+  /** Whether the effect is currently paused/deactivated */
+  isPaused?: boolean
 }

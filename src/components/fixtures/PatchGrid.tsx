@@ -48,6 +48,34 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch }: PatchGrid
     }
   }, [selectedProfile, startAddress, label, onPatch, profiles])
 
+  const handleAutoAddress = useCallback(() => {
+    const profile = profiles.find(p => p.key === selectedProfile)
+    if (!profile) return
+    const numChannels = profile.profile.channels.length
+    
+    // Find first block of `numChannels` free addresses
+    for (let addr = 1; addr <= 512 - numChannels + 1; addr++) {
+      let isFree = true
+      for (let i = 0; i < numChannels; i++) {
+        const checkAddr = addr + i
+        const isOccupied = patch.some(f => {
+          const fStart = f.startAddress
+          const fEnd = fStart + f.profile.channels.length - 1
+          return checkAddr >= fStart && checkAddr <= fEnd
+        })
+        if (isOccupied) {
+          isFree = false
+          break
+        }
+      }
+      if (isFree) {
+        setStartAddress(addr)
+        return
+      }
+    }
+    setError('No contiguous free addresses available for this fixture.')
+  }, [patch, profiles, selectedProfile])
+
   const handleAddNetworkNode = () => {
     if (!netName || !netIp) return
     network.addNode({
@@ -135,7 +163,16 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch }: PatchGrid
           <div className="patch-add-row2">
             {/* Start address */}
             <div className="form-group">
-              <label className="form-label">DMX Address</label>
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>DMX Address</span>
+                <button 
+                  className="btn btn-ghost" 
+                  style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                  onClick={handleAutoAddress}
+                >
+                  Auto-Find
+                </button>
+              </label>
               <input
                 type="number"
                 min={1} max={512}

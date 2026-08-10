@@ -4,11 +4,11 @@ import { handle } from './ipcUtils'
 
 export function registerTimelineIpc(timeline: TimelineManager): void {
   handle('timeline:getShows',   ()       => timeline.getShows().then(s => ({ shows: s })))
-  handle('timeline:saveShow',   (e, s)   => timeline.saveShow(s as any).then(() =>({})))
-  handle('timeline:deleteShow', (e, id)  => timeline.deleteShow(id as string).then(() =>({})))
-  handle('timeline:importAudio',(e, p)   => timeline.importAudio(p as string).then(f => ({ fileName: f })))
+  handle('timeline:saveShow',   (s)   => timeline.saveShow(s as any).then(() =>({})))
+  handle('timeline:deleteShow', (id)  => timeline.deleteShow(id as string).then(() =>({})))
+  handle('timeline:importAudio',(p)   => timeline.importAudio(p as string).then(f => ({ fileName: f })))
   
-  ipcMain.handle('timeline:getAudioBuffer', async (e, fileName: string) => {
+  ipcMain.handle('timeline:getAudioBuffer', async (fileName: string) => {
     try {
       const p = timeline.getAudioPath(fileName)
       const fs = require('fs')

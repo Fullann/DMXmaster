@@ -18,9 +18,9 @@ import { registerIpcHandlers, pushUniverseUpdate } from './ipc/index'
 const serialManager  = new SerialManager()
 const dmxEngine      = new DmxEngine(serialManager)
 const fixtureManager = new FixtureManager()
-const sceneManager   = new SceneManager(fixtureManager)
-const chaserManager  = new ChaserManager(sceneManager)
 const effectsEngine  = new EffectsEngine()
+const sceneManager   = new SceneManager(fixtureManager, effectsEngine)
+const chaserManager  = new ChaserManager(sceneManager)
 const liveGridManager= new LiveGridManager()
 const audioEngine    = new AudioEngine()
 const networkManager = new NetworkManager()
@@ -41,7 +41,7 @@ function createWindow(): BrowserWindow {
       preload:          join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration:  false,
-      sandbox:          false,
+      sandbox:          true,
     },
   })
 

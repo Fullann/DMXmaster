@@ -81,6 +81,9 @@ export class DmxEngine {
   private isIdle            = false
   private lastTickMs        = 0
 
+  // Bypass intelligent engine to allow raw DMX control from Dashboard
+  public engineBypassed: boolean = false
+
   private readonly serial: SerialManager
 
   // ── Pluggable subsystems ──────────────────────────────────────────────────
@@ -152,14 +155,14 @@ export class DmxEngine {
   }
 
   /** Snapshot of a specific universe (0-based index). */
-  getUniverseSnapshot(universeIdx = 0): number[] {
+  getUniverseSnapshot(universeIdx = 0): Uint8Array {
     const u = Math.max(0, Math.min(MAX_UNIVERSES - 1, universeIdx))
-    return Array.from(this.universes[u])
+    return new Uint8Array(this.universes[u])
   }
 
-  /** Snapshots of all universes (array of 512-element arrays). */
-  getAllUniverseSnapshots(): number[][] {
-    return this.universes.map(u => Array.from(u))
+  /** Snapshots of all universes. */
+  getAllUniverseSnapshots(): Uint8Array[] {
+    return this.universes.map(u => new Uint8Array(u))
   }
 
   // ── Adaptive framerate ──────────────────────────────────────────────────────
@@ -234,7 +237,9 @@ export class DmxEngine {
 
     // ── Fixture → Universes ────────────────────────────────────────────────────
     // Each fixture writes to universes[fixture.universeIndex ?? 0]
-    this.fixtureManager?.applyToUniverses(this.universes, mergedOffsets)
+    if (!this.engineBypassed) {
+      this.fixtureManager?.applyToUniverses(this.universes, mergedOffsets)
+    }
 
     // ── Pixel Mapping (highest priority, universe 0 only for now) ─────────────
     this.pixelEngine?.applyToUniverse(this.universes[0])

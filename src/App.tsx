@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 
 import { useGlobalShortcuts }   from '@/hooks/useGlobalShortcuts'
 import '@/styles/index.css'
+import { 
+  Grid, LayoutDashboard, Folder, Cable, SlidersHorizontal, 
+  Clapperboard, Repeat, Waves, Mic, Tv, Clock, Eye,
+  FilePlus, Download, Upload, Zap, MonitorSpeaker
+} from 'lucide-react'
 
 // Stores
 import { useSerialStore } from '@/store/useSerialStore'
@@ -35,19 +40,19 @@ import { VisualizerView } from '@/views/VisualizerView'
 
 type AppView = 'dashboard' | 'library' | 'patch' | 'control' | 'scenes' | 'chaser' | 'fx' | 'live' | 'audio' | 'pixel' | 'timeline' | 'visualizer'
 
-const TABS: { id: AppView; label: string; icon: string }[] = [
-  { id: 'live',      label: 'Live Grid',    icon: '🎛' },
-  { id: 'dashboard', label: 'Dashboard',    icon: '⚡' },
-  { id: 'library',   label: 'Library',      icon: '📁' },
-  { id: 'patch',     label: 'Patch',        icon: '🔌' },
-  { id: 'control',   label: 'Control',      icon: '🎛' },
-  { id: 'scenes',    label: 'Scenes',       icon: '🎬' },
-  { id: 'chaser',    label: 'Chasers',      icon: '🔄' },
-  { id: 'fx',        label: 'FX Generator', icon: '🌊' },
-  { id: 'audio',     label: 'Audio Input',  icon: '🎤' },
-  { id: 'pixel',     label: 'Pixel Mapper', icon: '📺' },
-  { id: 'timeline',  label: 'Timeline',     icon: '⏳' },
-  { id: 'visualizer',label: '3D View',      icon: '👁' },
+const TABS: { id: AppView; label: string; icon: React.ReactNode }[] = [
+  { id: 'live',      label: 'Live Grid',    icon: <Grid size={18} /> },
+  { id: 'dashboard', label: 'Dashboard',    icon: <LayoutDashboard size={18} /> },
+  { id: 'library',   label: 'Library',      icon: <Folder size={18} /> },
+  { id: 'patch',     label: 'Patch',        icon: <Cable size={18} /> },
+  { id: 'control',   label: 'Control',      icon: <SlidersHorizontal size={18} /> },
+  { id: 'scenes',    label: 'Scenes',       icon: <Clapperboard size={18} /> },
+  { id: 'chaser',    label: 'Chasers',      icon: <Repeat size={18} /> },
+  { id: 'fx',        label: 'FX Generator', icon: <Waves size={18} /> },
+  { id: 'audio',     label: 'Audio Input',  icon: <Mic size={18} /> },
+  { id: 'pixel',     label: 'Pixel Mapper', icon: <Tv size={18} /> },
+  { id: 'timeline',  label: 'Timeline',     icon: <Clock size={18} /> },
+  { id: 'visualizer',label: '3D View',      icon: <Eye size={18} /> },
 ]
 
 export default function App() {
@@ -105,70 +110,16 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* ── Top Bar ──────────────────────────────────────────────────────────── */}
-      <header className="topbar">
-        <div className="topbar-logo">
-          <div className="topbar-logo-icon">⚡</div>
+      {/* ── Sidebar Navigation (Formerly Tab Navigation) ────────────────────── */}
+      <nav className="tab-nav">
+        {/* Logo at the top of the sidebar */}
+        <div className="topbar-logo" style={{ padding: '0.5rem 0.75rem', marginBottom: '1rem', WebkitAppRegion: 'drag' } as any}>
+          <div className="topbar-logo-icon" style={{ display: 'flex', alignItems: 'center' }}>
+            <Zap size={20} color="var(--accent)" fill="var(--accent)" />
+          </div>
           <span className="topbar-logo-text">DMX Master</span>
         </div>
-        <div className="topbar-badges">
-          <div className="topbar-badge badge-engine">
-            <span className="badge-dot pulse" />
-            Engine Running
-          </div>
-          {patchCount > 0 && (
-            <div className="topbar-badge badge-connected">
-              <span className="badge-dot" />
-              {patchCount} Fixture{patchCount !== 1 ? 's' : ''} Patched
-            </div>
-          )}
-          {isSerialConnected ? (
-            <div className="topbar-badge badge-connected">
-              <span className="badge-dot" />
-              {serialPort.split('/').pop() ?? serialPort}
-            </div>
-          ) : (
-            <div className="topbar-badge badge-disconnected">
-              <span className="badge-dot" />
-              No Device
-            </div>
-          )}
-          </div>
-          
-          {/* Global Controls & File Management */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          
-          <div style={{ display: 'flex', gap: '0.5rem', borderRight: '1px solid rgba(255,255,255,0.2)', paddingRight: '1rem' }}>
-            <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => window.appAPI.newShow()}>
-              📄 New Show
-            </button>
-            <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => window.appAPI.importShow()}>
-              📂 Import
-            </button>
-            <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => window.appAPI.exportShow()}>
-              💾 Export
-            </button>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className={`status-badge ${isBroadcastEnabled ? 'status-connected' : 'status-disconnected'}`} 
-                 style={{ cursor: 'pointer', padding: '0.25rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                 onClick={() => toggleBroadcast(!isBroadcastEnabled)}
-                 title="Toggle Art-Net Broadcast"
-            >
-              <div className="status-dot"></div>
-              Network: {isBroadcastEnabled ? 'ON' : 'OFF'}
-            </div>
-            <div className={`status-badge ${isSerialConnected ? 'status-connected' : 'status-disconnected'}`}>
-              <div className="status-dot"></div>
-              {isSerialConnected ? 'USB DMX Active' : 'USB DMX Offline'}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* ── Tab Navigation ───────────────────────────────────────────────────── */}
-      <nav className="tab-nav">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -182,20 +133,81 @@ export default function App() {
         ))}
       </nav>
 
-      {/* ── Content Area ─────────────────────────────────────────────────────── */}
-      <div className="content-area">
-        {currentView === 'dashboard' && <DashboardView />}
-        {currentView === 'library' && <LibraryView />}
-        {currentView === 'patch' && <PatchView />}
-        {currentView === 'control' && <ControlView />}
-        {currentView === 'scenes' && <ScenesView />}
-        {currentView === 'chaser' && <ChaserView />}
-        {currentView === 'fx' && <FxView />}
-        {currentView === 'live' && <LiveView />}
-        {currentView === 'audio' && <AudioView />}
-        {currentView === 'pixel' && <PixelView />}
-        {currentView === 'timeline' && <TimelineView />}
-        {currentView === 'visualizer' && <VisualizerView />}
+      {/* ── Main Content Area ──────────────────────────────────────────────── */}
+      <div className="app-content-wrap">
+        {/* ── Top Bar (Badges & Controls Only) ──────────────────────────────── */}
+        <header className="topbar">
+          <div className="topbar-badges">
+            <div className="topbar-badge badge-engine">
+              <span className="badge-dot pulse" />
+              Engine Running
+            </div>
+            {patchCount > 0 && (
+              <div className="topbar-badge badge-connected">
+                <span className="badge-dot" />
+                {patchCount} Fixture{patchCount !== 1 ? 's' : ''} Patched
+              </div>
+            )}
+            {isSerialConnected ? (
+              <div className="topbar-badge badge-connected">
+                <span className="badge-dot" />
+                {serialPort.split('/').pop() ?? serialPort}
+              </div>
+            ) : (
+              <div className="topbar-badge badge-disconnected">
+                <span className="badge-dot" />
+                No Device
+              </div>
+            )}
+          </div>
+          
+          {/* Global Controls & File Management */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            
+            <div style={{ display: 'flex', gap: '0.5rem', borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '1rem' }}>
+              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => window.appAPI.newShow()}>
+                <FilePlus size={14} /> New Show
+              </button>
+              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => window.appAPI.importShow()}>
+                <Upload size={14} /> Import
+              </button>
+              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => window.appAPI.exportShow()}>
+                <Download size={14} /> Export
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className={`status-badge ${isBroadcastEnabled ? 'status-connected' : 'status-disconnected'}`} 
+                   style={{ cursor: 'pointer', padding: '0.35rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '12px' }}
+                   onClick={() => toggleBroadcast(!isBroadcastEnabled)}
+                   title="Toggle Art-Net Broadcast"
+              >
+                <div className="status-dot"></div>
+                Network: {isBroadcastEnabled ? 'ON' : 'OFF'}
+              </div>
+              <div className={`status-badge ${isSerialConnected ? 'status-connected' : 'status-disconnected'}`} style={{ padding: '0.35rem 0.85rem', borderRadius: '12px' }}>
+                <div className="status-dot"></div>
+                {isSerialConnected ? 'USB DMX Active' : 'USB DMX Offline'}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* ── Content View ─────────────────────────────────────────────────── */}
+        <div className="content-area">
+          {currentView === 'dashboard' && <DashboardView />}
+          {currentView === 'library' && <LibraryView />}
+          {currentView === 'patch' && <PatchView />}
+          {currentView === 'control' && <ControlView />}
+          {currentView === 'scenes' && <ScenesView />}
+          {currentView === 'chaser' && <ChaserView />}
+          {currentView === 'fx' && <FxView />}
+          {currentView === 'live' && <LiveView />}
+          {currentView === 'audio' && <AudioView />}
+          {currentView === 'pixel' && <PixelView />}
+          {currentView === 'timeline' && <TimelineView />}
+          {currentView === 'visualizer' && <VisualizerView />}
+        </div>
       </div>
     </div>
   )

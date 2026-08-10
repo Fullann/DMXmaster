@@ -18,12 +18,13 @@ export interface DmxAPI {
   disconnect:     () => Promise<{ success: boolean; error?: string }>
   updateChannel:  (channel: number, value: number, universeIdx?: number) => Promise<{ success: boolean; error?: string }>
   updateChannels: (channelMap: Record<number, number>, universeIdx?: number) => Promise<{ success: boolean; error?: string }>
-  getUniverse:    (universeIdx?: number) => Promise<{ success: boolean; universe?: number[]; error?: string }>
-  getUniverses:   () => Promise<{ success: boolean; universes?: number[][]; error?: string }>
+  getUniverse:    (universeIdx?: number) => Promise<{ success: boolean; universe?: Uint8Array; error?: string }>
+  getUniverses:   () => Promise<{ success: boolean; universes?: Uint8Array[]; error?: string }>
   blackout:       () => Promise<{ success: boolean; error?: string }>
   /** Intensity-only blackout — does NOT clear Color or Position channels */
   softBlackout:   () => Promise<{ success: boolean; error?: string }>
-  onUniverseUpdate: (cb: (universe: number[]) => void) => () => void
+  setEngineBypass:(bypass: boolean) => Promise<{ success: boolean; error?: string }>
+  onUniverseUpdate: (cb: (universe: Uint8Array) => void) => () => void
 }
 
 const dmxAPI: DmxAPI = {
@@ -35,9 +36,10 @@ const dmxAPI: DmxAPI = {
   getUniverse:    (u)          => ipcRenderer.invoke('dmx:getUniverse', u),
   getUniverses:   ()           => ipcRenderer.invoke('dmx:getUniverses'),
   blackout:       ()           => ipcRenderer.invoke('dmx:blackout'),
-  softBlackout:   ()        => ipcRenderer.invoke('dmx:softBlackout'),
+  softBlackout:   ()           => ipcRenderer.invoke('dmx:softBlackout'),
+  setEngineBypass:(bypass)     => ipcRenderer.invoke('dmx:setEngineBypass', bypass),
   onUniverseUpdate: (cb) => {
-    const listener = (_: Electron.IpcRendererEvent, universe: number[]) => cb(universe)
+    const listener = (_: Electron.IpcRendererEvent, universe: Uint8Array) => cb(universe)
     ipcRenderer.on('dmx:universeUpdate', listener)
     return () => ipcRenderer.removeListener('dmx:universeUpdate', listener)
   },
@@ -60,7 +62,8 @@ export interface FixtureAPI {
   patchFixture:   (key: string, addr: number, label?: string, universeIdx?: number) => Promise<{ success: boolean; fixture?: PatchedFixture; error?: string }>
   removePatch:    (id: string) => Promise<{ success: boolean; error?: string }>
   setPosition:    (id: string, pos: [number, number, number]) => Promise<{ success: boolean; error?: string }>
-  setUniverse:    (id: string, universeIdx: number) => Promise<{ success: boolean; error?: string }>
+  setRotation:    (id: string, rot: [number, number, number]) => Promise<{ success: boolean; error?: string }>
+  setUniverse:    (id: string, uIdx: number) => Promise<{ success: boolean; error?: string }>
   sendCommand:    (id: string, type: ChannelType, val: number) => Promise<{ success: boolean; error?: string }>
   sendColor:      (id: string, r: number, g: number, b: number, w?: number) => Promise<{ success: boolean; error?: string }>
   getStates:      () => Promise<{ success: boolean; states?: Record<string, FixtureLogicalState>; error?: string }>
@@ -81,7 +84,8 @@ const fixtureAPI: FixtureAPI = {
   patchFixture:   (k, a, l, u)       => ipcRenderer.invoke('fixture:patchFixture', k, a, l, u),
   removePatch:    (id)               => ipcRenderer.invoke('fixture:removePatch', id),
   setPosition:    (id, pos)          => ipcRenderer.invoke('fixture:setPosition', id, pos),
-  setUniverse:    (id, u)            => ipcRenderer.invoke('fixture:setUniverse', id, u),
+  setRotation:    (id, rot)          => ipcRenderer.invoke('fixture:setRotation', id, rot),
+  setUniverse:    (id, uIdx)         => ipcRenderer.invoke('fixture:setUniverse', id, uIdx),
   sendCommand:    (id, t, v)         => ipcRenderer.invoke('fixture:sendCommand', id, t, v),
   sendColor:      (id, r, g, b, w)   => ipcRenderer.invoke('fixture:sendColor', id, r, g, b, w),
   getStates:      ()                 => ipcRenderer.invoke('fixture:getStates'),
@@ -112,7 +116,7 @@ export interface SceneAPI {
 const sceneAPI: SceneAPI = {
   getScenes:          ()                    => ipcRenderer.invoke('scene:getScenes'),
   getScene:           (id)                  => ipcRenderer.invoke('scene:getScene', id),
-  saveCurrentAsScene: (name, fade, mask)    => ipcRenderer.invoke('scene:saveCurrentAsScene', name, fade, mask),
+  saveCurrentAsScene: (n, f, m, i)          => ipcRenderer.invoke('scene:saveCurrentAsScene', n, f, m, i),
   recallScene:        (id)                  => ipcRenderer.invoke('scene:recallScene', id),
   deleteScene:        (id)                  => ipcRenderer.invoke('scene:deleteScene', id),
   cancelFade:         ()                    => ipcRenderer.invoke('scene:cancelFade'),
@@ -133,8 +137,10 @@ export interface FxAPI {
 }
 
 const fxAPI: FxAPI = {
-  addEffect:    (cfg) => ipcRenderer.invoke('fx:addEffect', cfg),
-  removeEffect: (id)  => ipcRenderer.invoke('fx:removeEffect', id),
+  addEffect:    (cfg: any) => ipcRenderer.invoke('fx:addEffect', cfg),
+  updateEffect: (id: string, cfg: any) => ipcRenderer.invoke('fx:updateEffect', id, cfg),
+  setPaused:    (id: string, paused: boolean) => ipcRenderer.invoke('fx:setPaused', id, paused),
+  removeEffect: (id: string)  => ipcRenderer.invoke('fx:removeEffect', id),
   clearAll:     ()    => ipcRenderer.invoke('fx:clearAll'),
   getEffects:   ()    => ipcRenderer.invoke('fx:getEffects'),
 }

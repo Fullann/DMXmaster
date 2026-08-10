@@ -7,20 +7,21 @@ export function registerFixtureIpc(fixture: FixtureManager): void {
   // Profiles
   handle('fixture:getProfiles', () => ({ profiles: fixture.getProfiles() }))
   handle('fixture:reloadProfiles', async () => { await fixture.loadProfiles(); return { profiles: fixture.getProfiles() } })
-  handle('fixture:saveProfile', async (e, p) => ({ key: await fixture.saveProfile(p as FixtureProfile) }))
-  handle('fixture:deleteProfile', (e, id) => fixture.deleteProfile(id as string))
+  handle('fixture:saveProfile', async (p) => ({ key: await fixture.saveProfile(p as FixtureProfile) }))
+  handle('fixture:deleteProfile', (id) => fixture.deleteProfile(id as string))
 
   // Patch
   handle('fixture:getPatch', () => ({ patch: fixture.getPatch() }))
-  handle('fixture:savePatch', (e, p) => fixture.savePatch(p as any))
+  handle('fixture:savePatch', (p) => fixture.savePatch(p as any))
   handle('fixture:patchFixture',    (key, addr, label, uIdx) => ({ fixture: fixture.patchFixture(key as string, addr as number, label as string, uIdx as number) }))
   handle('fixture:removePatch',     (id)                  => { fixture.removePatchedFixture(id as string) })
   handle('fixture:setPosition',     async (id, pos)       => { await fixture.setFixturePosition(id as string, pos as [number, number, number]) })
+  handle('fixture:setRotation',     async (id, rot)       => { await fixture.setFixtureRotation(id as string, rot as [number, number, number]) })
   handle('fixture:setUniverse',     async (id, uIdx)      => { await fixture.setFixtureUniverse(id as string, uIdx as number) })
 
   // Groups
   handle('fixture:getGroups', () => ({ groups: fixture.getGroups() }))
-  handle('fixture:saveGroups', (e, g) => fixture.saveGroups(g as any))
+  handle('fixture:saveGroups', (g) => fixture.saveGroups(g as any))
   
   // Fire-and-forget (ipcRenderer.send in preload) — do NOT use handle() here
   ipcMain.on('fixture:setGrandMaster', (_e, level) => { fixture.setGrandMaster(level as number) })

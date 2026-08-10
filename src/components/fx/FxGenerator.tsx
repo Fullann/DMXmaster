@@ -6,13 +6,15 @@ interface FxGeneratorProps {
   patch:         PatchedFixture[]
   activeEffects: ActiveEffect[]
   onAddEffect:   (cfg: FxConfig) => void
+  onUpdateEffect: (id: string, cfg: FxConfig) => void
+  onSetPaused:   (id: string, paused: boolean) => void
   onRemoveEffect: (id: string) => void
 }
 
 const WAVEFORMS: Waveform[] = ['Sine', 'Triangle', 'Sawtooth', 'Pulse']
 const TARGETS: FxTarget[] = ['Intensity', 'Pan', 'Tilt', 'Red', 'Green', 'Blue', 'White', 'Color']
 
-export function FxGenerator({ patch, activeEffects, onAddEffect, onRemoveEffect }: FxGeneratorProps) {
+export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect, onSetPaused, onRemoveEffect }: FxGeneratorProps) {
   // Generator State
   const [shape, setShape] = useState<Waveform>('Sine')
   const [target, setTarget] = useState<FxTarget>('Tilt')
@@ -21,6 +23,7 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onRemoveEffect 
   const [phase, setPhase] = useState(0)   // Global phase
   const [spread, setSpread] = useState(0) // Stagger per fixture
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [editingFxId, setEditingFxId] = useState<string | null>(null)
 
   // Visualizer Canvas ref
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -33,10 +36,26 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onRemoveEffect 
     setSelectedIds(next)
   }
 
-  // Handle Create
-  const handleCreate = () => {
+  // Handle Select Active FX
+  const handleSelectFx = (fx: ActiveEffect) => {
+    setEditingFxId(fx.id)
+    setShape(fx.config.shape)
+    setTarget(fx.config.target)
+    setSpeed(fx.config.speedHz)
+    setSize(fx.config.size)
+    setPhase(fx.config.phaseDegrees)
+    setSpread(fx.config.spreadDegrees)
+    setSelectedIds(new Set(fx.config.fixtureIds))
+  }
+
+  const handleClearSelection = () => {
+    setEditingFxId(null)
+  }
+
+  // Handle Create / Update
+  const handleSave = () => {
     if (selectedIds.size === 0) return
-    onAddEffect({
+    const config: FxConfig = {
       shape,
       target,
       speedHz: speed,
@@ -44,7 +63,13 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onRemoveEffect 
       phaseDegrees: phase,
       spreadDegrees: spread,
       fixtureIds: Array.from(selectedIds)
-    })
+    }
+    
+    if (editingFxId) {
+      onUpdateEffect(editingFxId, config)
+    } else {
+      onAddEffect(config)
+    }
   }
 
   // Visualizer Animation Loop
@@ -155,13 +180,33 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onRemoveEffect 
             <div className="busking-empty-hint" style={{ padding: '1rem', textAlign: 'center' }}>No running effects</div>
           ) : (
             activeEffects.map(fx => (
-              <div key={fx.id} className="fx-active-card">
+              <div 
+                key={fx.id} 
+                className={`fx-active-card ${editingFxId === fx.id ? 'selected' : ''}`}
+                onClick={() => handleSelectFx(fx)}
+                style={{ cursor: 'pointer', border: editingFxId === fx.id ? '1px solid var(--accent)' : '' }}
+              >
                 <div className="fx-active-header">
                   <strong>{fx.config.shape}</strong> {fx.config.target}
-                  <button className="btn btn-ghost" style={{ padding: '2px 6px' }} onClick={() => onRemoveEffect(fx.id)}>×</button>
+                  <div>
+                    <button 
+                      className="btn btn-ghost" 
+                      style={{ padding: '2px 6px', marginRight: '4px' }} 
+                      onClick={(e) => { e.stopPropagation(); onSetPaused(fx.id, !fx.isPaused) }}
+                    >
+                      {fx.isPaused ? '▶️' : '⏸️'}
+                    </button>
+                    <button 
+                      className="btn btn-ghost" 
+                      style={{ padding: '2px 6px' }} 
+                      onClick={(e) => { e.stopPropagation(); if(editingFxId === fx.id) handleClearSelection(); onRemoveEffect(fx.id); }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
                 <div className="fx-active-meta">
-                  {fx.config.speedHz}Hz · {fx.config.fixtureIds.length} fix
+                  {fx.config.speedHz}Hz · {fx.config.fixtureIds.length} fix {fx.isPaused ? '(PAUSED)' : ''}
                 </div>
               </div>
             ))
@@ -172,7 +217,10 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onRemoveEffect 
       {/* ── Generator Form ─────────────────────────────────────────────── */}
       <main className="fx-main panel">
         <div className="panel-header">
-          <span className="panel-title">FX Generator</span>
+          <span className="panel-title">FX Generator {editingFxId ? '(Editing)' : ''}</span>
+          {editingFxId && (
+            <button className="btn btn-ghost" onClick={handleClearSelection}>Cancel Edit</button>
+          )}
         </div>
 
         <div className="fx-generator-layout">
@@ -269,9 +317,9 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onRemoveEffect 
               className="btn btn-primary" 
               style={{ width: '100%', marginTop: '1rem', padding: '1rem' }}
               disabled={selectedIds.size === 0}
-              onClick={handleCreate}
+              onClick={handleSave}
             >
-              ▶ Start Effect
+              {editingFxId ? '📝 Update Effect' : '▶ Start Effect'}
             </button>
           </div>
 

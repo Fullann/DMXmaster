@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import type { PatchedFixture, FixtureLogicalState, ChannelType } from '@/types/fixtures'
 import { getFixtureCapabilities, hexToRgb, rgbToHex } from '@/types/fixtures'
+import { useDmxStore } from '@/store/useDmxStore'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LogicalControl — per-fixture smart controls based on channel capabilities.
@@ -37,6 +38,10 @@ export function LogicalControl({ patch, states, onSendCommand, onSendColor }: Lo
     )
   }
 
+  const handleSendRaw = useCallback((channel: number, value: number, universeIdx = 0) => {
+    useDmxStore.getState().updateChannel(channel, value, universeIdx)
+  }, [])
+
   return (
     <div className="lc-grid">
       {patch.map((fixture, idx) => (
@@ -47,6 +52,7 @@ export function LogicalControl({ patch, states, onSendCommand, onSendColor }: Lo
           color={CHANNEL_COLORS[idx % 4]}
           onSendCommand={onSendCommand}
           onSendColor={onSendColor}
+          onSendRaw={(ch, val) => handleSendRaw(ch, val, fixture.universeIndex)}
         />
       ))}
     </div>
@@ -63,9 +69,10 @@ interface FixtureCardProps {
   color:         string
   onSendCommand: (fixtureId: string, type: ChannelType, value: number) => void
   onSendColor:   (fixtureId: string, r: number, g: number, b: number, w?: number) => void
+  onSendRaw:     (channelIndex: number, value: number) => void
 }
 
-function FixtureCard({ fixture, state, color, onSendCommand, onSendColor }: FixtureCardProps) {
+function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSendRaw }: FixtureCardProps) {
   const cap = getFixtureCapabilities(fixture)
   const s   = state ?? { intensity: 0, r: 0, g: 0, b: 0, w: 0, smoke: 0, pan: 128, tilt: 128, shutter: 255, speed: 0, effect: 0, color: 0 }
 
@@ -83,6 +90,17 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor }: Fixt
   }, [fixture.id, s.smoke, onSendCommand])
 
   const currentHex = rgbToHex(s.r, s.g, s.b)
+
+  // Track which channels are already rendered by specialized UI
+  const handledTypes = new Set<string>()
+  if (cap.hasIntensity) handledTypes.add('Intensity')
+  if (cap.hasRgb) { handledTypes.add('Red'); handledTypes.add('Green'); handledTypes.add('Blue') }
+  if (cap.hasWhite) handledTypes.add('White')
+  if (cap.hasSmoke) handledTypes.add('Smoke')
+  if (cap.hasPanTilt) { handledTypes.add('Pan'); handledTypes.add('Tilt') }
+  if (cap.hasEffect) handledTypes.add('Effect')
+
+  const unhandledChannels = fixture.profile.channels.filter(ch => !handledTypes.has(ch.type))
 
   return (
     <div className="lc-fixture-card">
@@ -206,6 +224,51 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor }: Fixt
               style={{ '--lc-color': 'var(--status-warn)' } as React.CSSProperties}
               onChange={handleSlider('Effect')}
             />
+          </div>
+        )}
+
+        {/* ── Generic Fallbacks ────────────────────────────────────────────── */}
+        {unhandledChannels.length > 0 && (
+          <div className="lc-control-group" style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="lc-control-label" style={{ marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
+              <span>⚙️ Extra Channels</span>
+            </div>
+            {unhandledChannels.map(ch => {
+              const isLogical = ['Shutter', 'Strobe', 'Speed', 'Color'].includes(ch.type)
+              let val = 0
+              if (ch.type === 'Shutter' || ch.type === 'Strobe') val = s.shutter
+              else if (ch.type === 'Speed') val = s.speed
+              else if (ch.type === 'Color') val = s.color
+              else {
+                // Unknown/Custom: get raw value if needed, though we don't have it in props. 
+                // We'll leave it as uncontrolled or 0 visually if not logical.
+              }
+
+              return (
+                <div key={ch.number} style={{ marginBottom: '0.5rem' }}>
+                  <div className="lc-control-label" style={{ fontSize: '0.75rem' }}>
+                    <span>{ch.type} (CH {ch.number})</span>
+                    {isLogical && <span className="lc-control-value">{val}</span>}
+                  </div>
+                  <input type="range" min={0} max={255} 
+                    value={isLogical ? val : undefined}
+                    defaultValue={!isLogical ? ch.defaultValue : undefined}
+                    className="lc-slider"
+                    style={{ '--lc-color': '#888', height: '16px' } as React.CSSProperties}
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      if (isLogical) {
+                        onSendCommand(fixture.id, ch.type, v)
+                      } else {
+                        // startAddress is 1-indexed. ch.number is 1-indexed. 
+                        // DMX channels are 1-indexed in updateChannel.
+                        onSendRaw(fixture.startAddress + ch.number - 1, v)
+                      }
+                    }}
+                  />
+                </div>
+              )
+            })}
           </div>
         )}
 

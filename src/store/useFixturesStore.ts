@@ -17,6 +17,7 @@ export interface FixturesState {
   patchFixture: (profileKey: string, startAddress: number, label?: string, universeIndex?: number) => Promise<PatchedFixture | null>
   removePatch: (id: string) => Promise<void>
   setFixturePosition: (id: string, pos: [number, number, number]) => Promise<void>
+  setFixtureRotation: (id: string, rot: [number, number, number]) => Promise<void>
   setFixtureUniverse: (id: string, universeIdx: number) => Promise<void>
   sendCommand: (fixtureId: string, type: ChannelType, value: number) => Promise<void>
   sendColor: (fixtureId: string, r: number, g: number, b: number, w?: number) => Promise<void>
@@ -100,8 +101,13 @@ export const useFixturesStore = create<FixturesState>((set, get) => ({
   },
 
   setFixturePosition: async (id, pos) => {
-    set((state) => ({ patch: state.patch.map(f => f.id === id ? { ...f, position3d: pos } : f) }))
     await window.fixtureAPI.setPosition(id, pos)
+    set((state) => ({ patch: state.patch.map(f => f.id === id ? { ...f, position3d: pos } : f) }))
+  },
+
+  setFixtureRotation: async (id, rot) => {
+    await window.fixtureAPI.setRotation(id, rot)
+    set((state) => ({ patch: state.patch.map(f => f.id === id ? { ...f, rotation3d: rot } : f) }))
   },
 
   setFixtureUniverse: async (id, universeIdx) => {

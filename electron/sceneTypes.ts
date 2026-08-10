@@ -47,6 +47,10 @@ export interface Scene {
   createdAt:     string
   /** Which parameter group was captured — defaults to 'all' for legacy scenes */
   filterMask:    ParameterGroup
+  /** State of running effects when this scene was captured (optional for backwards compat) */
+  fxState?: {
+    activeEffects: import('./fxTypes').ActiveEffect[]
+  }
 }
 
 /** Minimal scene info returned in list operations */

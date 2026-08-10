@@ -68,6 +68,13 @@ export class FixtureManager {
     try {
       const data = await fs.readFile(this.patchPath, 'utf8')
       this.patch = JSON.parse(data)
+      
+      // Initialize logical states for all patched fixtures
+      for (const fixture of this.patch) {
+        if (!this.fixtureStates.has(fixture.id)) {
+          this.fixtureStates.set(fixture.id, { ...DEFAULT_LOGICAL_STATE })
+        }
+      }
     } catch (e: any) {
       if (e.code !== 'ENOENT') console.error('[FixtureManager] Error loading patch:', e.message)
     }
@@ -155,6 +162,7 @@ export class FixtureManager {
     this.patch.push(fixture)
     const initialState: FixtureLogicalState = { ...DEFAULT_LOGICAL_STATE }
     this.fixtureStates.set(id, initialState)
+    this.savePatch(this.patch).catch(err => console.error('[FixtureManager] Error saving patch after patchFixture:', err))
 
     console.log(`[FixtureManager] Patched "${fixture.label}" at CH ${startAddress}.`)
     return fixture
@@ -184,6 +192,15 @@ export class FixtureManager {
       fixture.position3d = position3d
       await this.savePatch(this.patch)
       console.log(`[FixtureManager] Saved position for ${fixture.label} -> [${position3d.join(', ')}]`)
+    }
+  }
+
+  async setFixtureRotation(id: string, rotation3d: [number, number, number]): Promise<void> {
+    const fixture = this.patch.find(f => f.id === id)
+    if (fixture) {
+      fixture.rotation3d = rotation3d
+      await this.savePatch(this.patch)
+      console.log(`[FixtureManager] Saved rotation for ${fixture.label} -> [${rotation3d.join(', ')}]`)
     }
   }
 
@@ -353,7 +370,7 @@ export class FixtureManager {
           case 'Speed':     v = state.speed;     break
           case 'Effect':    v = state.effect;    break
           case 'Color':     v = state.color;     break
-          default:          v = ch.defaultValue; break
+          default:          continue // Skip updating DMX universe for custom/unknown channels so Dashboard can control them
         }
 
         // Apply dynamic FX offset (LTP addition) if one exists for this channel type

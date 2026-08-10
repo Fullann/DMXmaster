@@ -9,7 +9,7 @@ export interface ScenesState {
   fadeStatus: FadeStatus
 
   loadScenes: () => Promise<void>
-  saveCurrentAsScene: (name: string, fadeTimeMs: number, filterMask?: ParameterGroup) => Promise<Scene | null>
+  saveCurrentAsScene: (name: string, fadeTimeMs: number, filterMask: ParameterGroup, includeFx: boolean) => Promise<Scene | null>
   recallScene: (id: string) => Promise<void>
   deleteScene: (id: string) => Promise<void>
   cancelFade: () => Promise<void>
@@ -71,14 +71,14 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
     else set({ error: result.error ?? 'Failed to load scenes', isLoading: false })
   },
 
-  saveCurrentAsScene: async (name, fadeTimeMs, filterMask = 'all') => {
-    set({ error: null })
-    const result = await window.sceneAPI.saveCurrentAsScene(name, fadeTimeMs, filterMask)
+  saveCurrentAsScene: async (name, fadeTimeMs, filterMask, includeFx) => {
+    set({ isLoading: true, error: null })
+    const result = await window.sceneAPI.saveCurrentAsScene(name, fadeTimeMs, filterMask, includeFx)
     if (result.success && result.scene) {
-      set((state) => ({ scenes: [result.scene!, ...state.scenes] }))
+      set((state) => ({ scenes: [result.scene!, ...state.scenes], isLoading: false }))
       return result.scene
     }
-    set({ error: result.error ?? 'Failed to save scene' })
+    set({ error: result.error ?? 'Failed to save scene', isLoading: false })
     return null
   },
 

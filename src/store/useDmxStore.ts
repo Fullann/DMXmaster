@@ -1,25 +1,27 @@
 import { create } from 'zustand'
 
 export interface DmxState {
-  universes: number[][]
-  universe: number[] // Alias for universes[0]
+  universes: Uint8Array[]
+  universe: Uint8Array // Alias for universes[0]
+  engineBypassed: boolean
   
   updateChannel: (channel: number, value: number, universeIdx?: number) => Promise<void>
   updateChannels: (channelMap: Record<number, number>, universeIdx?: number) => Promise<void>
   blackout: () => Promise<void>
+  setEngineBypass: (bypass: boolean) => Promise<void>
   init: () => () => void // Returns cleanup function
 }
 
 export const useDmxStore = create<DmxState>((set, get) => ({
-  universes: Array.from({ length: 8 }, () => new Array(512).fill(0)),
+  universes: Array.from({ length: 8 }, () => new Uint8Array(512)),
   get universe() { return get().universes[0] },
+  engineBypassed: false,
 
   updateChannel: async (channel, value, universeIdx = 0) => {
     const safeVal = Math.max(0, Math.min(255, value))
     const u = Math.max(0, Math.min(7, universeIdx))
     set((state) => {
-      const next = [...state.universes]
-      next[u] = [...next[u]]
+      const next = state.universes.map(u => new Uint8Array(u))
       next[u][channel - 1] = safeVal
       return { universes: next, universe: next[0] }
     })
@@ -29,8 +31,7 @@ export const useDmxStore = create<DmxState>((set, get) => ({
   updateChannels: async (channelMap, universeIdx = 0) => {
     const u = Math.max(0, Math.min(7, universeIdx))
     set((state) => {
-      const next = [...state.universes]
-      next[u] = [...next[u]]
+      const next = state.universes.map(u => new Uint8Array(u))
       for (const [ch, val] of Object.entries(channelMap)) {
         next[u][Number(ch) - 1] = Math.max(0, Math.min(255, val))
       }
@@ -40,21 +41,23 @@ export const useDmxStore = create<DmxState>((set, get) => ({
   },
 
   blackout: async () => {
-    const emptyUniverses = Array.from({ length: 8 }, () => new Array(512).fill(0))
+    const emptyUniverses = Array.from({ length: 8 }, () => new Uint8Array(512))
     set({ universes: emptyUniverses, universe: emptyUniverses[0] })
     await window.dmxAPI.blackout()
   },
 
+  setEngineBypass: async (bypass: boolean) => {
+    set({ engineBypassed: bypass })
+    await window.dmxAPI.setEngineBypass(bypass)
+  },
+
   init: () => {
-    const unsubscribe = window.dmxAPI.onUniverseUpdate((newUniverseOrUniverses: any) => {
+    const unsubscribe = window.dmxAPI.onUniverseUpdate((newUniverse: Uint8Array) => {
       set((state) => {
-        if (Array.isArray(newUniverseOrUniverses) && Array.isArray(newUniverseOrUniverses[0])) {
-          return { universes: [...newUniverseOrUniverses], universe: newUniverseOrUniverses[0] }
-        } else {
-          const next = [...state.universes]
-          next[0] = [...newUniverseOrUniverses]
-          return { universes: next, universe: next[0] }
-        }
+        const next = [...state.universes]
+        // Since newUniverse is already a Uint8Array provided by IPC, we can just use it directly
+        next[0] = newUniverse
+        return { universes: next, universe: next[0] }
       })
     })
     return unsubscribe
