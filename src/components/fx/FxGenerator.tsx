@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { PatchedFixture } from '@/types/fixtures'
 import type { FxTarget, Waveform, FxConfig, ActiveEffect } from '@/types/fx'
+import { Play, Pause, Trash2, Edit3, PlayCircle } from 'lucide-react'
 
 interface FxGeneratorProps {
   patch:         PatchedFixture[]
@@ -191,17 +192,17 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
                   <div>
                     <button 
                       className="btn btn-ghost" 
-                      style={{ padding: '2px 6px', marginRight: '4px' }} 
+                      style={{ padding: '2px 6px', marginRight: '4px', display: 'inline-flex', alignItems: 'center' }} 
                       onClick={(e) => { e.stopPropagation(); onSetPaused(fx.id, !fx.isPaused) }}
                     >
-                      {fx.isPaused ? '▶️' : '⏸️'}
+                      {fx.isPaused ? <Play size={14} /> : <Pause size={14} />}
                     </button>
                     <button 
                       className="btn btn-ghost" 
-                      style={{ padding: '2px 6px' }} 
+                      style={{ padding: '2px 6px', display: 'inline-flex', alignItems: 'center' }} 
                       onClick={(e) => { e.stopPropagation(); if(editingFxId === fx.id) handleClearSelection(); onRemoveEffect(fx.id); }}
                     >
-                      ×
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -315,11 +316,11 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
 
             <button 
               className="btn btn-primary" 
-              style={{ width: '100%', marginTop: '1rem', padding: '1rem' }}
+              style={{ width: '100%', marginTop: '1rem', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               disabled={selectedIds.size === 0}
               onClick={handleSave}
             >
-              {editingFxId ? '📝 Update Effect' : '▶ Start Effect'}
+              {editingFxId ? <><Edit3 size={16} /> Update Effect</> : <><PlayCircle size={16} /> Start Effect</>}
             </button>
           </div>
 

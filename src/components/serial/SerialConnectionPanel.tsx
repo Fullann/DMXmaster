@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import type { PortInfo } from '@/types/electron'
+import { Zap, RefreshCw } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SerialConnectionPanel
@@ -57,7 +58,7 @@ export function SerialConnectionPanel({
       <div className={`connection-status ${isConnected ? 'connected' : ''}`}>
         {isConnected ? (
           <>
-            <span className="connection-icon">⚡</span>
+            <span className="connection-icon"><Zap size={14} /></span>
             <span>Connected — <strong>{portLabel}</strong></span>
           </>
         ) : (
@@ -107,7 +108,7 @@ export function SerialConnectionPanel({
           disabled={isLoading || isConnected}
           title="Refresh port list"
         >
-          ↺
+          <RefreshCw size={14} />
         </button>
       </div>
 

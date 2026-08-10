@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { randomUUID } from '@/utils/uuid'
 import type { Chaser, ChaserStep, ChaserStatus } from '@/types/chaser'
 import type { Scene } from '@/types/scenes'
+import { Plus, Square, Play, Trash2, Clapperboard, Save, ArrowUp, ArrowDown } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ChaserEditor — Full chaser authoring panel with BPM clock + step list.
@@ -132,8 +133,8 @@ export function ChaserEditor({
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && createNew()}
           />
-          <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={createNew}>
-            + New
+          <button className="btn btn-primary" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={createNew}>
+            <Plus size={14} /> New
           </button>
         </div>
 
@@ -156,16 +157,17 @@ export function ChaserEditor({
               </div>
               <div className="chaser-list-actions">
                 {status.isRunning && status.chaserId === c.id ? (
-                  <button className="btn btn-danger chaser-stop-btn" onClick={e => { e.stopPropagation(); onStop() }}>
-                    ■ Stop
+                  <button className="btn btn-danger chaser-stop-btn" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={e => { e.stopPropagation(); onStop() }}>
+                    <Square size={12} fill="currentColor" /> Stop
                   </button>
                 ) : (
                   <button
                     className="btn btn-primary chaser-play-btn"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={e => { e.stopPropagation(); onStart(c.id) }}
                     disabled={!c.steps.length}
                   >
-                    ▶
+                    <Play size={12} fill="currentColor" />
                   </button>
                 )}
                 <button
@@ -173,7 +175,7 @@ export function ChaserEditor({
                   style={{ color: 'var(--status-error)', fontSize: '0.8rem' }}
                   onClick={e => { e.stopPropagation(); handleDeleteChaser(c.id) }}
                 >
-                  ×
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
@@ -185,7 +187,9 @@ export function ChaserEditor({
       <div className="chaser-edit-panel">
         {!editing ? (
           <div className="chaser-no-selection">
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎬</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: 'var(--accent)' }}>
+              <Clapperboard size={48} strokeWidth={1.5} />
+            </div>
             <div>Select or create a chaser to edit</div>
           </div>
         ) : (
@@ -198,8 +202,8 @@ export function ChaserEditor({
                 onChange={e => setEditing(prev => prev ? { ...prev, name: e.target.value } : prev)}
                 placeholder="Chaser name"
               />
-              <button className="btn btn-primary" onClick={handleSave}>
-                💾 Save
+              <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={handleSave}>
+                <Save size={14} /> Save
               </button>
             </div>
 
@@ -320,20 +324,20 @@ export function ChaserEditor({
                       disabled={idx === 0}
                       onClick={() => moveStep(idx, idx - 1)}
                       title="Move up"
-                    >↑</button>
+                    ><ArrowUp size={14} /></button>
                     <button
                       className="btn btn-ghost"
                       disabled={idx === editing.steps.length - 1}
                       onClick={() => moveStep(idx, idx + 1)}
                       title="Move down"
-                    >↓</button>
+                    ><ArrowDown size={14} /></button>
                   </div>
 
                   <button
                     className="btn btn-ghost chaser-step-remove"
                     onClick={() => removeStep(idx)}
                     title="Remove step"
-                  >×</button>
+                  ><Trash2 size={14} /></button>
                 </div>
               ))}
             </div>

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import type { FixtureProfile } from '@/types/fixtures'
 import { validateFixtureProfile } from '@/types/fixtures'
+import { Lightbulb, AlertTriangle, CheckCircle2, FileJson } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AiImportTool — paste JSON output from an LLM, validate, and save.
@@ -58,13 +59,17 @@ export function AiImportTool({ onSave }: AiImportToolProps) {
   return (
     <div className="ai-import-tool">
       <div className="fb-header">
-        <span className="panel-title">AI Import</span>
+        <span className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FileJson size={16} /> AI Import
+        </span>
         <span className="fb-hint">Paste JSON from ChatGPT, Claude, or any LLM</span>
       </div>
 
       {/* Prompt hint */}
       <div className="ai-prompt-hint">
-        <span className="ai-prompt-label">💡 Prompt template</span>
+        <span className="ai-prompt-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Lightbulb size={14} /> Prompt template
+        </span>
         <code className="ai-prompt-text">
           "Generate a DMX fixture profile JSON for the [BRAND] [MODEL] in
           [N]-channel mode. Use this schema: &#123; manufacturer, model, mode,
@@ -90,7 +95,9 @@ export function AiImportTool({ onSave }: AiImportToolProps) {
       {/* Errors */}
       {errors.length > 0 && (
         <div className="validation-errors">
-          <div className="ve-title">⚠ Validation failed ({errors.length} error{errors.length > 1 ? 's' : ''})</div>
+          <div className="ve-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <AlertTriangle size={14} /> Validation failed ({errors.length} error{errors.length > 1 ? 's' : ''})
+          </div>
           <ul className="ve-list">
             {errors.map((e, i) => <li key={i}>{e}</li>)}
           </ul>
@@ -100,7 +107,9 @@ export function AiImportTool({ onSave }: AiImportToolProps) {
       {/* Preview of valid profile */}
       {validProfile && (
         <div className="validation-success">
-          <div className="vs-title">✓ Valid Profile</div>
+          <div className="vs-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle2 size={14} /> Valid Profile
+          </div>
           <div className="vs-meta">
             <span><strong>{validProfile.manufacturer}</strong> {validProfile.model}</span>
             <span className="vs-badge">{validProfile.mode}</span>

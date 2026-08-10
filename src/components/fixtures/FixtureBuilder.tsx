@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import type { FixtureProfile, FixtureChannel, ChannelType } from '@/types/fixtures'
 import { VALID_CHANNEL_TYPES } from '@/types/fixtures'
+import { Plus, Trash2, CheckCircle2, Sliders } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FixtureBuilder — create a fixture profile from scratch with a form.
@@ -72,7 +73,9 @@ export function FixtureBuilder({ onSave }: FixtureBuilderProps) {
   return (
     <div className="fixture-builder">
       <div className="fb-header">
-        <span className="panel-title">Fixture Builder</span>
+        <span className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Sliders size={16} /> Fixture Builder
+        </span>
         <span className="fb-hint">Build a profile from scratch or from a manual</span>
       </div>
 
@@ -154,7 +157,9 @@ export function FixtureBuilder({ onSave }: FixtureBuilderProps) {
 
             {/* Remove */}
             {channels.length > 1 && (
-              <button className="btn btn-ghost fb-ch-remove" onClick={() => removeChannel(idx)} title="Remove channel">×</button>
+              <button className="btn btn-ghost fb-ch-remove" onClick={() => removeChannel(idx)} title="Remove channel">
+                <Trash2 size={14} />
+              </button>
             )}
           </div>
         ))}
@@ -162,7 +167,9 @@ export function FixtureBuilder({ onSave }: FixtureBuilderProps) {
 
       {/* Actions */}
       <div className="fb-actions">
-        <button className="btn btn-ghost" onClick={addChannel}>+ Add Channel</button>
+        <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={addChannel}>
+          <Plus size={14} /> Add Channel
+        </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
@@ -173,7 +180,9 @@ export function FixtureBuilder({ onSave }: FixtureBuilderProps) {
       </div>
 
       {savedKey && (
-        <div className="fb-success">✓ Saved: {savedKey}</div>
+        <div className="fb-success" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <CheckCircle2 size={14} /> Saved: {savedKey}
+        </div>
       )}
     </div>
   )

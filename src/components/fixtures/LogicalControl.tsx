@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { PatchedFixture, FixtureLogicalState, ChannelType } from '@/types/fixtures'
 import { getFixtureCapabilities, hexToRgb, rgbToHex } from '@/types/fixtures'
 import { useDmxStore } from '@/store/useDmxStore'
+import { Sun, Palette, Circle, Cloud, MoveHorizontal, MoveVertical, Sparkles, Settings2 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LogicalControl — per-fixture smart controls based on channel capabilities.
@@ -121,9 +122,9 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
         {/* ── Intensity ─────────────────────────────────────────────────────── */}
         {cap.hasIntensity && (
           <div className="lc-control-group">
-            <div className="lc-control-label">
-              <span>☀ Intensity</span>
-              <span className="lc-control-value">{s.intensity}</span>
+            <div className="lc-control-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sun size={14} /> <span>Intensity</span>
+              <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.intensity}</span>
             </div>
             <input
               type="range" min={0} max={255} value={s.intensity}
@@ -137,9 +138,9 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
         {/* ── RGB Color Picker ──────────────────────────────────────────────── */}
         {cap.hasRgb && (
           <div className="lc-control-group">
-            <div className="lc-control-label">
-              <span>🎨 Color</span>
-              <span className="lc-control-value lc-hex">{currentHex.toUpperCase()}</span>
+            <div className="lc-control-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Palette size={14} /> <span>Color</span>
+              <span className="lc-control-value lc-hex" style={{ marginLeft: 'auto' }}>{currentHex.toUpperCase()}</span>
             </div>
             <div className="lc-color-row">
               <input
@@ -158,9 +159,9 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
 
             {/* White channel (RGBW) */}
             {cap.hasWhite && (
-              <div className="lc-control-label lc-white-row">
-                <span>⬜ White</span>
-                <span className="lc-control-value">{s.w}</span>
+              <div className="lc-control-label lc-white-row" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Circle size={14} /> <span>White</span>
+                <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.w}</span>
               </div>
             )}
             {cap.hasWhite && (
@@ -176,7 +177,9 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
         {/* ── Smoke toggle ──────────────────────────────────────────────────── */}
         {cap.hasSmoke && (
           <div className="lc-control-group">
-            <div className="lc-control-label"><span>☁ Smoke</span></div>
+            <div className="lc-control-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Cloud size={14} /> <span>Smoke</span>
+            </div>
             <button
               id={`smoke-toggle-${fixture.id}`}
               className={`smoke-toggle ${s.smoke > 0 ? 'active' : ''}`}
@@ -191,18 +194,18 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
         {/* ── Pan / Tilt ────────────────────────────────────────────────────── */}
         {cap.hasPanTilt && (
           <div className="lc-control-group">
-            <div className="lc-control-label">
-              <span>🔄 Pan</span>
-              <span className="lc-control-value">{s.pan}</span>
+            <div className="lc-control-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <MoveHorizontal size={14} /> <span>Pan</span>
+              <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.pan}</span>
             </div>
             <input type="range" min={0} max={255} value={s.pan}
               className="lc-slider"
               style={{ '--lc-color': color } as React.CSSProperties}
               onChange={handleSlider('Pan')}
             />
-            <div className="lc-control-label lc-white-row">
-              <span>⬆ Tilt</span>
-              <span className="lc-control-value">{s.tilt}</span>
+            <div className="lc-control-label lc-white-row" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <MoveVertical size={14} /> <span>Tilt</span>
+              <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.tilt}</span>
             </div>
             <input type="range" min={0} max={255} value={s.tilt}
               className="lc-slider"
@@ -215,9 +218,9 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
         {/* ── Effect ───────────────────────────────────────────────────────── */}
         {cap.hasEffect && (
           <div className="lc-control-group">
-            <div className="lc-control-label">
-              <span>✨ Effect</span>
-              <span className="lc-control-value">{s.effect}</span>
+            <div className="lc-control-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sparkles size={14} /> <span>Effect</span>
+              <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.effect}</span>
             </div>
             <input type="range" min={0} max={255} value={s.effect}
               className="lc-slider"
@@ -230,8 +233,8 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
         {/* ── Generic Fallbacks ────────────────────────────────────────────── */}
         {unhandledChannels.length > 0 && (
           <div className="lc-control-group" style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="lc-control-label" style={{ marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
-              <span>⚙️ Extra Channels</span>
+            <div className="lc-control-label" style={{ marginBottom: '0.5rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Settings2 size={14} /> <span>Extra Channels</span>
             </div>
             {unhandledChannels.map(ch => {
               const isLogical = ['Shutter', 'Strobe', 'Speed', 'Color'].includes(ch.type)

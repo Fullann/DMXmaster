@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import type { Scene, FadeStatus } from '@/types/scenes'
 import { getSceneColor, formatFadeTime } from '@/types/scenes'
+import { Clapperboard, Timer, Trash2 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BuskingGrid — the scene playback dashboard.
@@ -30,7 +31,9 @@ export function BuskingGrid({
   if (scenes.length === 0) {
     return (
       <div className="busking-empty">
-        <div className="busking-empty-icon">🎬</div>
+        <div className="busking-empty-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: 'var(--accent)' }}>
+          <Clapperboard size={48} strokeWidth={1.5} />
+        </div>
         <div>No scenes recorded yet.</div>
         <div className="busking-empty-hint">
           Use the <strong>Record Scene</strong> panel to capture the current look.
@@ -115,7 +118,7 @@ function SceneCard({
           title="Delete scene"
           tabIndex={-1}
         >
-          ×
+          <Trash2 size={14} />
         </button>
       </div>
 
@@ -128,7 +131,7 @@ function SceneCard({
           {isFading ? (
             <span className="scene-fading-label">FADING…</span>
           ) : (
-            <>⏱ {formatFadeTime(scene.fadeTimeMs)}</>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Timer size={12} /> {formatFadeTime(scene.fadeTimeMs)}</span>
           )}
         </span>
         <span className="scene-card-fixtures">{fixtureCount} fix</span>
