@@ -100,6 +100,11 @@ export function useFixtures() {
     await window.fixtureAPI.setPosition(id, pos)
   }, [])
 
+  const setFixtureTransform = useCallback(async (id: string, pos: [number, number, number], rot: [number, number, number]) => {
+    setPatch(prev => prev.map(f => f.id === id ? { ...f, position3d: pos, rotation3d: rot } : f))
+    await window.fixtureAPI.setFixtureTransform(id, pos, rot)
+  }, [])
+
   const setFixtureRotation = useCallback(async (id: string, rot: [number, number, number]) => {
     setPatch(prev => prev.map(f => f.id === id ? { ...f, rotation3d: rot } : f))
     await window.fixtureAPI.setRotation(id, rot)
@@ -141,7 +146,9 @@ export function useFixtures() {
     isLoading, error,
     loadProfiles, loadPatch,
     saveProfile, deleteProfile,
-    patchFixture, removePatch,
+    patchFixture,
+    removePatch,
+    setFixtureTransform,
     setFixturePosition,
     setFixtureRotation,
     setFixtureUniverse,

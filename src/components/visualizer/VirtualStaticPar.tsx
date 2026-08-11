@@ -1,6 +1,7 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { SpotLight } from '@react-three/drei'
 import { useDmxStore } from '@/store/useDmxStore'
 
 interface Props {
@@ -9,9 +10,16 @@ interface Props {
 }
 
 export function VirtualStaticPar({ uIdx, channelMap }: Props) {
+  const baseRef = useRef<THREE.Group>(null)
   const lensMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
-  const beamMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
-  const spotLightRef = useRef<THREE.SpotLight>(null)
+  const spotLightRef = useRef<any>(null)
+  const targetRef = useRef<THREE.Object3D>(null)
+
+  useEffect(() => {
+    if (spotLightRef.current && targetRef.current) {
+      spotLightRef.current.target = targetRef.current
+    }
+  }, [])
 
   useFrame(() => {
     const universes = useDmxStore.getState().universes
@@ -38,12 +46,6 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
       }
     }
 
-    if (beamMaterialRef.current) {
-      beamMaterialRef.current.color.copy(colorHex)
-      beamMaterialRef.current.opacity = intensity * 0.4
-      beamMaterialRef.current.visible = intensity > 0
-    }
-
     if (spotLightRef.current) {
       spotLightRef.current.color.copy(colorHex)
       spotLightRef.current.intensity = intensity * 50
@@ -65,23 +67,9 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
         <meshBasicMaterial ref={lensMaterialRef} color="#111111" />
       </mesh>
 
-      {/* BEAM (Cone) */}
-      <mesh position={[0, 3.3, 0]}>
-        <coneGeometry args={[2.0, 6, 32]} />
-        <meshBasicMaterial 
-          ref={beamMaterialRef}
-          color="#ffffff" 
-          transparent={true} 
-          opacity={0} 
-          depthWrite={false} 
-          blending={THREE.AdditiveBlending} 
-          visible={false}
-        />
-      </mesh>
-
-      {/* SpotLight */}
-      <spotLight
-        ref={spotLightRef}
+      {/* Volumetric SpotLight */}
+      <SpotLight
+        ref={spotLightRef as any}
         position={[0, 0.4, 0]}
         angle={0.3}
         penumbra={0.3}
@@ -89,9 +77,11 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
         intensity={0}
         distance={20}
         castShadow
-        visible={false}
+        volumetric={true}
+        attenuation={20}
+        anglePower={3}
       />
-      <object3D position={[0, 10, 0]} />
+      <object3D ref={targetRef} position={[0, 10, 0]} />
     </group>
   )
 }

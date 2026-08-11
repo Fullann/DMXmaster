@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import { join } from 'path'
 import { DmxEngine }      from './dmxEngine'
 import { SerialManager }  from './serialManager'
@@ -12,6 +12,7 @@ import { NetworkManager } from './networkManager'
 import { PixelEngine }    from './pixelEngine'
 import { TimelineManager} from './timelineManager'
 import { ShowManager }    from './showManager'
+import { PaletteManager } from './paletteManager'
 import { registerIpcHandlers, pushUniverseUpdate } from './ipc/index'
 
 // ── Core services (singletons for app lifetime) ───────────────────────────────
@@ -19,7 +20,8 @@ const serialManager  = new SerialManager()
 const dmxEngine      = new DmxEngine(serialManager)
 const fixtureManager = new FixtureManager()
 const effectsEngine  = new EffectsEngine()
-const sceneManager   = new SceneManager(fixtureManager, effectsEngine)
+const paletteManager = new PaletteManager()
+const sceneManager   = new SceneManager(fixtureManager, effectsEngine, paletteManager)
 const chaserManager  = new ChaserManager(sceneManager)
 const liveGridManager= new LiveGridManager()
 const audioEngine    = new AudioEngine()
@@ -66,6 +68,44 @@ function createWindow(): BrowserWindow {
   return mainWindow
 }
 
+let visualizerWindow: BrowserWindow | null = null
+
+function createVisualizerWindow() {
+  if (visualizerWindow && !visualizerWindow.isDestroyed()) {
+    visualizerWindow.focus()
+    return
+  }
+
+  visualizerWindow = new BrowserWindow({
+    width: 1000,
+    height: 700,
+    minWidth: 640,
+    minHeight: 480,
+    backgroundColor: '#050505',
+    titleBarStyle: 'hiddenInset',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  })
+
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    visualizerWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#visualizer')
+  } else {
+    visualizerWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: 'visualizer' })
+  }
+
+  visualizerWindow.once('ready-to-show', () => {
+    visualizerWindow?.show()
+  })
+}
+
+ipcMain.handle('app:openVisualizer', () => {
+  createVisualizerWindow()
+})
+
 app.whenReady().then(async () => {
   // 1. FixtureManager — creates dirs, loads profiles from disk
   await fixtureManager.initialize()
@@ -77,6 +117,7 @@ app.whenReady().then(async () => {
   await networkManager.initialize()
   await pixelEngine.initialize()
   await timelineManager.initialize()
+  await paletteManager.initialize()
   showManager.initialize()
 
   // 3. Wire fixture, scene, effects, and chaser managers into the 44Hz engine
@@ -89,7 +130,7 @@ app.whenReady().then(async () => {
   dmxEngine.setPixelEngine(pixelEngine)
 
   // 4. Register all IPC handlers
-  registerIpcHandlers(dmxEngine, serialManager, fixtureManager, sceneManager, chaserManager, effectsEngine, liveGridManager, audioEngine, networkManager, pixelEngine, timelineManager, showManager)
+  registerIpcHandlers(dmxEngine, serialManager, fixtureManager, sceneManager, chaserManager, effectsEngine, liveGridManager, audioEngine, networkManager, pixelEngine, timelineManager, showManager, paletteManager)
 
   // 5. Create window + start engine
   const mainWindow = createWindow()
@@ -97,11 +138,13 @@ app.whenReady().then(async () => {
   console.log('[Main] DMX engine started.')
 
   // 6. Push universe updates to renderer at ~30fps for the 3D Visualizer & DMX Monitor
-  //    We use a separate slower interval from the 44Hz engine to avoid flooding IPC.
   const PUSH_INTERVAL_MS = Math.round(1000 / 30)
   const pushTimer = setInterval(() => {
-    if (!mainWindow.isDestroyed() && mainWindow.webContents) {
-      pushUniverseUpdate(mainWindow.webContents, dmxEngine.getUniverseSnapshot())
+    const snap = dmxEngine.getUniverseSnapshot()
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed() && win.webContents) {
+        pushUniverseUpdate(win.webContents, snap)
+      }
     }
   }, PUSH_INTERVAL_MS)
   pushTimer.unref()

@@ -1,6 +1,7 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { SpotLight } from '@react-three/drei'
 import { useDmxStore } from '@/store/useDmxStore'
 
 interface Props {
@@ -14,8 +15,14 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
   
   // Materials and Lights refs for high-performance direct mutations
   const lensMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
-  const beamMaterialRef = useRef<THREE.MeshBasicMaterial>(null)
   const spotLightRef = useRef<THREE.SpotLight>(null)
+  const targetRef = useRef<THREE.Object3D>(null)
+
+  useEffect(() => {
+    if (spotLightRef.current && targetRef.current) {
+      spotLightRef.current.target = targetRef.current
+    }
+  }, [])
 
   useFrame(() => {
     if (!headRef.current || !yokeRef.current) return
@@ -52,12 +59,6 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
       if (intensity === 0) {
         lensMaterialRef.current.color.setHex(0x111111)
       }
-    }
-
-    if (beamMaterialRef.current) {
-      beamMaterialRef.current.color.copy(colorHex)
-      beamMaterialRef.current.opacity = intensity * 0.3
-      beamMaterialRef.current.visible = intensity > 0
     }
 
     if (spotLightRef.current) {
@@ -105,23 +106,9 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
             <meshBasicMaterial ref={lensMaterialRef} color="#111111" />
           </mesh>
 
-          {/* BEAM (Cone) */}
-          <mesh position={[0, 3.4, 0]}>
-            <coneGeometry args={[1.5, 6, 32]} />
-            <meshBasicMaterial 
-              ref={beamMaterialRef}
-              color="#ffffff" 
-              transparent={true} 
-              opacity={0} 
-              depthWrite={false} 
-              blending={THREE.AdditiveBlending} 
-              visible={false}
-            />
-          </mesh>
-
-          {/* Actual SpotLight for illuminating the floor */}
-          <spotLight
-            ref={spotLightRef}
+          {/* Volumetric SpotLight */}
+          <SpotLight
+            ref={spotLightRef as any}
             position={[0, 0.4, 0]}
             angle={0.25}
             penumbra={0.5}
@@ -129,10 +116,12 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
             intensity={0}
             distance={20}
             castShadow
-            visible={false}
+            volumetric={true}
+            attenuation={20}
+            anglePower={4}
           />
           {/* Target for SpotLight */}
-          <object3D position={[0, 10, 0]} />
+          <object3D ref={targetRef} position={[0, 10, 0]} />
         </group>
       </group>
     </group>

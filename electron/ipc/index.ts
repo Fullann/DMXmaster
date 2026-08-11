@@ -10,6 +10,7 @@ import type { NetworkManager } from '../networkManager'
 import type { PixelEngine }    from '../pixelEngine'
 import type { TimelineManager} from '../timelineManager'
 import type { ShowManager }    from '../showManager'
+import type { PaletteManager } from '../paletteManager'
 
 import { registerSerialIpc }   from './serialIpc'
 import { registerDmxIpc }      from './dmxIpc'
@@ -23,6 +24,7 @@ import { registerNetworkIpc }  from './networkIpc'
 import { registerPixelIpc }    from './pixelIpc'
 import { registerTimelineIpc } from './timelineIpc'
 import { registerShowIpc }     from './showIpc'
+import { registerPaletteHandlers }  from './paletteIpc'
 
 export { pushUniverseUpdate } from './dmxIpc'
 
@@ -39,6 +41,7 @@ export function registerIpcHandlers(
   pixel:   PixelEngine,
   timeline:TimelineManager,
   show:    ShowManager,
+  palette: PaletteManager,
 ): void {
   registerSerialIpc(serial)
   registerDmxIpc(engine, fixture)
@@ -52,6 +55,7 @@ export function registerIpcHandlers(
   registerPixelIpc(pixel)
   registerTimelineIpc(timeline)
   registerShowIpc(show)
+  registerPaletteHandlers(palette)
 
   console.log('[IPC] All modular handlers registered.')
 }

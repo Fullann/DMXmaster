@@ -29,16 +29,34 @@ export const useFxStore = create<FxState>((set, get) => ({
   },
 
   addEffect: async (cfg) => {
+    set({ error: null })
     const res = await window.fxAPI.addEffect(cfg)
+    if (res.success) {
+      await get().loadEffects()
+    } else {
+      set({ error: res.error ?? 'Failed to add effect' })
+    }
     return res.id ?? null
   },
 
   updateEffect: async (id, cfg) => {
-    await window.fxAPI.updateEffect(id, cfg)
+    set({ error: null })
+    const res = await window.fxAPI.updateEffect(id, cfg)
+    if (res.success) {
+      await get().loadEffects()
+    } else {
+      set({ error: res.error ?? 'Failed to update effect' })
+    }
   },
 
   setPaused: async (id, paused) => {
-    await window.fxAPI.setPaused(id, paused)
+    set({ error: null })
+    const res = await window.fxAPI.setPaused(id, paused)
+    if (res.success) {
+      await get().loadEffects()
+    } else {
+      set({ error: res.error ?? 'Failed to toggle pause' })
+    }
   },
 
   removeEffect: async (id) => {

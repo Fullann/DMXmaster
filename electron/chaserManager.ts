@@ -61,9 +61,22 @@ export class ChaserManager {
     }
   }
 
-  private async _writeChaser(chaser: Chaser): Promise<void> {
-    const filePath = path.join(this.chasersDir, `${chaser.id}.json`)
-    await fs.promises.writeFile(filePath, JSON.stringify(chaser, null, 2), 'utf-8')
+  private _writeDebounceTimers = new Map<string, NodeJS.Timeout>()
+
+  private _writeChaserDebounced(chaser: Chaser): void {
+    const existing = this._writeDebounceTimers.get(chaser.id)
+    if (existing) clearTimeout(existing)
+
+    this._writeDebounceTimers.set(chaser.id, setTimeout(async () => {
+      const filePath = path.join(this.chasersDir, `${chaser.id}.json`)
+      try {
+        await fs.promises.writeFile(filePath, JSON.stringify(chaser, null, 2), 'utf-8')
+      } catch (err) {
+        console.error(`[ChaserManager] Failed to write chaser ${chaser.id} to disk`, err)
+      } finally {
+        this._writeDebounceTimers.delete(chaser.id)
+      }
+    }, 500))
   }
 
   getChasers(): Chaser[] {
@@ -81,8 +94,7 @@ export class ChaserManager {
     if (!chaser.id) chaser.id = randomUUID()
     if (!chaser.createdAt) chaser.createdAt = new Date().toISOString()
     this.chasers.set(chaser.id, chaser)
-    await this._writeChaser(chaser)
-    console.log(`[ChaserManager] Saved chaser "${chaser.name}" (${chaser.steps.length} steps).`)
+    this._writeChaserDebounced(chaser)
     return chaser
   }
 
@@ -147,7 +159,7 @@ export class ChaserManager {
       // Use step's crossfadeMs by temporarily overriding the scene fade time
       // We call recallScene which uses the scene's own fadeTimeMs; for per-step
       // control we pass the crossfade value through a dedicated recall path.
-      this.sceneManager.recallSceneWithFade(step.sceneId, step.crossfadeMs)
+      this.sceneManager.recallSceneWithFade(step.sceneId, step.crossfadeMs, step.paletteRefs)
     } catch (err) {
       console.warn(`[ChaserManager] Step ${this.currentStep} recall failed:`, err)
     }

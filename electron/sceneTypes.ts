@@ -43,6 +43,8 @@ export interface Scene {
   fadeTimeMs:    number
   /** fixtureId → snapshot of only the parameters this scene controls */
   fixtureStates: Record<string, FixtureSnapshot>
+  /** Array of Palette IDs that this scene references. */
+  paletteRefs?:  string[]
   /** ISO timestamp for display / sorting */
   createdAt:     string
   /** Which parameter group was captured — defaults to 'all' for legacy scenes */

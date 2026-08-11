@@ -15,6 +15,8 @@ export function registerFixtureIpc(fixture: FixtureManager): void {
   handle('fixture:savePatch', (p) => fixture.savePatch(p as any))
   handle('fixture:patchFixture',    (key, addr, label, uIdx) => ({ fixture: fixture.patchFixture(key as string, addr as number, label as string, uIdx as number) }))
   handle('fixture:removePatch',     (id)                  => { fixture.removePatchedFixture(id as string) })
+  handle('fixture:unpatchAll',      ()                   => fixture.unpatchAll())
+  handle('fixture:setTransform',    (id, pos, rot)       => fixture.setFixtureTransform(id as string, pos as [number,number,number], rot as [number,number,number]))
   handle('fixture:setPosition',     async (id, pos)       => { await fixture.setFixturePosition(id as string, pos as [number, number, number]) })
   handle('fixture:setRotation',     async (id, rot)       => { await fixture.setFixtureRotation(id as string, rot as [number, number, number]) })
   handle('fixture:setUniverse',     async (id, uIdx)      => { await fixture.setFixtureUniverse(id as string, uIdx as number) })
@@ -22,6 +24,7 @@ export function registerFixtureIpc(fixture: FixtureManager): void {
   // Groups
   handle('fixture:getGroups', () => ({ groups: fixture.getGroups() }))
   handle('fixture:saveGroups', (g) => fixture.saveGroups(g as any))
+  handle('fixture:renameGroup', (id, name) => fixture.renameGroup(id as string, name as string))
   
   // Fire-and-forget (ipcRenderer.send in preload) — do NOT use handle() here
   ipcMain.on('fixture:setGrandMaster', (_e, level) => { fixture.setGrandMaster(level as number) })

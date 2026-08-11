@@ -54,36 +54,46 @@ export function VirtualFixture({
   return (
     <group>
       {/* SETUP MODE TRANSFORM CONTROLS */}
-      {setupMode && isSelected && (
+      {setupMode && isSelected ? (
         <TransformControls
-          object={baseRef.current || undefined}
           mode={transformMode}
-          onMouseUp={() => {
+          onMouseUp={(e) => {
             if (baseRef.current) {
               if (transformMode === 'translate' && onPositionChange) {
                 const pos = baseRef.current.position
                 onPositionChange(fixture.id, [pos.x, pos.y, pos.z])
               } else if (transformMode === 'rotate' && onRotationChange) {
+                // Limit rotation precision to avoid floating point noise in JSON
                 const rot = baseRef.current.rotation
-                onRotationChange(fixture.id, [rot.x, rot.y, rot.z])
+                onRotationChange(fixture.id, [
+                  Number(rot.x.toFixed(3)), 
+                  Number(rot.y.toFixed(3)), 
+                  Number(rot.z.toFixed(3))
+                ])
               }
             }
           }}
-        />
-      )}
-      
-      {/* BASE WRAPPER FOR DRAGGING AND SELECTION */}
-      <group 
-        ref={baseRef} 
-        position={position}
-        rotation={rotation}
-        onClick={(e) => {
+        >
+          <group ref={baseRef} position={position} rotation={rotation}>
+            <MeshContent />
+          </group>
+        </TransformControls>
+      ) : (
+        <group ref={baseRef} position={position} rotation={rotation} onClick={(e) => {
           if (setupMode && onSelect) {
             e.stopPropagation()
             onSelect(fixture.id)
           }
-        }}
-      >
+        }}>
+          <MeshContent />
+        </group>
+      )}
+    </group>
+  )
+
+  function MeshContent() {
+    return (
+      <>
         {/* SETUP MODE SELECTION HIGHLIGHT */}
         {setupMode && isSelected && (
           <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -95,8 +105,7 @@ export function VirtualFixture({
         {/* RENDER INFERRED COMPONENT */}
         {type === 'smoke' && <VirtualSmokeMachine uIdx={uIdx} channelMap={channelMap} />}
         {type === 'moving_head' && <VirtualMovingHead uIdx={uIdx} channelMap={channelMap} />}
-        {type === 'static' && <VirtualStaticPar uIdx={uIdx} channelMap={channelMap} />}
-      </group>
-    </group>
-  )
+      </>
+    )
+  }
 }

@@ -31,6 +31,7 @@ function channelTypeToStateKey(type: ChannelType): keyof FixtureLogicalState | n
     Smoke: 'smoke', Pan: 'pan', Tilt: 'tilt',
     Shutter: 'shutter', Strobe: 'shutter',
     Speed: 'speed', Effect: 'effect', Color: 'color',
+    Gobo: 'gobo', Prism: 'prism', Zoom: 'zoom', Focus: 'focus',
   }
   return map[type] ?? null
 }

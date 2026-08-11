@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import type { PatchedFixture, FixtureLogicalState, ChannelType } from '@/types/fixtures'
 import { getFixtureCapabilities, hexToRgb, rgbToHex } from '@/types/fixtures'
 import { useDmxStore } from '@/store/useDmxStore'
-import { Sun, Palette, Circle, Cloud, MoveHorizontal, MoveVertical, Sparkles, Settings2 } from 'lucide-react'
+import { Sun, Palette, Circle, Cloud, MoveHorizontal, MoveVertical, Sparkles, Settings2, Disc, Triangle, ZoomIn, Focus } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LogicalControl — per-fixture smart controls based on channel capabilities.
@@ -100,6 +100,9 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
   if (cap.hasSmoke) handledTypes.add('Smoke')
   if (cap.hasPanTilt) { handledTypes.add('Pan'); handledTypes.add('Tilt') }
   if (cap.hasEffect) handledTypes.add('Effect')
+  if (cap.hasGobo) handledTypes.add('Gobo')
+  if (cap.hasPrism) handledTypes.add('Prism')
+  if (cap.hasZoomFocus) { handledTypes.add('Zoom'); handledTypes.add('Focus') }
 
   const unhandledChannels = fixture.profile.channels.filter(ch => !handledTypes.has(ch.type))
 
@@ -212,6 +215,87 @@ function FixtureCard({ fixture, state, color, onSendCommand, onSendColor, onSend
               style={{ '--lc-color': color } as React.CSSProperties}
               onChange={handleSlider('Tilt')}
             />
+          </div>
+        )}
+
+        {/* ── Gobo ─────────────────────────────────────────────────────────── */}
+        {cap.hasGobo && (
+          <div className="lc-control-group">
+            <div className="lc-control-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Disc size={14} /> <span>Gobo</span>
+              <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.gobo}</span>
+            </div>
+            {/* Generic Gobo Grid (8 buttons mapped to 0, 32, 64, 96...) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '8px' }}>
+              {[0, 32, 64, 96, 128, 160, 192, 224].map((val, idx) => (
+                <button
+                  key={val}
+                  onClick={() => onSendCommand(fixture.id, 'Gobo', val)}
+                  style={{
+                    background: s.gobo >= val && s.gobo < val + 32 ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '4px',
+                    padding: '8px 0',
+                    cursor: 'pointer',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px'
+                  }}
+                  title={`Gobo ${idx === 0 ? 'Open' : idx}`}
+                >
+                  {idx === 0 ? <Circle size={14} /> : <Disc size={14} opacity={0.5 + (idx * 0.05)} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Prism ────────────────────────────────────────────────────────── */}
+        {cap.hasPrism && (
+          <div className="lc-control-group">
+            <div className="lc-control-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Triangle size={14} /> <span>Prism</span>
+              <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.prism}</span>
+            </div>
+            <input type="range" min={0} max={255} value={s.prism}
+              className="lc-slider"
+              style={{ '--lc-color': color } as React.CSSProperties}
+              onChange={handleSlider('Prism')}
+            />
+          </div>
+        )}
+
+        {/* ── Zoom & Focus ─────────────────────────────────────────────────── */}
+        {cap.hasZoomFocus && (
+          <div className="lc-control-group">
+            {fixture.profile.channels.some(c => c.type === 'Zoom') && (
+              <>
+                <div className="lc-control-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ZoomIn size={14} /> <span>Zoom</span>
+                  <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.zoom}</span>
+                </div>
+                <input type="range" min={0} max={255} value={s.zoom}
+                  className="lc-slider"
+                  style={{ '--lc-color': color } as React.CSSProperties}
+                  onChange={handleSlider('Zoom')}
+                />
+              </>
+            )}
+            {fixture.profile.channels.some(c => c.type === 'Focus') && (
+              <>
+                <div className="lc-control-label lc-white-row" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Focus size={14} /> <span>Focus</span>
+                  <span className="lc-control-value" style={{ marginLeft: 'auto' }}>{s.focus}</span>
+                </div>
+                <input type="range" min={0} max={255} value={s.focus}
+                  className="lc-slider"
+                  style={{ '--lc-color': color } as React.CSSProperties}
+                  onChange={handleSlider('Focus')}
+                />
+              </>
+            )}
           </div>
         )}
 

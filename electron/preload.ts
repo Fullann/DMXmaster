@@ -25,6 +25,9 @@ export interface DmxAPI {
   softBlackout:   () => Promise<{ success: boolean; error?: string }>
   setEngineBypass:(bypass: boolean) => Promise<{ success: boolean; error?: string }>
   onUniverseUpdate: (cb: (universe: Uint8Array) => void) => () => void
+  setMasterSpeed: (speed: number) => Promise<{ success: boolean; error?: string }>
+  setMasterSize:  (size: number) => Promise<{ success: boolean; error?: string }>
+  setAllPaused:   (paused: boolean) => Promise<{ success: boolean; error?: string }>
 }
 
 const dmxAPI: DmxAPI = {
@@ -43,6 +46,9 @@ const dmxAPI: DmxAPI = {
     ipcRenderer.on('dmx:universeUpdate', listener)
     return () => ipcRenderer.removeListener('dmx:universeUpdate', listener)
   },
+  setMasterSpeed: (speed)      => ipcRenderer.invoke('dmx:setMasterSpeed', speed),
+  setMasterSize:  (size)       => ipcRenderer.invoke('dmx:setMasterSize', size),
+  setAllPaused:   (paused)     => ipcRenderer.invoke('dmx:setAllPaused', paused),
 }
 
 contextBridge.exposeInMainWorld('dmxAPI', dmxAPI)
@@ -50,7 +56,7 @@ contextBridge.exposeInMainWorld('dmxAPI', dmxAPI)
 // ── Fixture API ───────────────────────────────────────────────────────────────
 
 import type {
-  FixtureProfile, PatchedFixture, FixtureLogicalState, ChannelType, ProfileEntry,
+  FixtureProfile, PatchedFixture, FixtureLogicalState, ChannelType, ProfileEntry, FixtureGroup,
 } from './fixtureTypes'
 
 export interface FixtureAPI {
@@ -61,9 +67,12 @@ export interface FixtureAPI {
   getPatch:       () => Promise<{ success: boolean; patch?: PatchedFixture[]; error?: string }>
   patchFixture:   (key: string, addr: number, label?: string, universeIdx?: number) => Promise<{ success: boolean; fixture?: PatchedFixture; error?: string }>
   removePatch:    (id: string) => Promise<{ success: boolean; error?: string }>
-  setPosition:    (id: string, pos: [number, number, number]) => Promise<{ success: boolean; error?: string }>
-  setRotation:    (id: string, rot: [number, number, number]) => Promise<{ success: boolean; error?: string }>
-  setUniverse:    (id: string, uIdx: number) => Promise<{ success: boolean; error?: string }>
+  unpatchAll: () => Promise<{ success: boolean; error?: string }>
+  setFixtureTransform: (id: string, position: [number, number, number], rotation: [number, number, number]) => Promise<{ success: boolean; error?: string }>
+  setPosition: (id: string, pos: [number, number, number]) => Promise<{ success: boolean; error?: string }>
+  setRotation: (id: string, rot: [number, number, number]) => Promise<{ success: boolean; error?: string }>
+  setUniverse: (id: string, uIdx: number) => Promise<{ success: boolean; error?: string }>
+  renameGroup: (id: string, name: string) => Promise<{ success: boolean; error?: string }>
   sendCommand:    (id: string, type: ChannelType, val: number) => Promise<{ success: boolean; error?: string }>
   sendColor:      (id: string, r: number, g: number, b: number, w?: number) => Promise<{ success: boolean; error?: string }>
   getStates:      () => Promise<{ success: boolean; states?: Record<string, FixtureLogicalState>; error?: string }>
@@ -83,9 +92,12 @@ const fixtureAPI: FixtureAPI = {
   getPatch:       ()                 => ipcRenderer.invoke('fixture:getPatch'),
   patchFixture:   (k, a, l, u)       => ipcRenderer.invoke('fixture:patchFixture', k, a, l, u),
   removePatch:    (id)               => ipcRenderer.invoke('fixture:removePatch', id),
+  unpatchAll:     ()                 => ipcRenderer.invoke('fixture:unpatchAll'),
+  setFixtureTransform: (id, pos, rot)=> ipcRenderer.invoke('fixture:setTransform', id, pos, rot),
   setPosition:    (id, pos)          => ipcRenderer.invoke('fixture:setPosition', id, pos),
   setRotation:    (id, rot)          => ipcRenderer.invoke('fixture:setRotation', id, rot),
   setUniverse:    (id, uIdx)         => ipcRenderer.invoke('fixture:setUniverse', id, uIdx),
+  renameGroup:    (id, name)         => ipcRenderer.invoke('fixture:renameGroup', id, name),
   sendCommand:    (id, t, v)         => ipcRenderer.invoke('fixture:sendCommand', id, t, v),
   sendColor:      (id, r, g, b, w)   => ipcRenderer.invoke('fixture:sendColor', id, r, g, b, w),
   getStates:      ()                 => ipcRenderer.invoke('fixture:getStates'),
@@ -116,7 +128,7 @@ export interface SceneAPI {
 const sceneAPI: SceneAPI = {
   getScenes:          ()                    => ipcRenderer.invoke('scene:getScenes'),
   getScene:           (id)                  => ipcRenderer.invoke('scene:getScene', id),
-  saveCurrentAsScene: (n, f, m, i)          => ipcRenderer.invoke('scene:saveCurrentAsScene', n, f, m, i),
+  saveCurrentAsScene: (n, f, m)             => ipcRenderer.invoke('scene:saveCurrentAsScene', n, f, m),
   recallScene:        (id)                  => ipcRenderer.invoke('scene:recallScene', id),
   deleteScene:        (id)                  => ipcRenderer.invoke('scene:deleteScene', id),
   cancelFade:         ()                    => ipcRenderer.invoke('scene:cancelFade'),
@@ -131,6 +143,8 @@ import type { FxConfig, ActiveEffect } from './fxTypes'
 
 export interface FxAPI {
   addEffect:    (config: FxConfig) => Promise<{ success: boolean; id?: string; error?: string }>
+  updateEffect: (id: string, config: FxConfig) => Promise<{ success: boolean; error?: string }>
+  setPaused:    (id: string, paused: boolean) => Promise<{ success: boolean; error?: string }>
   removeEffect: (id: string) => Promise<{ success: boolean; error?: string }>
   clearAll:     () => Promise<{ success: boolean; error?: string }>
   getEffects:   () => Promise<{ success: boolean; effects?: ActiveEffect[]; error?: string }>
@@ -256,12 +270,14 @@ export interface AppAPI {
   exportShow: () => Promise<{ success: boolean; error?: string }>
   importShow: () => Promise<{ success: boolean; error?: string }>
   newShow:    () => Promise<{ success: boolean; error?: string }>
+  openVisualizerWindow: () => Promise<void>
 }
 
 const appAPI: AppAPI = {
   exportShow: () => ipcRenderer.invoke('app:exportShow'),
   importShow: () => ipcRenderer.invoke('app:importShow'),
-  newShow:    () => ipcRenderer.invoke('app:newShow')
+  newShow:    () => ipcRenderer.invoke('app:newShow'),
+  openVisualizerWindow: () => ipcRenderer.invoke('app:openVisualizer'),
 }
 
 contextBridge.exposeInMainWorld('appAPI', appAPI)
@@ -296,6 +312,24 @@ const chaserAPI: ChaserAPI = {
 
 contextBridge.exposeInMainWorld('chaserAPI', chaserAPI)
 
+// ── PALETTE API ───────────────────────────────────────────────────────────────
+
+import type { Palette } from './paletteTypes'
+
+export interface PaletteAPI {
+  getPalettes: () => Promise<{ success: boolean; palettes?: Palette[]; error?: string }>
+  savePalette: (palette: Partial<Palette>) => Promise<{ success: boolean; palette?: Palette; error?: string }>
+  deletePalette: (id: string) => Promise<{ success: boolean; error?: string }>
+}
+
+const paletteAPI: PaletteAPI = {
+  getPalettes: () => ipcRenderer.invoke('palette:getPalettes'),
+  savePalette: (p) => ipcRenderer.invoke('palette:savePalette', p),
+  deletePalette: (id) => ipcRenderer.invoke('palette:deletePalette', id),
+}
+
+contextBridge.exposeInMainWorld('paletteAPI', paletteAPI)
+
 // ── Global type augmentation ──────────────────────────────────────────────────
 
 declare global {
@@ -311,5 +345,6 @@ declare global {
     timelineAPI:TimelineAPI
     appAPI:     AppAPI
     chaserAPI:  ChaserAPI
+    paletteAPI: PaletteAPI
   }
 }

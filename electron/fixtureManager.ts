@@ -157,6 +157,7 @@ export class FixtureManager {
       label: label?.trim() || `${profile.manufacturer} ${profile.model}`,
       universeIndex,
       position3d: [0, 0, 0], // Default position, visualizer auto-layout might override this or use it
+      rotation3d: [0, 0, 0],
     }
 
     this.patch.push(fixture)
@@ -181,16 +182,26 @@ export class FixtureManager {
     return this.patch
   }
 
-  async savePatch(newPatch: PatchedFixture[]): Promise<void> {
-    this.patch = newPatch
+  async savePatch(newPatch?: PatchedFixture[]): Promise<void> {
+    if (newPatch) this.patch = newPatch
     await fs.writeFile(this.patchPath, JSON.stringify(this.patch, null, 2), 'utf8')
+  }
+
+  async setFixtureTransform(id: string, position3d: [number, number, number], rotation3d: [number, number, number]): Promise<void> {
+    const fixture = this.patch.find(f => f.id === id)
+    if (fixture) {
+      fixture.position3d = position3d
+      fixture.rotation3d = rotation3d
+      await this.savePatch()
+      console.log(`[FixtureManager] Saved transform for ${fixture.label}`)
+    }
   }
 
   async setFixturePosition(id: string, position3d: [number, number, number]): Promise<void> {
     const fixture = this.patch.find(f => f.id === id)
     if (fixture) {
       fixture.position3d = position3d
-      await this.savePatch(this.patch)
+      await this.savePatch()
       console.log(`[FixtureManager] Saved position for ${fixture.label} -> [${position3d.join(', ')}]`)
     }
   }

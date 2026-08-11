@@ -10,6 +10,9 @@ export function registerDmxIpc(engine: DmxEngine, fixture: FixtureManager): void
   handle('dmx:getUniverses',   ()               => ({ universes: engine.getAllUniverseSnapshots() }))
   handle('dmx:blackout',       ()              => { engine.blackout() })
   handle('dmx:setEngineBypass',(bypass)        => { engine.engineBypassed = bypass as boolean })
+  handle('dmx:setMasterSpeed', (speed)         => { engine.setMasterSpeed(speed as number) })
+  handle('dmx:setMasterSize',  (size)          => { engine.setMasterSize(size as number) })
+  handle('dmx:setAllPaused',   (paused)        => { engine.setAllPaused(paused as boolean) })
   
   /**
    * Soft (intensity-only) blackout — zeros intensity in the fixture logical

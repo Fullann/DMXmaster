@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto'
 import type { Scene, FadeStatus, FixtureSnapshot, ParameterGroup } from './sceneTypes'
 import { PARAMETER_GROUP_KEYS } from './sceneTypes'
 import type { FixtureManager } from './fixtureManager'
+import type { PaletteManager } from './paletteManager'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SceneManager
@@ -33,7 +34,8 @@ export class SceneManager {
 
   constructor(
     private readonly fixtureManager: FixtureManager,
-    private readonly effectsEngine: import('./effectsEngine').EffectsEngine
+    private readonly effectsEngine: import('./effectsEngine').EffectsEngine,
+    private readonly paletteManager: PaletteManager
   ) {}
 
   // ── Initialization ──────────────────────────────────────────────────────────
@@ -63,9 +65,22 @@ export class SceneManager {
     }
   }
 
-  private async _writeScene(scene: Scene): Promise<void> {
-    const filePath = path.join(this.scenesDir, `${scene.id}.json`)
-    await fs.promises.writeFile(filePath, JSON.stringify(scene, null, 2), 'utf-8')
+  private _writeDebounceTimers = new Map<string, NodeJS.Timeout>()
+
+  private _writeSceneDebounced(scene: Scene): void {
+    const existing = this._writeDebounceTimers.get(scene.id)
+    if (existing) clearTimeout(existing)
+
+    this._writeDebounceTimers.set(scene.id, setTimeout(async () => {
+      const filePath = path.join(this.scenesDir, `${scene.id}.json`)
+      try {
+        await fs.promises.writeFile(filePath, JSON.stringify(scene, null, 2), 'utf-8')
+      } catch (err) {
+        console.error(`[SceneManager] Failed to write scene ${scene.id} to disk`, err)
+      } finally {
+        this._writeDebounceTimers.delete(scene.id)
+      }
+    }, 500))
   }
 
   async deleteScene(id: string): Promise<void> {
@@ -131,8 +146,9 @@ export class SceneManager {
       }
     }
 
+    if (!scene.createdAt) scene.createdAt = new Date().toISOString()
     this.scenes.set(scene.id, scene)
-    await this._writeScene(scene)
+    this._writeSceneDebounced(scene)
     console.log(`[SceneManager] Saved scene "${scene.name}" (mask: ${filterMask}, ${Object.keys(fixtureStates).length} fixture(s)).`)
     return scene
   }
@@ -155,16 +171,40 @@ export class SceneManager {
    * Used by ChaserManager to apply per-step crossfade times regardless of
    * the scene's stored fadeTimeMs.
    */
-  recallSceneWithFade(sceneId: string, overrideFadeMs: number): void {
+  recallSceneWithFade(sceneId: string, overrideFadeMs: number, stepPaletteRefs?: string[]): void {
     const scene = this.scenes.get(sceneId)
     if (!scene) throw new Error(`Scene not found: ${sceneId}`)
-    this._startRecall(scene, overrideFadeMs)
+    this._startRecall(scene, overrideFadeMs, stepPaletteRefs)
   }
 
-  private _startRecall(scene: Scene, fadeMs: number): void {
+  private _startRecall(scene: Scene, fadeMs: number, stepPaletteRefs?: string[]): void {
+    // 1. Resolve Palette References (merge palette values into a deep copy of fixtureStates)
+    const targetStates: Record<string, FixtureSnapshot> = {}
+    for (const [id, state] of Object.entries(scene.fixtureStates)) {
+      targetStates[id] = { ...state }
+    }
+    
+    // Combine scene palettes and step palettes
+    const allRefs = new Set<string>([
+      ...(scene.paletteRefs || []),
+      ...(stepPaletteRefs || [])
+    ])
+
+    if (allRefs.size > 0) {
+      for (const paletteId of allRefs) {
+        const palette = this.paletteManager.getPalette(paletteId)
+        if (palette) {
+          for (const [fixId, pState] of Object.entries(palette.values)) {
+            if (!targetStates[fixId]) targetStates[fixId] = {}
+            Object.assign(targetStates[fixId], pState)
+          }
+        }
+      }
+    }
+
     // Snap to target if no fade time
     if (fadeMs <= 0) {
-      for (const [fixtureId, snapshot] of Object.entries(scene.fixtureStates)) {
+      for (const [fixtureId, snapshot] of Object.entries(targetStates)) {
         this.fixtureManager.setLogicalState(fixtureId, snapshot)
       }
       this.activeFade = null
@@ -174,13 +214,13 @@ export class SceneManager {
       const allStates  = this.fixtureManager.getFixtureStates()
       const sourceStates: Record<string, FixtureSnapshot> = {}
 
-      for (const fixtureId of Object.keys(scene.fixtureStates)) {
+      for (const fixtureId of Object.keys(targetStates)) {
         const current = allStates[fixtureId]
         if (current) sourceStates[fixtureId] = { ...current }
       }
 
-      // Build a virtual scene copy with the overridden fade time
-      const virtualScene: Scene = { ...scene, fadeTimeMs: fadeMs }
+      // Build a virtual scene copy with the overridden fade time and resolved palette states
+      const virtualScene: Scene = { ...scene, fadeTimeMs: fadeMs, fixtureStates: targetStates }
       this.activeFade = { scene: virtualScene, sourceStates, elapsedMs: 0 }
       console.log(`[SceneManager] Recalling "${scene.name}" over ${fadeMs}ms.`)
     }

@@ -8,6 +8,7 @@ export interface ChaserStep {
   label:       string
   holdMs:      number
   crossfadeMs: number
+  paletteRefs?: string[]
 }
 
 export interface Chaser {

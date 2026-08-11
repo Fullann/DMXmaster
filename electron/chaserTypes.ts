@@ -11,6 +11,8 @@
 export interface ChaserStep {
   /** UUID of the Scene to recall for this step */
   sceneId:      string
+  /** Array of Palette IDs that this step references. */
+  paletteRefs?: string[]
   /** Human-readable label (usually mirrors scene name, for display only) */
   label:        string
   /** How long to hold this step in milliseconds (used when bpmSync = false) */

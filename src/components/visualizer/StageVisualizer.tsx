@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid, Environment, Text } from '@react-three/drei'
+import { ExternalLink } from 'lucide-react'
 import { useFixtures } from '@/hooks/useFixtures'
 import { useVisualizer } from '@/hooks/useVisualizer'
 import { VirtualFixture } from './VirtualFixture'
@@ -18,6 +19,24 @@ export function StageVisualizer() {
       
       <div className="section-title" style={{ padding: '1rem', position: 'absolute', zIndex: 10, display: 'flex', alignItems: 'center', gap: '1rem' }}>
         3D Stage Visualizer
+        <button 
+          onClick={() => window.appAPI.openVisualizerWindow()}
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'var(--text-primary)',
+            padding: '4px 12px',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            fontSize: '0.8rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+          title="Detach 3D Map to another screen"
+        >
+          <ExternalLink size={12} /> Detach
+        </button>
         <button 
           onClick={toggleSetupMode}
           style={{

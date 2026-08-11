@@ -4,6 +4,7 @@ import { GRID_PAGE_COUNT } from '@/types/grid'
 import type { Scene } from '@/types/scenes'
 import type { ActiveEffect } from '@/types/fx'
 import { AssignPopover } from './AssignPopover'
+import { MidiLearnable } from '@/components/midi/MidiLearnable'
 
 interface LiveGridProps {
   grid:        LiveGridState
@@ -80,21 +81,26 @@ export function LiveGrid({
           }
 
           return (
-            <div
+            <MidiLearnable 
               key={cell.note}
-              className={`live-cell ${hasPayload ? 'assigned' : 'empty'} ${isActive ? 'active' : ''}`}
-              style={{
-                '--cell-color': baseColor,
-                backgroundColor: isActive ? baseColor : 'rgba(255,255,255,0.03)',
-                borderColor: hasPayload ? baseColor : 'var(--border)',
-                boxShadow: isActive ? `0 0 16px ${baseColor}` : 'none',
-              } as React.CSSProperties}
-              onClick={() => onToggle(cell.note)}
-              onContextMenu={(e) => handleRightClick(e, cell.note)}
+              action={{ type: 'triggerGridCell', page: activePage, note: cell.note }}
+              label={`Trigger Note ${cell.note}`}
             >
-              <div className="live-cell-note">{cell.note}</div>
-              <div className="live-cell-label">{label}</div>
-            </div>
+              <div
+                className={`live-cell ${hasPayload ? 'assigned' : 'empty'} ${isActive ? 'active' : ''}`}
+                style={{
+                  '--cell-color': baseColor,
+                  backgroundColor: isActive ? baseColor : 'rgba(255,255,255,0.03)',
+                  borderColor: hasPayload ? baseColor : 'var(--border)',
+                  boxShadow: isActive ? `0 0 16px ${baseColor}` : 'none',
+                } as React.CSSProperties}
+                onClick={() => onToggle(cell.note)}
+                onContextMenu={(e) => handleRightClick(e, cell.note)}
+              >
+                <div className="live-cell-note">{cell.note}</div>
+                <div className="live-cell-label">{label}</div>
+              </div>
+            </MidiLearnable>
           )
         })}
       </div>

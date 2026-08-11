@@ -1,8 +1,12 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
+import { useScenesStore } from '@/store/useScenesStore'
+import { usePaletteStore } from '@/store/usePaletteStore'
 import { randomUUID } from '@/utils/uuid'
 import type { Chaser, ChaserStep, ChaserStatus } from '@/types/chaser'
 import type { Scene } from '@/types/scenes'
+import { MidiLearnable } from '@/components/midi/MidiLearnable'
 import { Plus, Square, Play, Trash2, Clapperboard, Save, ArrowUp, ArrowDown } from 'lucide-react'
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ChaserEditor — Full chaser authoring panel with BPM clock + step list.
@@ -10,7 +14,6 @@ import { Plus, Square, Play, Trash2, Clapperboard, Save, ArrowUp, ArrowDown } fr
 
 interface ChaserEditorProps {
   chasers:      Chaser[]
-  scenes:       Scene[]
   status:       ChaserStatus
   onSave:       (chaser: Chaser) => Promise<Chaser | null>
   onDelete:     (id: string) => Promise<void>
@@ -40,9 +43,12 @@ function BpmKnob({ bpm, onChange }: { bpm: number; onChange: (v: number) => void
 }
 
 export function ChaserEditor({
-  chasers, scenes, status,
+  chasers, status,
   onSave, onDelete, onStart, onStop, onSetBpm, onTapTempo,
 }: ChaserEditorProps) {
+  const { scenes, loadScenes } = useScenesStore()
+  const { palettes, loadPalettes } = usePaletteStore()
+
   const [activeId, setActiveId] = useState<string | null>(null)
   const [editing,  setEditing]  = useState<Chaser | null>(null)
   const [newName,  setNewName]  = useState('')
@@ -156,20 +162,22 @@ export function ChaserEditor({
                 </span>
               </div>
               <div className="chaser-list-actions">
-                {status.isRunning && status.chaserId === c.id ? (
-                  <button className="btn btn-danger chaser-stop-btn" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={e => { e.stopPropagation(); onStop() }}>
-                    <Square size={12} fill="currentColor" /> Stop
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn-primary chaser-play-btn"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    onClick={e => { e.stopPropagation(); onStart(c.id) }}
-                    disabled={!c.steps.length}
-                  >
-                    <Play size={12} fill="currentColor" />
-                  </button>
-                )}
+                <MidiLearnable action={{ type: 'triggerChaser', chaserId: c.id }} label={`Toggle Chaser: ${c.name}`}>
+                  {status.isRunning && status.chaserId === c.id ? (
+                    <button className="btn btn-danger chaser-stop-btn" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={e => { e.stopPropagation(); onStop() }}>
+                      <Square size={12} fill="currentColor" /> Stop
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-primary chaser-play-btn"
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      onClick={e => { e.stopPropagation(); onStart(c.id) }}
+                      disabled={!c.steps.length}
+                    >
+                      <Play size={12} fill="currentColor" />
+                    </button>
+                  )}
+                </MidiLearnable>
                 <button
                   className="btn btn-ghost"
                   style={{ color: 'var(--status-error)', fontSize: '0.8rem' }}
@@ -316,6 +324,21 @@ export function ChaserEditor({
                       min={0}
                       onChange={e => updateStep(idx, { crossfadeMs: parseInt(e.target.value) || 0 })}
                     />
+                  </div>
+                  
+                  <div className="chaser-step-field">
+                    <label>Palette</label>
+                    <select
+                      className="styled-input chaser-step-input"
+                      value={step.paletteRefs?.[0] || ''}
+                      onChange={e => updateStep(idx, { paletteRefs: e.target.value ? [e.target.value] : [] })}
+                      style={{ minWidth: '100px' }}
+                    >
+                      <option value="">None</option>
+                      {palettes.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.type})</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="chaser-step-move">

@@ -81,6 +81,11 @@ export class DmxEngine {
   private isIdle            = false
   private lastTickMs        = 0
 
+  // Global Masters
+  private masterSpeed       = 1.0
+  private masterSize        = 1.0
+  private allPaused         = false
+
   // Bypass intelligent engine to allow raw DMX control from Dashboard
   public engineBypassed: boolean = false
 
@@ -137,6 +142,19 @@ export class DmxEngine {
     const u = Math.max(0, Math.min(MAX_UNIVERSES - 1, universeIdx))
     this.universes[u][channel - 1] = value
     this._rampUp()
+  }
+
+  // ── Global Masters Control ──────────────────────────────────────────────────
+  setMasterSpeed(speed: number): void {
+    this.masterSpeed = Math.max(0, Math.min(2.0, speed))
+  }
+
+  setMasterSize(size: number): void {
+    this.masterSize = Math.max(0, Math.min(2.0, size))
+  }
+
+  setAllPaused(paused: boolean): void {
+    this.allPaused = paused
   }
 
   setChannels(channelMap: Record<number, number>, universeIdx = 0): void {
@@ -207,23 +225,38 @@ export class DmxEngine {
     const deltaMs = this.lastTickMs > 0 ? now - this.lastTickMs : this.currentIntervalMs
     this.lastTickMs = now
 
-    // ── Chaser ───────────────────────────────────────────────────────────────
-    this.chaserManager?.tick(deltaMs)
+    // ── Apply Master Speed & Pause ────────────────────────────────────────────
+    const scaledDeltaMs = this.allPaused ? 0 : deltaMs * this.masterSpeed
 
-    // ── Scene Crossfade ───────────────────────────────────────────────────────
+    // ── Chaser ───────────────────────────────────────────────────────────────
+    this.chaserManager?.tick(scaledDeltaMs)
+
+    // ── Scene Crossfade (Does not pause, scenes must finish fading) ───────────
     this.sceneManager?.tick(deltaMs)
 
     // ── Audio → FX modulation ─────────────────────────────────────────────────
-    if (this.effectsEngine && this.audioEngine) {
+    if (this.effectsEngine && this.audioEngine && !this.allPaused) {
       this.audioEngine.applyFxModifications(this.effectsEngine)
     }
 
     // ── FX Engine (LFOs) ──────────────────────────────────────────────────────
-    this.effectsEngine?.tick(deltaMs)
-    const fxOffsets = this.effectsEngine?.getOffsets()
+    this.effectsEngine?.tick(scaledDeltaMs)
+    let fxOffsets = this.effectsEngine?.getOffsets() || {}
+
+    // Apply Master Size to FX Offsets
+    if (this.masterSize !== 1.0) {
+      const scaledFx: Record<string, Record<string, number>> = {}
+      for (const fixId in fxOffsets) {
+        scaledFx[fixId] = {}
+        for (const ch in fxOffsets[fixId]) {
+          scaledFx[fixId][ch] = fxOffsets[fixId][ch] * this.masterSize
+        }
+      }
+      fxOffsets = scaledFx
+    }
 
     // ── Audio fixture offsets ─────────────────────────────────────────────────
-    const audioOffsets = this.audioEngine?.getFixtureOffsets()
+    const audioOffsets = this.allPaused ? {} : this.audioEngine?.getFixtureOffsets()
 
     const mergedOffsets = { ...fxOffsets }
     if (audioOffsets) {

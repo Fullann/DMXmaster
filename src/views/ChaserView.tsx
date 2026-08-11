@@ -10,7 +10,6 @@ export function ChaserView() {
     <div className="view-full chaser-view">
       <ChaserEditor
         chasers={chaserState.chasers}
-        scenes={sceneState.scenes}
         status={chaserState.status}
         onSave={chaserState.saveChaser}
         onDelete={chaserState.deleteChaser}

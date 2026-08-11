@@ -21,6 +21,7 @@ export interface Scene {
   name:          string
   fadeTimeMs:    number
   fixtureStates: Record<string, Record<string, number>>
+  paletteRefs?:  string[]
   createdAt:     string
   filterMask:    ParameterGroup
 }

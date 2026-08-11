@@ -5,11 +5,15 @@ import '@/styles/index.css'
 import { 
   Grid, LayoutDashboard, Folder, Cable, SlidersHorizontal, 
   Clapperboard, Repeat, Waves, Mic, Tv, Clock, Eye,
-  FilePlus, Download, Upload, Zap, MonitorSpeaker
+  FilePlus, Download, Upload, Zap, Palette, Settings2, Wrench, Target
 } from 'lucide-react'
 
 // Stores
 import { useSerialStore } from '@/store/useSerialStore'
+import { GlobalTopbar } from './components/layout/GlobalTopbar'
+import { GlobalMasterToolbar } from './components/layout/GlobalMasterToolbar'
+import { MidiListener }   from '@/components/midi/MidiListener'
+import { MidiFeedbackEngine } from '@/components/midi/MidiFeedbackEngine'
 import { useDmxStore } from '@/store/useDmxStore'
 import { useMidiStore } from '@/store/useMidiStore'
 import { useFixturesStore } from '@/store/useFixturesStore'
@@ -23,8 +27,11 @@ import { useNetworkStore } from '@/store/useNetworkStore'
 // Views
 import { DashboardView }  from '@/views/DashboardView'
 import { LibraryView }    from '@/views/LibraryView'
+import { FixtureBuilderView } from '@/views/FixtureBuilderView'
 import { PatchView }      from '@/views/PatchView'
+import { PaletteView }    from '@/views/PaletteView'
 import { ControlView }    from '@/views/ControlView'
+import { MovementView }   from '@/views/MovementView'
 import { ScenesView }     from '@/views/ScenesView'
 import { ChaserView }     from '@/views/ChaserView'
 import { FxView }         from '@/views/FxView'
@@ -33,19 +40,23 @@ import { AudioView }      from '@/views/AudioView'
 import { PixelView }      from '@/views/PixelView'
 import { TimelineView }   from '@/views/TimelineView'
 import { VisualizerView } from '@/views/VisualizerView'
+import { MidiView }       from '@/views/MidiView'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App — root component with tab navigation
 // ─────────────────────────────────────────────────────────────────────────────
 
-type AppView = 'dashboard' | 'library' | 'patch' | 'control' | 'scenes' | 'chaser' | 'fx' | 'live' | 'audio' | 'pixel' | 'timeline' | 'visualizer'
+type AppView = 'dashboard' | 'library' | 'builder' | 'patch' | 'palette' | 'control' | 'movement' | 'scenes' | 'chaser' | 'fx' | 'live' | 'audio' | 'pixel' | 'timeline' | 'visualizer' | 'midi'
 
 const TABS: { id: AppView; label: string; icon: React.ReactNode }[] = [
   { id: 'live',      label: 'Live Grid',    icon: <Grid size={18} /> },
   { id: 'dashboard', label: 'Dashboard',    icon: <LayoutDashboard size={18} /> },
   { id: 'library',   label: 'Library',      icon: <Folder size={18} /> },
+  { id: 'builder',   label: 'Builder',      icon: <Wrench size={18} /> },
   { id: 'patch',     label: 'Patch',        icon: <Cable size={18} /> },
+  { id: 'palette',   label: 'Palettes',     icon: <Palette size={18} /> },
   { id: 'control',   label: 'Control',      icon: <SlidersHorizontal size={18} /> },
+  { id: 'movement',  label: 'Follow Spot',  icon: <Target size={18} /> },
   { id: 'scenes',    label: 'Scenes',       icon: <Clapperboard size={18} /> },
   { id: 'chaser',    label: 'Chasers',      icon: <Repeat size={18} /> },
   { id: 'fx',        label: 'FX Generator', icon: <Waves size={18} /> },
@@ -53,10 +64,14 @@ const TABS: { id: AppView; label: string; icon: React.ReactNode }[] = [
   { id: 'pixel',     label: 'Pixel Mapper', icon: <Tv size={18} /> },
   { id: 'timeline',  label: 'Timeline',     icon: <Clock size={18} /> },
   { id: 'visualizer',label: '3D View',      icon: <Eye size={18} /> },
+  { id: 'midi',      label: 'MIDI Mapping', icon: <Settings2 size={18} /> },
 ]
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('dashboard')
+  
+  // Detached window mode
+  const [isDetachedVisualizer] = useState(() => window.location.hash === '#visualizer')
 
   // We only subscribe to topbar-specific data to avoid re-renders!
   const isSerialConnected = useSerialStore(s => s.isConnected)
@@ -101,15 +116,27 @@ export default function App() {
     }
   }, [midiLastMessage])
 
-  // ── Global keyboard shortcuts ────────────────────────────────────────────────
   useGlobalShortcuts({
     onSoftBlackout:    () => window.dmxAPI.softBlackout(),
     onTriggerFirstRow: (col) => useLiveGridStore.getState().triggerFirstRow(col),
     onSwitchPage:      (page) => useLiveGridStore.getState().switchPage(page),
   })
 
+  // ── Detached Window Render ──────────────────────────────────────────────────
+  if (isDetachedVisualizer) {
+    return (
+      <div className="app-shell" style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+        <MidiListener />
+        <div style={{ WebkitAppRegion: 'drag', height: '38px', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 999 } as any} />
+        <VisualizerView />
+      </div>
+    )
+  }
+
   return (
     <div className="app-shell">
+      <MidiListener />
+      <MidiFeedbackEngine />
       {/* ── Sidebar Navigation (Formerly Tab Navigation) ────────────────────── */}
       <nav className="tab-nav">
         {/* Logo at the top of the sidebar */}
@@ -194,11 +221,14 @@ export default function App() {
         </header>
 
         {/* ── Content View ─────────────────────────────────────────────────── */}
-        <div className="content-area">
+        <div className="content-area" style={{ paddingBottom: '56px' }}>
           {currentView === 'dashboard' && <DashboardView />}
           {currentView === 'library' && <LibraryView />}
+          {currentView === 'builder' && <FixtureBuilderView />}
           {currentView === 'patch' && <PatchView />}
+          {currentView === 'palette' && <PaletteView />}
           {currentView === 'control' && <ControlView />}
+          {currentView === 'movement' && <MovementView />}
           {currentView === 'scenes' && <ScenesView />}
           {currentView === 'chaser' && <ChaserView />}
           {currentView === 'fx' && <FxView />}
@@ -207,7 +237,11 @@ export default function App() {
           {currentView === 'pixel' && <PixelView />}
           {currentView === 'timeline' && <TimelineView />}
           {currentView === 'visualizer' && <VisualizerView />}
+          {currentView === 'midi' && <MidiView />}
         </div>
+        
+        {/* ── Global Master Toolbar (Bottom) ────────────────────────────────── */}
+        <GlobalMasterToolbar />
       </div>
     </div>
   )

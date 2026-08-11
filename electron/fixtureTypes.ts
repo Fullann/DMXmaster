@@ -21,6 +21,7 @@ export type ChannelType =
   | 'Shutter' | 'Strobe'
   | 'Speed'
   | 'Effect'
+  | 'Gobo' | 'Prism' | 'Zoom' | 'Focus'
   | 'Unknown'
 
 export interface FixtureChannel {
@@ -69,6 +70,8 @@ export interface PatchedFixture {
   universeIndex?: number
   /** 3D world position [x, y, z] for the stage visualizer. Defaults to auto-layout. */
   position3d?:  [number, number, number]
+  /** 3D world rotation [x, y, z] (Euler angles in radians). Defaults to [0, 0, 0]. */
+  rotation3d?:  [number, number, number]
 }
 
 /** Logical state per patched fixture — these map to raw channel values in the universe */
@@ -85,6 +88,10 @@ export interface FixtureLogicalState {
   speed:     number  // Speed (0-255)
   effect:    number  // Effect (0-255)
   color:     number  // Color wheel (0-255)
+  gobo:      number  // Gobo wheel (0-255)
+  prism:     number  // Prism (0-255)
+  zoom:      number  // Zoom (0-255)
+  focus:     number  // Focus (0-255)
 }
 
 export const DEFAULT_LOGICAL_STATE: Readonly<FixtureLogicalState> = {
@@ -96,6 +103,10 @@ export const DEFAULT_LOGICAL_STATE: Readonly<FixtureLogicalState> = {
   speed: 0,
   effect: 0,
   color: 0,
+  gobo: 0,
+  prism: 0,
+  zoom: 128,
+  focus: 128,
 }
 
 export interface ProfileEntry {
@@ -107,7 +118,7 @@ export interface ProfileEntry {
 export const VALID_CHANNEL_TYPES = new Set<ChannelType>([
   'Intensity', 'Red', 'Green', 'Blue', 'White',
   'Color', 'Pan', 'Tilt', 'Smoke', 'Shutter', 'Strobe',
-  'Speed', 'Effect', 'Unknown',
+  'Speed', 'Effect', 'Gobo', 'Prism', 'Zoom', 'Focus', 'Unknown',
 ])
 
 // ── Default profiles bundled with the app ────────────────────────────────────

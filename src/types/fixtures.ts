@@ -12,6 +12,7 @@ export type ChannelType =
   | 'Shutter' | 'Strobe'
   | 'Speed'
   | 'Effect'
+  | 'Gobo' | 'Prism' | 'Zoom' | 'Focus'
   | 'Unknown'
 
 export interface FixtureChannel {
@@ -48,6 +49,7 @@ export interface FixtureLogicalState {
   smoke:     number
   pan:       number; tilt: number
   shutter:   number; speed: number; effect: number; color: number
+  gobo:      number; prism: number; zoom: number; focus: number
 }
 
 export const DEFAULT_LOGICAL_STATE: FixtureLogicalState = {
@@ -57,6 +59,7 @@ export const DEFAULT_LOGICAL_STATE: FixtureLogicalState = {
   pan: 128, tilt: 128,
   shutter: 255,
   speed: 0, effect: 0, color: 0,
+  gobo: 0, prism: 0, zoom: 128, focus: 128,
 }
 
 export interface ProfileEntry {
@@ -75,6 +78,9 @@ export interface FixtureCapabilities {
   hasColor:     boolean
   hasEffect:    boolean
   hasStrobe:    boolean
+  hasGobo:      boolean
+  hasPrism:     boolean
+  hasZoomFocus: boolean
 }
 
 export function getFixtureCapabilities(fixture: PatchedFixture): FixtureCapabilities {
@@ -88,6 +94,9 @@ export function getFixtureCapabilities(fixture: PatchedFixture): FixtureCapabili
     hasColor:     types.has('Color'),
     hasEffect:    types.has('Effect'),
     hasStrobe:    types.has('Strobe') || types.has('Shutter'),
+    hasGobo:      types.has('Gobo'),
+    hasPrism:     types.has('Prism'),
+    hasZoomFocus: types.has('Zoom') || types.has('Focus'),
   }
 }
 
@@ -96,7 +105,7 @@ export function getFixtureCapabilities(fixture: PatchedFixture): FixtureCapabili
 export const VALID_CHANNEL_TYPES = new Set<string>([
   'Intensity', 'Red', 'Green', 'Blue', 'White',
   'Color', 'Pan', 'Tilt', 'Smoke', 'Shutter', 'Strobe',
-  'Speed', 'Effect', 'Unknown',
+  'Speed', 'Effect', 'Gobo', 'Prism', 'Zoom', 'Focus', 'Unknown',
 ])
 
 export interface ValidationResult {

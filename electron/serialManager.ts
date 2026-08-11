@@ -13,6 +13,9 @@ const BAUD_RATE = 57600 // Enttec DMX USB Pro specification
 export class SerialManager {
   private port: SerialPort | null = null
   private _isConnected = false
+  private _intendedDisconnect = false
+  private _reconnectTimer: NodeJS.Timeout | null = null
+  private _lastPortPath: string | null = null
 
   // ── Public accessors ────────────────────────────────────────────────────────
 
@@ -60,9 +63,14 @@ export class SerialManager {
 
         // Handle unexpected disconnections (USB unplugged, device reset, etc.)
         newPort.on('close', () => {
-          console.warn('[SerialManager] Port closed unexpectedly.')
           this._isConnected = false
           this.port = null
+          if (!this._intendedDisconnect && this._lastPortPath) {
+            console.warn('[SerialManager] Port closed unexpectedly. Attempting auto-reconnect...')
+            this._startAutoReconnect()
+          } else {
+            console.warn('[SerialManager] Port closed.')
+          }
         })
 
         newPort.on('error', (portErr) => {
@@ -70,6 +78,9 @@ export class SerialManager {
         })
 
         console.log(`[SerialManager] Connected to ${portPath} at ${BAUD_RATE} baud.`)
+        this._lastPortPath = portPath
+        this._intendedDisconnect = false
+        this._stopAutoReconnect()
         resolve()
       })
     })
@@ -81,6 +92,9 @@ export class SerialManager {
    */
   disconnect(): Promise<void> {
     return new Promise((resolve, reject) => {
+      this._intendedDisconnect = true
+      this._stopAutoReconnect()
+
       if (!this.port || !this._isConnected) {
         this._isConnected = false
         this.port = null
@@ -97,6 +111,25 @@ export class SerialManager {
         resolve()
       })
     })
+  }
+
+  private _startAutoReconnect() {
+    this._stopAutoReconnect()
+    this._reconnectTimer = setInterval(() => {
+      if (this._lastPortPath && !this._isConnected) {
+        console.log(`[SerialManager] Auto-reconnecting to ${this._lastPortPath}...`)
+        this.connect(this._lastPortPath).catch(() => {
+          // Ignore connection errors during auto-reconnect polling
+        })
+      }
+    }, 2000)
+  }
+
+  private _stopAutoReconnect() {
+    if (this._reconnectTimer) {
+      clearInterval(this._reconnectTimer)
+      this._reconnectTimer = null
+    }
   }
 
   // ── Data transmission ───────────────────────────────────────────────────────
