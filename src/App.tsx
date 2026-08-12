@@ -5,7 +5,7 @@ import '@/styles/index.css'
 import { 
   Grid, LayoutDashboard, Folder, Cable, SlidersHorizontal, 
   Clapperboard, Repeat, Waves, Mic, Tv, Clock, Eye,
-  FilePlus, Download, Upload, Zap, Palette, Settings2, Wrench, Target
+  FilePlus, Download, Upload, Zap, Palette, Settings2, Wrench, Target, Home
 } from 'lucide-react'
 
 // Stores
@@ -25,9 +25,9 @@ import { useLiveGridStore } from '@/store/useLiveGridStore'
 import { useNetworkStore } from '@/store/useNetworkStore'
 
 // Views
+import { HomeView }       from '@/views/HomeView'
 import { DashboardView }  from '@/views/DashboardView'
 import { LibraryView }    from '@/views/LibraryView'
-import { FixtureBuilderView } from '@/views/FixtureBuilderView'
 import { PatchView }      from '@/views/PatchView'
 import { PaletteView }    from '@/views/PaletteView'
 import { ControlView }    from '@/views/ControlView'
@@ -46,29 +46,57 @@ import { MidiView }       from '@/views/MidiView'
 // App — root component with tab navigation
 // ─────────────────────────────────────────────────────────────────────────────
 
-type AppView = 'dashboard' | 'library' | 'builder' | 'patch' | 'palette' | 'control' | 'movement' | 'scenes' | 'chaser' | 'fx' | 'live' | 'audio' | 'pixel' | 'timeline' | 'visualizer' | 'midi'
+type TabGroup = {
+  label: string;
+  items: { id: AppView; label: string; icon: React.ReactNode }[];
+}
 
-const TABS: { id: AppView; label: string; icon: React.ReactNode }[] = [
-  { id: 'live',      label: 'Live Grid',    icon: <Grid size={18} /> },
-  { id: 'dashboard', label: 'Dashboard',    icon: <LayoutDashboard size={18} /> },
-  { id: 'library',   label: 'Library',      icon: <Folder size={18} /> },
-  { id: 'builder',   label: 'Builder',      icon: <Wrench size={18} /> },
-  { id: 'patch',     label: 'Patch',        icon: <Cable size={18} /> },
-  { id: 'palette',   label: 'Palettes',     icon: <Palette size={18} /> },
-  { id: 'control',   label: 'Control',      icon: <SlidersHorizontal size={18} /> },
-  { id: 'movement',  label: 'Follow Spot',  icon: <Target size={18} /> },
-  { id: 'scenes',    label: 'Scenes',       icon: <Clapperboard size={18} /> },
-  { id: 'chaser',    label: 'Chasers',      icon: <Repeat size={18} /> },
-  { id: 'fx',        label: 'FX Generator', icon: <Waves size={18} /> },
-  { id: 'audio',     label: 'Audio Input',  icon: <Mic size={18} /> },
-  { id: 'pixel',     label: 'Pixel Mapper', icon: <Tv size={18} /> },
-  { id: 'timeline',  label: 'Timeline',     icon: <Clock size={18} /> },
-  { id: 'visualizer',label: '3D View',      icon: <Eye size={18} /> },
-  { id: 'midi',      label: 'MIDI Mapping', icon: <Settings2 size={18} /> },
+const TAB_GROUPS: TabGroup[] = [
+  {
+    label: 'Main',
+    items: [
+      { id: 'home',      label: 'Home',         icon: <Home size={18} /> },
+      { id: 'dashboard', label: 'Dashboard',    icon: <LayoutDashboard size={18} /> },
+      { id: 'live',      label: 'Live Grid',    icon: <Grid size={18} /> },
+    ]
+  },
+  {
+    label: 'Setup',
+    items: [
+      { id: 'patch',     label: 'Patch',        icon: <Cable size={18} /> },
+      { id: 'library',   label: 'Library',      icon: <Folder size={18} /> },
+      { id: 'midi',      label: 'MIDI Mapping', icon: <Settings2 size={18} /> },
+    ]
+  },
+  {
+    label: 'Programming',
+    items: [
+      { id: 'control',   label: 'Control',      icon: <SlidersHorizontal size={18} /> },
+      { id: 'palette',   label: 'Palettes',     icon: <Palette size={18} /> },
+      { id: 'movement',  label: 'Follow Spot',  icon: <Target size={18} /> },
+      { id: 'pixel',     label: 'Pixel Mapper', icon: <Tv size={18} /> },
+    ]
+  },
+  {
+    label: 'Playback',
+    items: [
+      { id: 'scenes',    label: 'Scenes',       icon: <Clapperboard size={18} /> },
+      { id: 'chaser',    label: 'Chasers',      icon: <Repeat size={18} /> },
+      { id: 'fx',        label: 'FX Generator', icon: <Waves size={18} /> },
+      { id: 'timeline',  label: 'Timeline',     icon: <Clock size={18} /> },
+      { id: 'audio',     label: 'Audio Input',  icon: <Mic size={18} /> },
+    ]
+  },
+  {
+    label: 'Visualizer',
+    items: [
+      { id: 'visualizer',label: '3D View',      icon: <Eye size={18} /> },
+    ]
+  }
 ]
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<AppView>('dashboard')
+  const [currentView, setCurrentView] = useState<AppView>('home')
   
   // Detached window mode
   const [isDetachedVisualizer] = useState(() => window.location.hash === '#visualizer')
@@ -147,16 +175,21 @@ export default function App() {
           <span className="topbar-logo-text">DMX Master</span>
         </div>
 
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            id={`tab-${tab.id}`}
-            className={`tab-btn ${currentView === tab.id ? 'active' : ''}`}
-            onClick={() => setCurrentView(tab.id)}
-          >
-            <span className="tab-icon">{tab.icon}</span>
-            {tab.label}
-          </button>
+        {TAB_GROUPS.map(group => (
+          <div key={group.label} className="tab-group">
+            <div className="tab-group-label">{group.label}</div>
+            {group.items.map(tab => (
+              <button
+                key={tab.id}
+                id={`tab-${tab.id}`}
+                className={`tab-btn ${currentView === tab.id ? 'active' : ''}`}
+                onClick={() => setCurrentView(tab.id)}
+              >
+                <span className="tab-icon">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
         ))}
       </nav>
 
@@ -222,9 +255,9 @@ export default function App() {
 
         {/* ── Content View ─────────────────────────────────────────────────── */}
         <div className="content-area" style={{ paddingBottom: '56px' }}>
+          {currentView === 'home' && <HomeView />}
           {currentView === 'dashboard' && <DashboardView />}
           {currentView === 'library' && <LibraryView />}
-          {currentView === 'builder' && <FixtureBuilderView />}
           {currentView === 'patch' && <PatchView />}
           {currentView === 'palette' && <PaletteView />}
           {currentView === 'control' && <ControlView />}

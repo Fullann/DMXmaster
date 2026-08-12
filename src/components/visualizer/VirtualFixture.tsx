@@ -54,10 +54,12 @@ export function VirtualFixture({
   return (
     <group>
       {/* SETUP MODE TRANSFORM CONTROLS */}
-      {setupMode && isSelected ? (
+      {setupMode && isSelected && (
         <TransformControls
+          object={baseRef}
           mode={transformMode}
-          onMouseUp={(e) => {
+          space={transformMode === 'rotate' ? 'local' : 'world'}
+          onMouseUp={() => {
             if (baseRef.current) {
               if (transformMode === 'translate' && onPositionChange) {
                 const pos = baseRef.current.position
@@ -73,21 +75,22 @@ export function VirtualFixture({
               }
             }
           }}
-        >
-          <group ref={baseRef} position={position} rotation={rotation}>
-            <MeshContent />
-          </group>
-        </TransformControls>
-      ) : (
-        <group ref={baseRef} position={position} rotation={rotation} onClick={(e) => {
+        />
+      )}
+
+      <group 
+        ref={baseRef as any} 
+        position={position} 
+        rotation={rotation} 
+        onClick={(e) => {
           if (setupMode && onSelect) {
             e.stopPropagation()
             onSelect(fixture.id)
           }
-        }}>
-          <MeshContent />
-        </group>
-      )}
+        }}
+      >
+        <MeshContent />
+      </group>
     </group>
   )
 
@@ -105,6 +108,7 @@ export function VirtualFixture({
         {/* RENDER INFERRED COMPONENT */}
         {type === 'smoke' && <VirtualSmokeMachine uIdx={uIdx} channelMap={channelMap} />}
         {type === 'moving_head' && <VirtualMovingHead uIdx={uIdx} channelMap={channelMap} />}
+        {type === 'static' && <VirtualStaticPar uIdx={uIdx} channelMap={channelMap} />}
       </>
     )
   }

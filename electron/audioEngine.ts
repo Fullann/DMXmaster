@@ -58,11 +58,15 @@ export class AudioEngine {
       const scale = energy / 255
       const offsetValue = Math.round(scale * (trigger.maxVal - trigger.minVal) + trigger.minVal)
 
+      // Map ChannelType to logical stateKey (e.g. 'Intensity' -> 'intensity')
+      const stateKey = channelTypeToStateKey(trigger.channelType)
+      if (!stateKey) continue
+
       for (const fixId of trigger.fixtureIds) {
         if (!offsets[fixId]) offsets[fixId] = {}
         // If multiple triggers target the same fixture+channel, Highest Takes Precedence for the offset
-        const existing = offsets[fixId][trigger.channelType] || 0
-        offsets[fixId][trigger.channelType] = Math.max(existing, offsetValue)
+        const existing = offsets[fixId][stateKey] || 0
+        offsets[fixId][stateKey] = Math.max(existing, offsetValue)
       }
     }
 
@@ -87,7 +91,21 @@ export class AudioEngine {
       const modValue = scale * (trigger.maxVal - trigger.minVal) + trigger.minVal
 
       // Apply to FX Engine (this tells FX engine to use this value instead of the base config for this tick)
-      fxEngine.setModulation(trigger.fxId, trigger.fxParam, modValue)
+      const paramName = trigger.fxParam === 'speed' ? 'speedHz' : trigger.fxParam
+      fxEngine.setModulation(trigger.fxId, paramName, modValue)
     }
   }
+}
+
+// ── Internal helper ──────────────────────────────────────────────────────────
+
+function channelTypeToStateKey(type: import('./fixtureTypes').ChannelType): keyof import('./fixtureTypes').FixtureLogicalState | null {
+  const map: Partial<Record<import('./fixtureTypes').ChannelType, keyof import('./fixtureTypes').FixtureLogicalState>> = {
+    Intensity: 'intensity',
+    Red: 'r', Green: 'g', Blue: 'b', White: 'w',
+    Smoke: 'smoke', Pan: 'pan', Tilt: 'tilt',
+    Shutter: 'shutter', Strobe: 'shutter',
+    Speed: 'speed', Effect: 'effect', Color: 'color',
+  }
+  return map[type] ?? null
 }

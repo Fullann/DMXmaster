@@ -38,7 +38,7 @@ export function GlobalMasterToolbar() {
       window.fixtureAPI.setGrandMaster(grandMaster)
     } else {
       setIsBlackout(true)
-      window.dmxAPI.softBlackout()
+      window.fixtureAPI.setGrandMaster(0)
     }
   }
 

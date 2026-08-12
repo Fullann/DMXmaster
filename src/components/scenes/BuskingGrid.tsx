@@ -22,10 +22,11 @@ interface BuskingGridProps {
   onRecall:    (id: string) => void
   onDelete:    (id: string) => void
   onCancelFade: () => void
+  onClear:      () => void
 }
 
 export function BuskingGrid({
-  scenes, activeId, fadeStatus, onRecall, onDelete, onCancelFade,
+  scenes, activeId, fadeStatus, onRecall, onDelete, onCancelFade, onClear
 }: BuskingGridProps) {
 
   if (scenes.length === 0) {
@@ -55,6 +56,7 @@ export function BuskingGrid({
           onRecall={onRecall}
           onDelete={onDelete}
           onCancelFade={onCancelFade}
+          onClear={onClear}
         />
       ))}
     </div>
@@ -74,10 +76,11 @@ interface SceneCardProps {
   onRecall:     (id: string) => void
   onDelete:     (id: string) => void
   onCancelFade: () => void
+  onClear:      () => void
 }
 
 function SceneCard({
-  scene, index, isActive, isFading, fadeProgress, onRecall, onDelete, onCancelFade,
+  scene, index, isActive, isFading, fadeProgress, onRecall, onDelete, onCancelFade, onClear
 }: SceneCardProps) {
   const color         = getSceneColor(index)
   const fixtureCount  = Object.keys(scene.fixtureStates).length
@@ -87,8 +90,9 @@ function SceneCard({
 
   const handleRecall = useCallback(() => {
     if (isFading) onCancelFade()
+    else if (isActive) onClear()
     else onRecall(scene.id)
-  }, [isFading, scene.id, onRecall, onCancelFade])
+  }, [isFading, isActive, scene.id, onRecall, onCancelFade, onClear])
 
   const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()

@@ -266,10 +266,14 @@ contextBridge.exposeInMainWorld('timelineAPI', timelineAPI)
 
 // ── APP API ───────────────────────────────────────────────────────────────────
 
+import type { RecentShow } from '../electron/showManager'
+
 export interface AppAPI {
   exportShow: () => Promise<{ success: boolean; error?: string }>
   importShow: () => Promise<{ success: boolean; error?: string }>
   newShow:    () => Promise<{ success: boolean; error?: string }>
+  getRecentShows: () => Promise<{ success: boolean; shows?: RecentShow[]; error?: string }>
+  openRecentShow: (filePath: string) => Promise<{ success: boolean; error?: string }>
   openVisualizerWindow: () => Promise<void>
 }
 
@@ -277,6 +281,8 @@ const appAPI: AppAPI = {
   exportShow: () => ipcRenderer.invoke('app:exportShow'),
   importShow: () => ipcRenderer.invoke('app:importShow'),
   newShow:    () => ipcRenderer.invoke('app:newShow'),
+  getRecentShows: () => ipcRenderer.invoke('app:getRecentShows'),
+  openRecentShow: (filePath) => ipcRenderer.invoke('app:openRecentShow', filePath),
   openVisualizerWindow: () => ipcRenderer.invoke('app:openVisualizer'),
 }
 

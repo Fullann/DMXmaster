@@ -48,21 +48,21 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
 
     if (spotLightRef.current) {
       spotLightRef.current.color.copy(colorHex)
-      spotLightRef.current.intensity = intensity * 50
+      spotLightRef.current.intensity = intensity * 150
       spotLightRef.current.visible = intensity > 0
     }
   })
 
   return (
-    <group position={[0, 0.4, 0]}>
+    <group position={[0, 0.3, 0]}>
       {/* PAR Can Body */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
+      <mesh>
         <cylinderGeometry args={[0.3, 0.3, 0.6, 16]} />
         <meshStandardMaterial color="#222" roughness={0.6} />
       </mesh>
 
       {/* LENS */}
-      <mesh position={[0, 0.31, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh position={[0, 0.31, 0]}>
         <cylinderGeometry args={[0.25, 0.25, 0.05, 16]} />
         <meshBasicMaterial ref={lensMaterialRef} color="#111111" />
       </mesh>
@@ -70,16 +70,16 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
       {/* Volumetric SpotLight */}
       <SpotLight
         ref={spotLightRef as any}
-        position={[0, 0.4, 0]}
-        angle={0.3}
+        position={[0, 0.35, 0]}
+        angle={0.4}
         penumbra={0.3}
         color="#ffffff"
         intensity={0}
-        distance={20}
+        distance={25}
         castShadow
         volumetric={true}
-        attenuation={20}
-        anglePower={3}
+        attenuation={15}
+        anglePower={2}
       />
       <object3D ref={targetRef} position={[0, 10, 0]} />
     </group>

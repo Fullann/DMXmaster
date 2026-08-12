@@ -1,14 +1,95 @@
 import { app, dialog } from 'electron'
 import { promises as fs, rmSync } from 'fs'
-import { join } from 'path'
+import { join, basename } from 'path'
 import AdmZip from 'adm-zip'
+
+export interface RecentShow {
+  name: string
+  path: string
+  lastOpened: number
+}
 
 export class ShowManager {
   private appDir = ''
+  private userDataDir = ''
+  private recentShowsPath = ''
 
   initialize(): void {
     const docPath = app.getPath('documents')
     this.appDir = join(docPath, 'DmxMaster')
+    this.userDataDir = app.getPath('userData')
+    this.recentShowsPath = join(this.userDataDir, 'recent_shows.json')
+  }
+
+  private async loadRecentShows(): Promise<RecentShow[]> {
+    try {
+      const data = await fs.readFile(this.recentShowsPath, 'utf-8')
+      return JSON.parse(data) as RecentShow[]
+    } catch {
+      return []
+    }
+  }
+
+  private async saveRecentShow(filePath: string): Promise<void> {
+    try {
+      let shows = await this.loadRecentShows()
+      const name = basename(filePath, '.dmxshow')
+      
+      shows = shows.filter(s => s.path !== filePath)
+      shows.unshift({
+        name,
+        path: filePath,
+        lastOpened: Date.now()
+      })
+      shows = shows.slice(0, 10)
+      
+      await fs.writeFile(this.recentShowsPath, JSON.stringify(shows, null, 2))
+    } catch (e) {
+      console.error('[ShowManager] Failed to save recent show', e)
+    }
+  }
+
+  async getRecentShows(): Promise<{ success: boolean; shows?: RecentShow[]; error?: string }> {
+    try {
+      const shows = await this.loadRecentShows()
+      return { success: true, shows }
+    } catch (e: any) {
+      return { success: false, error: e.message }
+    }
+  }
+
+  async openRecentShow(filePath: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      try {
+        await fs.access(filePath)
+      } catch {
+        return { success: false, error: 'File not found on disk.' }
+      }
+
+      const { response } = await dialog.showMessageBox({
+        type: 'warning',
+        buttons: ['Cancel', 'Open & Restart'],
+        title: 'Confirm Open',
+        message: 'Opening a show will overwrite your current configuration.',
+        detail: 'The application will restart immediately after opening. Are you sure you want to proceed?'
+      })
+
+      if (response === 0) return { success: false }
+
+      const zip = new AdmZip(filePath)
+      zip.extractAllTo(this.appDir, true)
+
+      await this.saveRecentShow(filePath)
+      console.log(`[ShowManager] Opened recent show from ${filePath}`)
+      
+      app.relaunch()
+      app.exit(0)
+
+      return { success: true }
+    } catch (e: any) {
+      console.error('[ShowManager] Open recent error:', e)
+      return { success: false, error: e.message }
+    }
   }
 
   async exportShow(): Promise<{ success: boolean; error?: string }> {
@@ -26,6 +107,7 @@ export class ShowManager {
       zip.addLocalFolder(this.appDir)
       
       zip.writeZip(filePath)
+      await this.saveRecentShow(filePath)
       console.log(`[ShowManager] Exported show to ${filePath}`)
       
       return { success: true }
@@ -62,6 +144,7 @@ export class ShowManager {
       const zip = new AdmZip(filePath)
       zip.extractAllTo(this.appDir, true) // true = overwrite
 
+      await this.saveRecentShow(filePath)
       console.log(`[ShowManager] Imported show from ${filePath}`)
       
       // Relaunch the app to safely load all the new singletons from disk

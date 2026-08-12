@@ -48,6 +48,7 @@ export function ScenesView() {
               onRecall={sceneState.recallScene}
               onDelete={sceneState.deleteScene}
               onCancelFade={sceneState.cancelFade}
+              onClear={sceneState.clearProgrammer}
             />
           </div>
         </main>
