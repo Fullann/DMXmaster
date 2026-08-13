@@ -46,10 +46,20 @@ export interface FixtureAPI {
 }
 
 import type { VirtualConsolePage } from './virtualConsole'
+import type { Cuelist, CuelistPlaybackState } from './cuelist'
 
 export interface VirtualConsoleAPI {
   getPages: () => Promise<{ success: boolean; pages?: VirtualConsolePage[]; error?: string }>
   savePages: (pages: VirtualConsolePage[]) => Promise<{ success: boolean; error?: string }>
+}
+
+export interface CuelistAPI {
+  getAll: () => Promise<{ success: boolean; cuelists?: Cuelist[]; error?: string }>
+  save:   (cuelists: Cuelist[]) => Promise<{ success: boolean; error?: string }>
+  go:     (cuelistId: string) => Promise<{ success: boolean; error?: string }>
+  stop:   () => Promise<{ success: boolean; error?: string }>
+  goto:   (cuelistId: string, cueId: string) => Promise<{ success: boolean; error?: string }>
+  onPlaybackState: (callback: (state: CuelistPlaybackState) => void) => void
 }
 
 declare global {
@@ -57,5 +67,6 @@ declare global {
     dmxAPI:     DmxAPI
     fixtureAPI: FixtureAPI
     virtualConsoleAPI: VirtualConsoleAPI
+    cuelistAPI: CuelistAPI
   }
 }

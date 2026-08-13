@@ -12,6 +12,7 @@ import type { TimelineManager} from '../timelineManager'
 import type { ShowManager }    from '../showManager'
 import type { PaletteManager } from '../paletteManager'
 import type { VirtualConsoleManager } from '../virtualConsoleManager'
+import type { CuelistManager } from '../cuelistManager'
 
 import { registerSerialIpc }   from './serialIpc'
 import { registerDmxIpc }      from './dmxIpc'
@@ -27,6 +28,7 @@ import { registerTimelineIpc } from './timelineIpc'
 import { registerShowIpc }     from './showIpc'
 import { registerPaletteHandlers }  from './paletteIpc'
 import { registerVirtualConsoleIpc } from './virtualConsoleIpc'
+import { registerCuelistIpc } from './cuelistIpc'
 
 export { pushUniverseUpdate } from './dmxIpc'
 
@@ -41,10 +43,11 @@ export function registerIpcHandlers(
   audio:   AudioEngine,
   network: NetworkManager,
   pixel:   PixelEngine,
-  timeline:TimelineManager,
-  show:    ShowManager,
-  palette: PaletteManager,
-  virtualConsole: VirtualConsoleManager
+  timelineManager: TimelineManager,
+  showManager:    ShowManager,
+  paletteManager: PaletteManager,
+  virtualConsoleManager: VirtualConsoleManager,
+  cuelistManager: CuelistManager
 ): void {
   registerSerialIpc(serial)
   registerDmxIpc(engine, fixture)
@@ -56,10 +59,11 @@ export function registerIpcHandlers(
   registerAudioIpc(audio)
   registerNetworkIpc(network)
   registerPixelIpc(pixel)
-  registerTimelineIpc(timeline)
-  registerShowIpc(show)
-  registerPaletteHandlers(palette)
-  registerVirtualConsoleIpc(virtualConsole)
+  registerTimelineIpc(timelineManager)
+  registerShowIpc(showManager)
+  registerPaletteHandlers(paletteManager)
+  registerVirtualConsoleIpc(virtualConsoleManager)
+  registerCuelistIpc(cuelistManager)
 
   console.log('[IPC] All modular handlers registered.')
 }

@@ -352,6 +352,30 @@ const virtualConsoleAPI: VirtualConsoleAPI = {
 
 contextBridge.exposeInMainWorld('virtualConsoleAPI', virtualConsoleAPI)
 
+// ── CUELIST API ───────────────────────────────────────────────────────────────
+
+import type { Cuelist, CuelistPlaybackState } from '../src/types/cuelist'
+
+export interface CuelistAPI {
+  getAll: () => Promise<{ success: boolean; cuelists?: Cuelist[]; error?: string }>
+  save:   (cuelists: Cuelist[]) => Promise<{ success: boolean; error?: string }>
+  go:     (cuelistId: string) => Promise<{ success: boolean; error?: string }>
+  stop:   () => Promise<{ success: boolean; error?: string }>
+  goto:   (cuelistId: string, cueId: string) => Promise<{ success: boolean; error?: string }>
+  onPlaybackState: (callback: (state: CuelistPlaybackState) => void) => void
+}
+
+const cuelistAPI: CuelistAPI = {
+  getAll: () => ipcRenderer.invoke('cuelist:getAll'),
+  save:   (cuelists) => ipcRenderer.invoke('cuelist:save', cuelists),
+  go:     (id) => ipcRenderer.invoke('cuelist:go', id),
+  stop:   () => ipcRenderer.invoke('cuelist:stop'),
+  goto:   (cuelistId, cueId) => ipcRenderer.invoke('cuelist:goto', { cuelistId, cueId }),
+  onPlaybackState: (callback) => ipcRenderer.on('cuelist:playbackState', (_e, state) => callback(state))
+}
+
+contextBridge.exposeInMainWorld('cuelistAPI', cuelistAPI)
+
 // ── Global type augmentation ──────────────────────────────────────────────────
 
 declare global {
@@ -369,5 +393,6 @@ declare global {
     chaserAPI:  ChaserAPI
     paletteAPI: PaletteAPI
     virtualConsoleAPI: VirtualConsoleAPI
+    cuelistAPI: CuelistAPI
   }
 }

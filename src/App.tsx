@@ -43,6 +43,7 @@ import { VisualizerView } from '@/views/VisualizerView'
 import { MidiView }       from '@/views/MidiView'
 import { FixtureBuilderView } from '@/views/FixtureBuilderView'
 import { VirtualConsoleView } from '@/views/VirtualConsoleView'
+import { CuelistView }    from '@/views/CuelistView'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App — root component with tab navigation
@@ -50,7 +51,7 @@ import { VirtualConsoleView } from '@/views/VirtualConsoleView'
 
 type TabGroup = {
   label: string;
-  items: { id: AppView; label: string; icon: React.ReactNode }[];
+  items: { id: string; label: string; icon: React.ReactNode }[];
 }
 
 const TAB_GROUPS: TabGroup[] = [
@@ -86,6 +87,7 @@ const TAB_GROUPS: TabGroup[] = [
       { id: 'scenes',    label: 'Scenes',       icon: <Clapperboard size={18} /> },
       { id: 'chaser',    label: 'Chasers',      icon: <Repeat size={18} /> },
       { id: 'console',   label: 'Virtual Console', icon: <SlidersHorizontal size={18} /> },
+      { id: 'cuelist',   label: 'Cuelist',      icon: <ListMusic size={18} /> },
       { id: 'fx',        label: 'FX Generator', icon: <Waves size={18} /> },
       { id: 'timeline',  label: 'Timeline',     icon: <Clock size={18} /> },
       { id: 'audio',     label: 'Audio Input',  icon: <Mic size={18} /> },
@@ -100,7 +102,7 @@ const TAB_GROUPS: TabGroup[] = [
 ]
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<AppView>('home')
+  const [currentView, setCurrentView] = useState<string>('home')
   
   // Detached window mode
   const [isDetachedVisualizer] = useState(() => window.location.hash === '#visualizer')
@@ -270,6 +272,7 @@ export default function App() {
           {currentView === 'scenes' && <ScenesView />}
           {currentView === 'chaser' && <ChaserView />}
           {currentView === 'console' && <VirtualConsoleView />}
+          {currentView === 'cuelist' && <CuelistView />}
           {currentView === 'fx' && <FxView />}
           {currentView === 'live' && <LiveView />}
           {currentView === 'audio' && <AudioView />}

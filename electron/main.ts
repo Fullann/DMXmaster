@@ -15,6 +15,7 @@ import { ShowManager }    from './showManager'
 import { PaletteManager } from './paletteManager'
 import { WebServerManager } from './webServerManager'
 import { VirtualConsoleManager } from './virtualConsoleManager'
+import { CuelistManager } from './cuelistManager'
 import { registerIpcHandlers, pushUniverseUpdate } from './ipc/index'
 
 // ── Core services (singletons for app lifetime) ───────────────────────────────
@@ -33,6 +34,7 @@ const timelineManager= new TimelineManager()
 const showManager    = new ShowManager()
 const webServerManager = new WebServerManager()
 const virtualConsoleManager = new VirtualConsoleManager()
+const cuelistManager = new CuelistManager(sceneManager)
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -124,6 +126,7 @@ app.whenReady().then(async () => {
   await paletteManager.initialize()
   showManager.initialize()
   virtualConsoleManager.init()
+  cuelistManager.init()
 
   // Initialize WebServerManager
   webServerManager.initialize(sceneManager, fixtureManager)
@@ -138,7 +141,7 @@ app.whenReady().then(async () => {
   dmxEngine.setPixelEngine(pixelEngine)
 
   // 4. Register all IPC handlers
-  registerIpcHandlers(dmxEngine, serialManager, fixtureManager, sceneManager, chaserManager, effectsEngine, liveGridManager, audioEngine, networkManager, pixelEngine, timelineManager, showManager, paletteManager, virtualConsoleManager)
+  registerIpcHandlers(dmxEngine, serialManager, fixtureManager, sceneManager, chaserManager, effectsEngine, liveGridManager, audioEngine, networkManager, pixelEngine, timelineManager, showManager, paletteManager, virtualConsoleManager, cuelistManager)
 
   // 5. Create window + start engine & web server
   const mainWindow = createWindow()
