@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DMX Master Companion</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>DMX Master</h1>
+        <div id="status" class="status-dot disconnected"></div>
+    </header>
+
+    <main>
+        <section class="controls-section">
+            <button id="btn-blackout" class="btn-danger">SOFT BLACKOUT</button>
+        </section>
+
+        <section class="scenes-section">
+            <h2>Scenes</h2>
+            <div id="scenes-container" class="grid-container">
+                <!-- Scenes will be populated here by app.js -->
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

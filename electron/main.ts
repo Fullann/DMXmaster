@@ -13,6 +13,7 @@ import { PixelEngine }    from './pixelEngine'
 import { TimelineManager} from './timelineManager'
 import { ShowManager }    from './showManager'
 import { PaletteManager } from './paletteManager'
+import { WebServerManager } from './webServerManager'
 import { registerIpcHandlers, pushUniverseUpdate } from './ipc/index'
 
 // ── Core services (singletons for app lifetime) ───────────────────────────────
@@ -29,6 +30,7 @@ const networkManager = new NetworkManager()
 const pixelEngine    = new PixelEngine()
 const timelineManager= new TimelineManager()
 const showManager    = new ShowManager()
+const webServerManager = new WebServerManager()
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -120,6 +122,9 @@ app.whenReady().then(async () => {
   await paletteManager.initialize()
   showManager.initialize()
 
+  // Initialize WebServerManager
+  webServerManager.initialize(sceneManager, fixtureManager)
+
   // 3. Wire fixture, scene, effects, and chaser managers into the 44Hz engine
   dmxEngine.setFixtureManager(fixtureManager)
   dmxEngine.setSceneManager(sceneManager)
@@ -132,9 +137,10 @@ app.whenReady().then(async () => {
   // 4. Register all IPC handlers
   registerIpcHandlers(dmxEngine, serialManager, fixtureManager, sceneManager, chaserManager, effectsEngine, liveGridManager, audioEngine, networkManager, pixelEngine, timelineManager, showManager, paletteManager)
 
-  // 5. Create window + start engine
+  // 5. Create window + start engine & web server
   const mainWindow = createWindow()
   dmxEngine.start()
+  webServerManager.start()
   console.log('[Main] DMX engine started.')
 
   // 6. Push universe updates to renderer at ~30fps for the 3D Visualizer & DMX Monitor
@@ -156,6 +162,7 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', async () => {
   console.log('[Main] Shutting down…')
+  webServerManager.stop()
   dmxEngine.stop()
   await serialManager.disconnect()
   console.log('[Main] Clean shutdown complete.')
