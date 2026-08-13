@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
 import type { Show, ShowEvent } from '@/types/timeline'
+import { useMidiStore } from '@/store/useMidiStore'
 
 export function useTimeline() {
   const [shows, setShows] = useState<Show[]>([])
@@ -7,6 +7,7 @@ export function useTimeline() {
   
   // Audio Playback State
   const [isPlaying, setIsPlaying] = useState(false)
+  const [syncMode, setSyncMode] = useState<'internal' | 'mtc'>('internal')
   const [currentTimeMs, setCurrentTimeMs] = useState(0)
   const [waveform, setWaveform] = useState<Float32Array | null>(null)
   
@@ -112,11 +113,20 @@ export function useTimeline() {
   // ── Playback Loop ───────────────────────────────────────────────────────────
 
   const loop = useCallback(() => {
-    if (!audioCtxRef.current || !isPlaying) return
+    if (syncMode === 'internal' && (!audioCtxRef.current || !isPlaying)) return
 
-    // Calculate current time
-    const elapsedSeconds = audioCtxRef.current.currentTime - startTimeRef.current
-    const elapsedMs = Math.floor(elapsedSeconds * 1000)
+    let elapsedMs = 0
+
+    if (syncMode === 'mtc') {
+      const midiState = useMidiStore.getState()
+      elapsedMs = midiState.mtcTimeMs
+      
+      // If MTC drops, we can optionally stop, but for now we just hold the last time.
+    } else {
+      // Calculate current time
+      const elapsedSeconds = audioCtxRef.current!.currentTime - startTimeRef.current
+      elapsedMs = Math.floor(elapsedSeconds * 1000)
+    }
     
     if (activeShow && elapsedMs >= activeShow.durationMs) {
       stop()
@@ -148,13 +158,13 @@ export function useTimeline() {
   }, [isPlaying, activeShow])
 
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying || syncMode === 'mtc') {
       rafRef.current = requestAnimationFrame(loop)
     } else {
       cancelAnimationFrame(rafRef.current)
     }
     return () => cancelAnimationFrame(rafRef.current)
-  }, [isPlaying, loop])
+  }, [isPlaying, syncMode, loop])
 
   const play = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -251,6 +261,8 @@ export function useTimeline() {
     stop,
     scrub,
     addEvent,
-    removeEvent
+    removeEvent,
+    syncMode,
+    setSyncMode
   }
 }

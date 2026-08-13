@@ -2,11 +2,16 @@ import { useState, useRef, useEffect, MouseEvent } from 'react'
 import { useTimeline } from '@/hooks/useTimeline'
 import { useScenes } from '@/hooks/useScenes'
 import { useFx } from '@/hooks/useFx'
+import { useMidiStore } from '@/store/useMidiStore'
 
 export function TimelineSequencer() {
   const tl = useTimeline()
   const scenes = useScenes()
   const fx = useFx()
+  
+  const mtcActive = useMidiStore(s => s.mtcActive)
+  const mtcTimeMs = useMidiStore(s => s.mtcTimeMs)
+  const mtcFrameRate = useMidiStore(s => s.mtcFrameRate)
   
   const [newShowName, setNewShowName] = useState('')
   const [selectedTrack, setSelectedTrack] = useState<string | null>(null)
@@ -111,15 +116,40 @@ export function TimelineSequencer() {
 
       {/* ── Transport Controls ─────────────────────────────────────────────── */}
       {tl.activeShow && (
-        <div className="panel" style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <button className="btn btn-ghost" onClick={tl.stop}>⏹ Stop</button>
-          {tl.isPlaying ? (
-            <button className="btn btn-primary" onClick={tl.pause}>⏸ Pause</button>
+        <div className="panel" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', alignItems: 'center' }}>
+          {tl.syncMode === 'internal' ? (
+            <>
+              <button className="btn btn-ghost" onClick={tl.stop}>⏹ Stop</button>
+              {tl.isPlaying ? (
+                <button className="btn btn-primary" onClick={tl.pause}>⏸ Pause</button>
+              ) : (
+                <button className="btn btn-primary" onClick={tl.play}>▶ Play</button>
+              )}
+            </>
           ) : (
-            <button className="btn btn-primary" onClick={tl.play}>▶ Play</button>
+            <div style={{ color: 'var(--status-warn)', fontWeight: 600, padding: '0 1rem' }}>
+              ⚠️ PLAYBACK SLAVED TO MTC
+            </div>
           )}
+
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.2rem', padding: '0.5rem' }}>
             {(tl.currentTimeMs / 1000).toFixed(3)}s / {(tl.activeShow.durationMs / 1000).toFixed(3)}s
+          </div>
+
+          <div style={{ marginLeft: '2rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '1px solid var(--border)', paddingLeft: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>INCOMING MTC ({mtcFrameRate} fps)</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.2rem', color: mtcActive ? 'var(--status-success)' : 'var(--text-muted)' }}>
+                {new Date(mtcTimeMs).toISOString().substr(11, 12)}
+              </span>
+            </div>
+            <button 
+              className={`btn ${tl.syncMode === 'mtc' ? 'btn-primary' : 'btn-ghost'}`} 
+              onClick={() => tl.setSyncMode(tl.syncMode === 'mtc' ? 'internal' : 'mtc')}
+              style={{ border: tl.syncMode === 'mtc' ? '1px solid var(--status-warn)' : 'none', color: tl.syncMode === 'mtc' ? 'var(--status-warn)' : 'inherit', background: tl.syncMode === 'mtc' ? 'rgba(255,170,0,0.1)' : 'transparent' }}
+            >
+              Sync to MTC
+            </button>
           </div>
         </div>
       )}

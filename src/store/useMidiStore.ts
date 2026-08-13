@@ -22,6 +22,9 @@ export interface MidiState {
   midiStatus: MidiStatus
   midiInputs: MidiDevice[]
   lastMessage: ParsedMidiMessage | null
+  mtcTimeMs: number
+  mtcFrameRate: number
+  mtcActive: boolean
   
   sendMidiColor: (noteNumber: number, colorVelocity: number) => void
   init: () => () => void
@@ -44,10 +47,20 @@ const parseMidiMessage = (event: MIDIMessageEvent): ParsedMidiMessage => {
   return { type, channel, note, velocity, raw: Array.from(data), timestamp: event.timeStamp }
 }
 
+let mtcFrames = 0
+let mtcSeconds = 0
+let mtcMinutes = 0
+let mtcHours = 0
+let mtcRate = 30
+let lastMtcReceiveTime = 0
+
 export const useMidiStore = create<MidiState>((set, get) => ({
   midiStatus: 'requesting',
   midiInputs: [],
   lastMessage: null,
+  mtcTimeMs: 0,
+  mtcFrameRate: 30,
+  mtcActive: false,
 
   sendMidiColor: (noteNumber, colorVelocity) => {
     if (!navigator.requestMIDIAccess) return
@@ -75,7 +88,38 @@ export const useMidiStore = create<MidiState>((set, get) => ({
           manufacturer: input.manufacturer ?? '',
         })
         input.onmidimessage = (event: MIDIMessageEvent) => {
-          set({ lastMessage: parseMidiMessage(event) })
+          const data = event.data
+          // Handle MTC Quarter Frame (0xF1)
+          if (data[0] === 0xF1) {
+            const val = data[1]
+            const type = (val >> 4) & 0x07
+            const nibble = val & 0x0F
+
+            switch (type) {
+              case 0: mtcFrames = (mtcFrames & 0xF0) | nibble; break;
+              case 1: mtcFrames = (mtcFrames & 0x0F) | (nibble << 4); break;
+              case 2: mtcSeconds = (mtcSeconds & 0xF0) | nibble; break;
+              case 3: mtcSeconds = (mtcSeconds & 0x0F) | (nibble << 4); break;
+              case 4: mtcMinutes = (mtcMinutes & 0xF0) | nibble; break;
+              case 5: mtcMinutes = (mtcMinutes & 0x0F) | (nibble << 4); break;
+              case 6: mtcHours = (mtcHours & 0xF0) | nibble; break;
+              case 7: 
+                mtcHours = (mtcHours & 0x0F) | ((nibble & 0x01) << 4);
+                const rateBits = (nibble >> 1) & 0x03;
+                if (rateBits === 0) mtcRate = 24;
+                else if (rateBits === 1) mtcRate = 25;
+                else if (rateBits === 2) mtcRate = 29.97;
+                else if (rateBits === 3) mtcRate = 30;
+                
+                // Full frame assembled
+                const ms = (mtcHours * 3600 + mtcMinutes * 60 + mtcSeconds) * 1000 + Math.floor((mtcFrames * 1000) / mtcRate);
+                lastMtcReceiveTime = performance.now();
+                set({ mtcTimeMs: ms, mtcFrameRate: mtcRate, mtcActive: true });
+                break;
+            }
+          } else {
+            set({ lastMessage: parseMidiMessage(event) })
+          }
         }
       })
       set({ midiInputs: devices })
@@ -87,6 +131,13 @@ export const useMidiStore = create<MidiState>((set, get) => ({
         set({ midiStatus: 'granted' })
         registerInputs(access)
         access.onstatechange = () => registerInputs(access)
+
+        // MTC Activity Watchdog (turn off active state if no MTC received for 500ms)
+        setInterval(() => {
+          if (get().mtcActive && performance.now() - lastMtcReceiveTime > 500) {
+            set({ mtcActive: false })
+          }
+        }, 500)
       })
       .catch(() => set({ midiStatus: 'denied' }))
 
