@@ -45,9 +45,17 @@ export interface FixtureAPI {
   getStates:      () => Promise<{ success: boolean; states?: Record<string, FixtureLogicalState>; error?: string }>
 }
 
+import type { VirtualConsolePage } from './virtualConsole'
+
+export interface VirtualConsoleAPI {
+  getPages: () => Promise<{ success: boolean; pages?: VirtualConsolePage[]; error?: string }>
+  savePages: (pages: VirtualConsolePage[]) => Promise<{ success: boolean; error?: string }>
+}
+
 declare global {
   interface Window {
     dmxAPI:     DmxAPI
     fixtureAPI: FixtureAPI
+    virtualConsoleAPI: VirtualConsoleAPI
   }
 }

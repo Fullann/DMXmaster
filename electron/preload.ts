@@ -336,6 +336,22 @@ const paletteAPI: PaletteAPI = {
 
 contextBridge.exposeInMainWorld('paletteAPI', paletteAPI)
 
+// ── VIRTUAL CONSOLE API ───────────────────────────────────────────────────────
+
+import type { VirtualConsolePage } from '../../src/types/virtualConsole'
+
+export interface VirtualConsoleAPI {
+  getPages: () => Promise<{ success: boolean; pages?: VirtualConsolePage[]; error?: string }>
+  savePages: (pages: VirtualConsolePage[]) => Promise<{ success: boolean; error?: string }>
+}
+
+const virtualConsoleAPI: VirtualConsoleAPI = {
+  getPages: () => ipcRenderer.invoke('virtualConsole:getPages'),
+  savePages: (pages) => ipcRenderer.invoke('virtualConsole:savePages', pages),
+}
+
+contextBridge.exposeInMainWorld('virtualConsoleAPI', virtualConsoleAPI)
+
 // ── Global type augmentation ──────────────────────────────────────────────────
 
 declare global {
@@ -352,5 +368,6 @@ declare global {
     appAPI:     AppAPI
     chaserAPI:  ChaserAPI
     paletteAPI: PaletteAPI
+    virtualConsoleAPI: VirtualConsoleAPI
   }
 }

@@ -42,6 +42,7 @@ import { TimelineView }   from '@/views/TimelineView'
 import { VisualizerView } from '@/views/VisualizerView'
 import { MidiView }       from '@/views/MidiView'
 import { FixtureBuilderView } from '@/views/FixtureBuilderView'
+import { VirtualConsoleView } from '@/views/VirtualConsoleView'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App — root component with tab navigation
@@ -84,6 +85,7 @@ const TAB_GROUPS: TabGroup[] = [
     items: [
       { id: 'scenes',    label: 'Scenes',       icon: <Clapperboard size={18} /> },
       { id: 'chaser',    label: 'Chasers',      icon: <Repeat size={18} /> },
+      { id: 'console',   label: 'Virtual Console', icon: <SlidersHorizontal size={18} /> },
       { id: 'fx',        label: 'FX Generator', icon: <Waves size={18} /> },
       { id: 'timeline',  label: 'Timeline',     icon: <Clock size={18} /> },
       { id: 'audio',     label: 'Audio Input',  icon: <Mic size={18} /> },
@@ -267,6 +269,7 @@ export default function App() {
           {currentView === 'movement' && <MovementView />}
           {currentView === 'scenes' && <ScenesView />}
           {currentView === 'chaser' && <ChaserView />}
+          {currentView === 'console' && <VirtualConsoleView />}
           {currentView === 'fx' && <FxView />}
           {currentView === 'live' && <LiveView />}
           {currentView === 'audio' && <AudioView />}
