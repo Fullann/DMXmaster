@@ -41,6 +41,7 @@ import { PixelView }      from '@/views/PixelView'
 import { TimelineView }   from '@/views/TimelineView'
 import { VisualizerView } from '@/views/VisualizerView'
 import { MidiView }       from '@/views/MidiView'
+import { FixtureBuilderView } from '@/views/FixtureBuilderView'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App — root component with tab navigation
@@ -65,6 +66,7 @@ const TAB_GROUPS: TabGroup[] = [
     items: [
       { id: 'patch',     label: 'Patch',        icon: <Cable size={18} /> },
       { id: 'library',   label: 'Library',      icon: <Folder size={18} /> },
+      { id: 'builder',   label: 'Fixture Builder', icon: <Wrench size={18} /> },
       { id: 'midi',      label: 'MIDI Mapping', icon: <Settings2 size={18} /> },
     ]
   },
@@ -259,6 +261,7 @@ export default function App() {
           {currentView === 'dashboard' && <DashboardView />}
           {currentView === 'library' && <LibraryView />}
           {currentView === 'patch' && <PatchView />}
+          {currentView === 'builder' && <FixtureBuilderView />}
           {currentView === 'palette' && <PaletteView />}
           {currentView === 'control' && <ControlView />}
           {currentView === 'movement' && <MovementView />}
