@@ -8,11 +8,47 @@ interface GelPickerProps {
 export function GelPicker({ onSelectColor }: GelPickerProps) {
   const [activeBrand, setActiveBrand] = useState<'Lee' | 'Rosco'>('Lee')
 
+  const [customColor, setCustomColor] = useState<string>('#ffffff')
+
+  const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const hex = e.target.value
+    setCustomColor(hex)
+    const rgb = hexToRgb(hex)
+    onSelectColor(rgb.r, rgb.g, rgb.b, hex)
+  }
+
   const filteredGels = GEL_LIBRARY.filter(g => g.brand === activeBrand)
 
   return (
     <div className="gel-picker panel p-md" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      
+      {/* ── Custom Color Picker ────────────────────────────────────────────── */}
+      <div style={{ background: 'var(--bg-dark)', padding: '1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <input 
+          type="color" 
+          value={customColor} 
+          onChange={handleCustomColorChange}
+          style={{
+            appearance: 'none',
+            border: 'none',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            cursor: 'pointer',
+            padding: 0,
+            background: 'transparent'
+          }}
+          title="Custom Color Picker"
+        />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Custom Color</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Select any RGB(W) hue</span>
+        </div>
+      </div>
+
+      {/* ── Gel Library Header ─────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
         <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Gel Library</h3>
         <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-dark)', padding: '2px', borderRadius: '8px' }}>
           <button 

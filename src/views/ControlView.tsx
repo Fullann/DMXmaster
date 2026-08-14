@@ -11,7 +11,13 @@ export function ControlView() {
     fixtures.patch.forEach(fix => {
       const cap = getFixtureCapabilities(fix)
       if (cap.hasRgb) {
-        fixtures.sendColor(fix.id, r, g, b, 0)
+        // Algorithme de calcul RGB vers RGBW
+        const w = cap.hasWhite ? Math.min(r, g, b) : 0
+        const outR = cap.hasWhite ? r - w : r
+        const outG = cap.hasWhite ? g - w : g
+        const outB = cap.hasWhite ? b - w : b
+        
+        fixtures.sendColor(fix.id, outR, outG, outB, w)
       }
     })
   }
