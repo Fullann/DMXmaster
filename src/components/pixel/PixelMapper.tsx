@@ -46,8 +46,24 @@ export function PixelMapper() {
           <input type="file" accept="video/*,image/*" className="styled-input" onChange={handleFileChange} />
         </div>
 
+        <div className="form-group" style={{ marginTop: '1rem' }}>
+          <label className="form-label">Or Use Built-in Generators</label>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button className={`btn ${pixel.activeGenerator === 'Rainbow' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => pixel.setGenerator('Rainbow')}>Rainbow</button>
+            <button className={`btn ${pixel.activeGenerator === 'Plasma' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => pixel.setGenerator('Plasma')}>Plasma</button>
+            <button className={`btn ${pixel.activeGenerator === 'Strobe' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => pixel.setGenerator('Strobe')}>Strobe</button>
+          </div>
+        </div>
+
         <div className="audio-visualizer" style={{ padding: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {pixel.mediaUrl ? (
+          {pixel.mediaType === 'generator' ? (
+            <canvas
+              ref={pixel.previewCanvasRef}
+              width={200}
+              height={200}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' }}
+            />
+          ) : pixel.mediaUrl ? (
             pixel.mediaType === 'video' ? (
               <video 
                 ref={pixel.videoRef} 
@@ -74,9 +90,9 @@ export function PixelMapper() {
           className="btn btn-primary" 
           style={{ width: '100%', marginTop: '1rem' }}
           onClick={pixel.togglePlay}
-          disabled={!pixel.mediaUrl || pixel.mediaType !== 'video'}
+          disabled={!pixel.mediaType}
         >
-          {pixel.isPlaying ? '⏸ Pause Video' : '▶ Play Video'}
+          {pixel.isPlaying ? '⏸ Pause Effect' : '▶ Play Effect'}
         </button>
       </div>
 
