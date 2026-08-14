@@ -5,7 +5,7 @@ import '@/styles/index.css'
 import { 
   Grid, LayoutDashboard, Folder, Cable, SlidersHorizontal, 
   Clapperboard, Repeat, Waves, Mic, Tv, Clock, Eye,
-  FilePlus, Download, Upload, Zap, Palette, Settings2, Wrench, Target, Home
+  FilePlus, Download, Upload, Zap, Palette, Settings2, Wrench, Target, Home, Search, ListMusic
 } from 'lucide-react'
 
 // Stores
@@ -44,6 +44,7 @@ import { MidiView }       from '@/views/MidiView'
 import { FixtureBuilderView } from '@/views/FixtureBuilderView'
 import { VirtualConsoleView } from '@/views/VirtualConsoleView'
 import { CuelistView }    from '@/views/CuelistView'
+import { RdmView }        from '@/views/RdmView'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App — root component with tab navigation
@@ -69,6 +70,7 @@ const TAB_GROUPS: TabGroup[] = [
       { id: 'patch',     label: 'Patch',        icon: <Cable size={18} /> },
       { id: 'library',   label: 'Library',      icon: <Folder size={18} /> },
       { id: 'builder',   label: 'Fixture Builder', icon: <Wrench size={18} /> },
+      { id: 'rdm',       label: 'RDM Discovery',icon: <Search size={18} /> },
       { id: 'midi',      label: 'MIDI Mapping', icon: <Settings2 size={18} /> },
     ]
   },
@@ -280,6 +282,7 @@ export default function App() {
           {currentView === 'timeline' && <TimelineView />}
           {currentView === 'visualizer' && <VisualizerView />}
           {currentView === 'midi' && <MidiView />}
+          {currentView === 'rdm' && <RdmView />}
         </div>
         
         {/* ── Global Master Toolbar (Bottom) ────────────────────────────────── */}

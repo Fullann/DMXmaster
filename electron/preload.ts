@@ -376,6 +376,24 @@ const cuelistAPI: CuelistAPI = {
 
 contextBridge.exposeInMainWorld('cuelistAPI', cuelistAPI)
 
+// ── RDM API ───────────────────────────────────────────────────────────────────
+
+import type { RdmDevice } from '../src/types/rdm'
+
+export interface RdmAPI {
+  discover: () => Promise<{ success: boolean; error?: string }>
+  setAddress: (uid: string, newAddress: number) => Promise<{ success: boolean; error?: string }>
+  getDevices: () => Promise<{ success: boolean; devices?: RdmDevice[]; error?: string }>
+}
+
+const rdmAPI: RdmAPI = {
+  discover: () => ipcRenderer.invoke('rdm:discover'),
+  setAddress: (uid, newAddress) => ipcRenderer.invoke('rdm:setAddress', uid, newAddress),
+  getDevices: () => ipcRenderer.invoke('rdm:getDevices')
+}
+
+contextBridge.exposeInMainWorld('rdmAPI', rdmAPI)
+
 // ── Global type augmentation ──────────────────────────────────────────────────
 
 declare global {
@@ -394,5 +412,6 @@ declare global {
     paletteAPI: PaletteAPI
     virtualConsoleAPI: VirtualConsoleAPI
     cuelistAPI: CuelistAPI
+    rdmAPI: RdmAPI
   }
 }

@@ -17,6 +17,7 @@ export function useTimeline() {
   
   const startTimeRef = useRef<number>(0)
   const rafRef = useRef<number>(0)
+  const lastElapsedMsRef = useRef<number>(0)
   
   // Tracking which events have fired
   const firedEventsRef = useRef<Set<string>>(new Set())
@@ -133,6 +134,20 @@ export function useTimeline() {
       return
     }
 
+    // Detect backwards jump in time (MTC scrub/rewind)
+    if (elapsedMs < lastElapsedMsRef.current - 100) {
+      if (activeShow) {
+        activeShow.tracks.forEach(track => {
+          track.events.forEach(event => {
+            if (event.timestampMs >= elapsedMs) {
+              firedEventsRef.current.delete(event.id)
+            }
+          })
+        })
+      }
+    }
+    lastElapsedMsRef.current = elapsedMs
+    
     setCurrentTimeMs(elapsedMs)
 
     // Fire-on-Pass Event Engine

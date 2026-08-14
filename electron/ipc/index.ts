@@ -13,6 +13,7 @@ import type { ShowManager }    from '../showManager'
 import type { PaletteManager } from '../paletteManager'
 import type { VirtualConsoleManager } from '../virtualConsoleManager'
 import type { CuelistManager } from '../cuelistManager'
+import type { RdmManager } from '../rdmManager'
 
 import { registerSerialIpc }   from './serialIpc'
 import { registerDmxIpc }      from './dmxIpc'
@@ -29,6 +30,7 @@ import { registerShowIpc }     from './showIpc'
 import { registerPaletteHandlers }  from './paletteIpc'
 import { registerVirtualConsoleIpc } from './virtualConsoleIpc'
 import { registerCuelistIpc } from './cuelistIpc'
+import { registerRdmIpc } from './rdmIpc'
 
 export { pushUniverseUpdate } from './dmxIpc'
 
@@ -47,7 +49,8 @@ export function registerIpcHandlers(
   showManager:    ShowManager,
   paletteManager: PaletteManager,
   virtualConsoleManager: VirtualConsoleManager,
-  cuelistManager: CuelistManager
+  cuelistManager: CuelistManager,
+  rdmManager: RdmManager
 ): void {
   registerSerialIpc(serial)
   registerDmxIpc(engine, fixture)
@@ -64,6 +67,7 @@ export function registerIpcHandlers(
   registerPaletteHandlers(paletteManager)
   registerVirtualConsoleIpc(virtualConsoleManager)
   registerCuelistIpc(cuelistManager)
+  registerRdmIpc(rdmManager)
 
   console.log('[IPC] All modular handlers registered.')
 }

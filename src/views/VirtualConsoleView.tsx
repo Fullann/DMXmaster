@@ -14,7 +14,7 @@ export function VirtualConsoleView() {
     init, setEditMode, setActivePage, addWidget, updateWidget, removeWidget, addPage 
   } = useVirtualConsoleStore()
 
-  const { scenes } = useScenesStore()
+  const { scenes, clearProgrammer } = useScenesStore()
   const { chasers } = useChaserStore()
 
   const [editorOpen, setEditorOpen] = useState(false)
@@ -105,6 +105,14 @@ export function VirtualConsoleView() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button 
+            className="btn btn-ghost"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', color: 'var(--status-error)' }}
+            onClick={() => clearProgrammer()}
+          >
+            <Trash2 size={16} /> CLEAR
+          </button>
+          
+          <button 
             className={`btn ${isEditMode ? 'btn-ghost' : 'btn-primary'}`}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
             onClick={() => setEditMode(false)}
@@ -159,80 +167,87 @@ export function VirtualConsoleView() {
           })}
 
           {/* Actual Widgets */}
-          {activePage?.widgets.map(w => (
-            <div 
-              key={w.id}
-              onClick={(e) => handleWidgetClick(e, w)}
-              style={{
-                gridColumn: `${w.x + 1} / span ${w.width}`,
-                gridRow: `${w.y + 1} / span ${w.height}`,
-                background: w.type === 'button' ? w.color : 'rgba(0,0,0,0.5)',
-                border: `2px solid ${w.type === 'button' ? 'rgba(255,255,255,0.2)' : w.color}`,
-                borderRadius: '8px',
-                cursor: isEditMode ? 'pointer' : (w.type === 'button' ? 'pointer' : 'default'),
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: w.type === 'button' ? 'center' : 'flex-end',
-                alignItems: 'center',
-                padding: '8px',
-                boxShadow: w.type === 'button' && !isEditMode ? '0 4px 12px rgba(0,0,0,0.5)' : 'none',
-                position: 'relative',
-                overflow: 'hidden',
-                transition: 'transform 0.1s, filter 0.1s',
-                zIndex: 10
-              }}
-              onMouseDown={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'brightness(1.5)' }}
-              onMouseUp={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'none' }}
-              onMouseLeave={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'none' }}
-            >
-              {isEditMode && (
-                <div style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: '2px' }}>
-                  <Edit2 size={12} color="white" />
-                </div>
-              )}
-              
-              {w.type === 'button' && (
-                <span style={{ 
-                  color: 'white', 
-                  fontWeight: 700, 
-                  textAlign: 'center', 
-                  textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                  fontSize: w.width > 1 || w.height > 1 ? '1.2rem' : '0.85rem'
-                }}>
-                  {w.label}
-                </span>
-              )}
+          {activePage?.widgets.map(w => {
+            let isMissing = false
+            if (w.targetType === 'scene') isMissing = !scenes.some(s => s.id === w.targetId)
+            if (w.targetType === 'chaser') isMissing = !chasers.some(c => c.id === w.targetId)
 
-              {w.type === 'fader' && (
-                <>
-                  <div style={{ width: '4px', height: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', position: 'absolute', top: 0 }} />
-                  <input 
-                    type="range" 
-                    min={0} max={255} 
-                    style={{ 
-                      writingMode: 'vertical-lr', 
-                      direction: 'rtl',
-                      width: '100%', 
-                      height: '80%', 
-                      zIndex: 2, 
-                      cursor: isEditMode ? 'pointer' : 'grab' 
-                    }} 
-                    disabled={isEditMode}
-                    onChange={(e) => {
-                      if (w.targetType === 'submaster' && w.targetId) {
-                        window.fixtureAPI.setSubmaster(w.targetId, parseInt(e.target.value))
-                      } else if (w.targetType === 'grandmaster') {
-                        window.fixtureAPI.setGrandMaster(parseInt(e.target.value))
-                      }
-                    }}
-                  />
-                  <span style={{ fontSize: '0.7rem', color: 'white', marginTop: 'auto', zIndex: 2, background: 'rgba(0,0,0,0.8)', padding: '2px 4px', borderRadius: '4px' }}>
-                    {w.label}
+            return (
+              <div 
+                key={w.id}
+                onClick={(e) => handleWidgetClick(e, w)}
+                style={{
+                  gridColumn: `${w.x + 1} / span ${w.width}`,
+                  gridRow: `${w.y + 1} / span ${w.height}`,
+                  background: w.type === 'button' ? (isMissing ? 'var(--status-error)' : w.color) : 'rgba(0,0,0,0.5)',
+                  border: `2px solid ${w.type === 'button' ? 'rgba(255,255,255,0.2)' : w.color}`,
+                  borderRadius: '8px',
+                  cursor: isEditMode ? 'pointer' : (w.type === 'button' ? 'pointer' : 'default'),
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: w.type === 'button' ? 'center' : 'flex-end',
+                  alignItems: 'center',
+                  padding: '8px',
+                  boxShadow: w.type === 'button' && !isEditMode ? '0 4px 12px rgba(0,0,0,0.5)' : 'none',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'transform 0.1s, filter 0.1s',
+                  zIndex: 10,
+                  opacity: isMissing && !isEditMode ? 0.5 : 1
+                }}
+                onMouseDown={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'brightness(1.5)' }}
+                onMouseUp={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'none' }}
+                onMouseLeave={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'none' }}
+              >
+                {isEditMode && (
+                  <div style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: '2px' }}>
+                    <Edit2 size={12} color="white" />
+                  </div>
+                )}
+                
+                {w.type === 'button' && (
+                  <span style={{ 
+                    color: 'white', 
+                    fontWeight: 700, 
+                    textAlign: 'center', 
+                    textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                    fontSize: w.width > 1 || w.height > 1 ? '1.2rem' : '0.85rem'
+                  }}>
+                    {isMissing ? 'Missing Target' : w.label}
                   </span>
-                </>
-              )}
-            </div>
-          ))}
+                )}
+
+                {w.type === 'fader' && (
+                  <>
+                    <div style={{ width: '4px', height: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', position: 'absolute', top: 0 }} />
+                    <input 
+                      type="range" 
+                      min={0} max={255} 
+                      style={{ 
+                        writingMode: 'vertical-lr', 
+                        direction: 'rtl',
+                        width: '100%', 
+                        height: '80%', 
+                        zIndex: 2, 
+                        cursor: isEditMode ? 'pointer' : 'grab' 
+                      }} 
+                      disabled={isEditMode}
+                      onChange={(e) => {
+                        if (w.targetType === 'submaster' && w.targetId) {
+                          window.fixtureAPI.setSubmaster(w.targetId, parseInt(e.target.value) / 255)
+                        } else if (w.targetType === 'grandmaster') {
+                          window.fixtureAPI.setGrandMaster(parseInt(e.target.value) / 255)
+                        }
+                      }}
+                    />
+                    <span style={{ fontSize: '0.7rem', color: 'white', marginTop: 'auto', zIndex: 2, background: 'rgba(0,0,0,0.8)', padding: '2px 4px', borderRadius: '4px', textAlign: 'center' }}>
+                      {w.label}
+                    </span>
+                  </>
+                )}
+              </div>
+            )
+          })}
 
         </div>
       </div>

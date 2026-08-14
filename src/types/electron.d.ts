@@ -62,11 +62,20 @@ export interface CuelistAPI {
   onPlaybackState: (callback: (state: CuelistPlaybackState) => void) => void
 }
 
+import type { RdmDevice } from './rdm'
+
+export interface RdmAPI {
+  discover: () => Promise<{ success: boolean; error?: string }>
+  setAddress: (uid: string, newAddress: number) => Promise<{ success: boolean; error?: string }>
+  getDevices: () => Promise<{ success: boolean; devices?: RdmDevice[]; error?: string }>
+}
+
 declare global {
   interface Window {
     dmxAPI:     DmxAPI
     fixtureAPI: FixtureAPI
     virtualConsoleAPI: VirtualConsoleAPI
     cuelistAPI: CuelistAPI
+    rdmAPI: RdmAPI
   }
 }
