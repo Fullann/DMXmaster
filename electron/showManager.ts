@@ -13,12 +13,96 @@ export class ShowManager {
   private appDir = ''
   private userDataDir = ''
   private recentShowsPath = ''
+  private lockFilePath = ''
+  private autoSavePath = ''
+  private autoSaveTimer: NodeJS.Timeout | null = null
 
   initialize(): void {
     const docPath = app.getPath('documents')
     this.appDir = join(docPath, 'DmxMaster')
     this.userDataDir = app.getPath('userData')
     this.recentShowsPath = join(this.userDataDir, 'recent_shows.json')
+    this.lockFilePath = join(this.appDir, '.lock')
+    this.autoSavePath = join(this.userDataDir, 'AutoSave.dmxshow')
+  }
+
+  async checkCrashRecovery(): Promise<void> {
+    try {
+      // 1. Ensure appDir exists so we don't throw checking for .lock
+      try { await fs.access(this.appDir) } catch { return }
+
+      // 2. Check if .lock exists
+      try {
+        await fs.access(this.lockFilePath)
+      } catch {
+        // Normal startup: Create .lock file
+        await fs.writeFile(this.lockFilePath, Date.now().toString())
+        return
+      }
+
+      // 3. Lock exists. Check if we have an AutoSave file
+      try {
+        await fs.access(this.autoSavePath)
+      } catch {
+        // No auto-save found. Just overwrite lock and continue.
+        await fs.writeFile(this.lockFilePath, Date.now().toString())
+        return
+      }
+
+      // 4. Prompt user synchronously using dialog.showMessageBoxSync
+      const response = dialog.showMessageBoxSync({
+        type: 'error',
+        buttons: ['Discard', 'Restore Backup'],
+        defaultId: 1,
+        title: 'Crash Detected',
+        message: 'DMX Master closed unexpectedly during your last session.',
+        detail: 'An auto-save backup is available. Do you want to restore it? This will overwrite your current corrupted state.'
+      })
+
+      if (response === 1) {
+        // Restore Backup
+        console.log('[ShowManager] Restoring auto-save backup...')
+        const zip = new AdmZip(this.autoSavePath)
+        zip.extractAllTo(this.appDir, true)
+      }
+
+      // Rewrite lock for the current session
+      await fs.writeFile(this.lockFilePath, Date.now().toString())
+
+    } catch (e) {
+      console.error('[ShowManager] Error checking crash recovery:', e)
+    }
+  }
+
+  shutdown(): void {
+    if (this.autoSaveTimer) {
+      clearInterval(this.autoSaveTimer)
+      this.autoSaveTimer = null
+    }
+    try {
+      rmSync(this.lockFilePath, { force: true })
+      console.log('[ShowManager] Removed .lock file (clean shutdown).')
+    } catch (e) {
+      console.error('[ShowManager] Failed to remove .lock file:', e)
+    }
+  }
+
+  startAutoSave(intervalMs: number): void {
+    if (this.autoSaveTimer) clearInterval(this.autoSaveTimer)
+    
+    this.autoSaveTimer = setInterval(async () => {
+      try {
+        console.log('[ShowManager] Running background auto-save...')
+        const zip = new AdmZip()
+        zip.addLocalFolder(this.appDir)
+        zip.writeZip(this.autoSavePath)
+      } catch (e) {
+        console.error('[ShowManager] Auto-save failed:', e)
+      }
+    }, intervalMs)
+    
+    // Don't keep the event loop alive just for the autosave timer
+    this.autoSaveTimer.unref()
   }
 
   private async loadRecentShows(): Promise<RecentShow[]> {

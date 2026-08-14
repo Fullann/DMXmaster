@@ -115,6 +115,10 @@ ipcMain.handle('app:openVisualizer', () => {
 })
 
 app.whenReady().then(async () => {
+  // 0. Initialize show manager and check for crash recovery FIRST
+  showManager.initialize()
+  await showManager.checkCrashRecovery()
+
   // 1. FixtureManager — creates dirs, loads profiles from disk
   await fixtureManager.initialize()
 
@@ -126,7 +130,6 @@ app.whenReady().then(async () => {
   await pixelEngine.initialize()
   await timelineManager.initialize()
   await paletteManager.initialize()
-  showManager.initialize()
   virtualConsoleManager.init()
   cuelistManager.init()
 
@@ -149,6 +152,10 @@ app.whenReady().then(async () => {
   const mainWindow = createWindow()
   dmxEngine.start()
   webServerManager.start()
+  
+  // Start auto-save every 5 minutes (300,000 ms)
+  showManager.startAutoSave(5 * 60 * 1000)
+  
   console.log('[Main] DMX engine started.')
 
   // 6. Push universe updates to renderer at ~30fps for the 3D Visualizer & DMX Monitor
@@ -170,6 +177,7 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', async () => {
   console.log('[Main] Shutting down…')
+  showManager.shutdown()
   webServerManager.stop()
   dmxEngine.stop()
   await serialManager.disconnect()
