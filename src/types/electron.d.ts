@@ -21,11 +21,18 @@ export interface DmxAPI {
   listPorts:      () => Promise<{ success: boolean; ports?: PortInfo[]; error?: string }>
   connect:        (portPath: string) => Promise<{ success: boolean; error?: string }>
   disconnect:     () => Promise<{ success: boolean; error?: string }>
-  updateChannel:  (channel: number, value: number) => Promise<{ success: boolean; error?: string }>
-  updateChannels: (channelMap: Record<number, number>) => Promise<{ success: boolean; error?: string }>
-  getUniverse:    () => Promise<{ success: boolean; universe?: number[]; error?: string }>
+  updateChannel:  (channel: number, value: number, universeIdx?: number) => Promise<{ success: boolean; error?: string }>
+  updateChannels: (channelMap: Record<number, number>, universeIdx?: number) => Promise<{ success: boolean; error?: string }>
+  getUniverse:    (universeIdx?: number) => Promise<{ success: boolean; universe?: Uint8Array; error?: string }>
+  getUniverses:   () => Promise<{ success: boolean; universes?: Uint8Array[]; error?: string }>
   blackout:       () => Promise<{ success: boolean; error?: string }>
-  onUniverseUpdate: (callback: (universe: number[]) => void) => () => void
+  softBlackout:   () => Promise<{ success: boolean; error?: string }>
+  setEngineBypass:(bypass: boolean) => Promise<{ success: boolean; error?: string }>
+  onUniverseUpdate: (cb: (universe: Uint8Array) => void) => () => void
+  setMasterSpeed: (speed: number) => Promise<{ success: boolean; error?: string }>
+  setMasterSize:  (size: number) => Promise<{ success: boolean; error?: string }>
+  setAllPaused:   (paused: boolean) => Promise<{ success: boolean; error?: string }>
+  setBlindMode:   (blind: boolean) => Promise<{ success: boolean; error?: string }>
 }
 
 import type {

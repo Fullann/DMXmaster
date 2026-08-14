@@ -4,11 +4,13 @@ export interface DmxState {
   universes: Uint8Array[]
   universe: Uint8Array // Alias for universes[0]
   engineBypassed: boolean
+  isBlindMode: boolean
   
   updateChannel: (channel: number, value: number, universeIdx?: number) => Promise<void>
   updateChannels: (channelMap: Record<number, number>, universeIdx?: number) => Promise<void>
   blackout: () => Promise<void>
   setEngineBypass: (bypass: boolean) => Promise<void>
+  setBlindMode: (blind: boolean) => Promise<void>
   init: () => () => void // Returns cleanup function
 }
 
@@ -16,6 +18,7 @@ export const useDmxStore = create<DmxState>((set, get) => ({
   universes: Array.from({ length: 8 }, () => new Uint8Array(512)),
   get universe() { return get().universes[0] },
   engineBypassed: false,
+  isBlindMode: false,
 
   updateChannel: async (channel, value, universeIdx = 0) => {
     const safeVal = Math.max(0, Math.min(255, value))
@@ -49,6 +52,11 @@ export const useDmxStore = create<DmxState>((set, get) => ({
   setEngineBypass: async (bypass: boolean) => {
     set({ engineBypassed: bypass })
     await window.dmxAPI.setEngineBypass(bypass)
+  },
+
+  setBlindMode: async (blind: boolean) => {
+    set({ isBlindMode: blind })
+    await window.dmxAPI.setBlindMode(blind)
   },
 
   init: () => {

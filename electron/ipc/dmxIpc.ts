@@ -13,6 +13,7 @@ export function registerDmxIpc(engine: DmxEngine, fixture: FixtureManager): void
   handle('dmx:setMasterSpeed', (speed)         => { engine.setMasterSpeed(speed as number) })
   handle('dmx:setMasterSize',  (size)          => { engine.setMasterSize(size as number) })
   handle('dmx:setAllPaused',   (paused)        => { engine.setAllPaused(paused as boolean) })
+  handle('dmx:setBlindMode',   (blind)         => { engine.setBlindMode(blind as boolean) })
   
   /**
    * Soft (intensity-only) blackout — zeros intensity in the fixture logical

@@ -28,6 +28,7 @@ export interface DmxAPI {
   setMasterSpeed: (speed: number) => Promise<{ success: boolean; error?: string }>
   setMasterSize:  (size: number) => Promise<{ success: boolean; error?: string }>
   setAllPaused:   (paused: boolean) => Promise<{ success: boolean; error?: string }>
+  setBlindMode:   (blind: boolean) => Promise<{ success: boolean; error?: string }>
 }
 
 const dmxAPI: DmxAPI = {
@@ -49,6 +50,7 @@ const dmxAPI: DmxAPI = {
   setMasterSpeed: (speed)      => ipcRenderer.invoke('dmx:setMasterSpeed', speed),
   setMasterSize:  (size)       => ipcRenderer.invoke('dmx:setMasterSize', size),
   setAllPaused:   (paused)     => ipcRenderer.invoke('dmx:setAllPaused', paused),
+  setBlindMode:   (blind)      => ipcRenderer.invoke('dmx:setBlindMode', blind),
 }
 
 contextBridge.exposeInMainWorld('dmxAPI', dmxAPI)

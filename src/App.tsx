@@ -115,6 +115,8 @@ export default function App() {
   const patchCount = useFixturesStore(s => s.patch.length)
   const isBroadcastEnabled = useNetworkStore(s => s.config.broadcastEnabled)
   const toggleBroadcast = useNetworkStore(s => s.setBroadcastEnabled)
+  const isBlindMode = useDmxStore(s => s.isBlindMode)
+  const setBlindMode = useDmxStore(s => s.setBlindMode)
 
   // ── Global Initialisation ────────────────────────────────────────────────────
   useEffect(() => {
@@ -245,6 +247,24 @@ export default function App() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button 
+                className={`btn ${isBlindMode ? 'btn-danger' : 'btn-ghost'}`}
+                style={{ 
+                  padding: '4px 16px', 
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: isBlindMode ? '#e74c3c' : 'rgba(255,255,255,0.05)',
+                  color: isBlindMode ? 'white' : 'inherit'
+                }}
+                onClick={() => setBlindMode(!isBlindMode)}
+                title="Program on Visualizer only"
+              >
+                <Eye size={14} /> BLIND
+              </button>
+              
               <div className={`status-badge ${isBroadcastEnabled ? 'status-connected' : 'status-disconnected'}`} 
                    style={{ cursor: 'pointer', padding: '0.35rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '12px' }}
                    onClick={() => toggleBroadcast(!isBroadcastEnabled)}

@@ -89,6 +89,21 @@ export class DmxEngine {
   // Bypass intelligent engine to allow raw DMX control from Dashboard
   public engineBypassed: boolean = false
 
+  // ── Blind Mode State ────────────────────────────────────────────────────────
+  private isBlindMode = false
+  private blindUnfadeMs = 0
+  private blindUnfadeElapsedMs = 0
+  
+  private readonly frozenUniverses: Uint8Array[] = Array.from(
+    { length: MAX_UNIVERSES },
+    () => new Uint8Array(DMX_CHANNELS)
+  )
+  
+  private readonly outputUniverses: Uint8Array[] = Array.from(
+    { length: MAX_UNIVERSES },
+    () => new Uint8Array(DMX_CHANNELS)
+  )
+
   private readonly serial: SerialManager
 
   // ── Pluggable subsystems ──────────────────────────────────────────────────
@@ -159,6 +174,28 @@ export class DmxEngine {
 
   setChannels(channelMap: Record<number, number>, universeIdx = 0): void {
     for (const [ch, val] of Object.entries(channelMap)) this.setChannel(Number(ch), val, universeIdx)
+  }
+
+  // ── Blind Mode ──────────────────────────────────────────────────────────────
+  setBlindMode(blind: boolean): void {
+    if (blind === this.isBlindMode) return
+    
+    if (blind) {
+      this.isBlindMode = true
+      this.blindUnfadeMs = 0
+      this.blindUnfadeElapsedMs = 0
+      // Freeze the current live output state
+      for (let u = 0; u < MAX_UNIVERSES; u++) {
+        this.frozenUniverses[u].set(this.outputUniverses[u])
+      }
+      console.log('[DmxEngine] Blind Mode ENABLED. Physical output frozen.')
+    } else {
+      this.isBlindMode = false
+      this.blindUnfadeMs = 2000 // 2 seconds fade
+      this.blindUnfadeElapsedMs = 0
+      this._rampUp() // Ensure the engine doesn't idle during crossfade
+      console.log('[DmxEngine] Blind Mode DISABLED. Crossfading to live over 2s.')
+    }
   }
 
   /** Full blackout — zeros all channels in ALL universes. */
@@ -277,8 +314,23 @@ export class DmxEngine {
     // ── Pixel Mapping (highest priority, universe 0 only for now) ─────────────
     this.pixelEngine?.applyToUniverse(this.universes[0])
 
+    // ── DMX-IN (HTP Merge) ────────────────────────────────────────────────────
+    const incoming = this.networkManager?.getIncomingUniverses()
+    if (incoming) {
+      for (let u = 0; u < MAX_UNIVERSES; u++) {
+        if (!incoming[u]) continue
+        for (let i = 0; i < DMX_CHANNELS; i++) {
+          if (incoming[u][i] > this.universes[u][i]) {
+            this.universes[u][i] = incoming[u][i]
+          }
+        }
+      }
+    }
+
     // ── Adaptive Framerate ────────────────────────────────────────────────────
-    const changed = this._anyUniverseChanged()
+    let changed = this._anyUniverseChanged()
+    if (this.blindUnfadeElapsedMs < this.blindUnfadeMs) changed = true // Force active during crossfade
+    
     if (changed) {
       this._snapshotAllUniverses()
       this.lastChangedMs = now
@@ -293,11 +345,40 @@ export class DmxEngine {
       this._armTimer(RATE_IDLE_MS)
     }
 
+    // ── Resolve Output Universes (Blind Mode) ─────────────────────────────────
+    let sendingUniverses = this.universes
+
+    if (this.isBlindMode) {
+      // Physical output is completely frozen
+      sendingUniverses = this.frozenUniverses
+    } else if (this.blindUnfadeElapsedMs < this.blindUnfadeMs) {
+      // Crossfading from frozen to live
+      this.blindUnfadeElapsedMs += deltaMs
+      const t = Math.min(1, this.blindUnfadeElapsedMs / this.blindUnfadeMs)
+      
+      for (let u = 0; u < MAX_UNIVERSES; u++) {
+        for (let i = 0; i < DMX_CHANNELS; i++) {
+          const source = this.frozenUniverses[u][i]
+          const target = this.universes[u][i]
+          this.outputUniverses[u][i] = Math.round(source + (target - source) * t)
+        }
+      }
+      sendingUniverses = this.outputUniverses
+      
+      if (t >= 1) this.blindUnfadeMs = 0 // Done fading
+    } else {
+      // Normal live mode
+      for (let u = 0; u < MAX_UNIVERSES; u++) {
+        this.outputUniverses[u].set(this.universes[u])
+      }
+      sendingUniverses = this.outputUniverses
+    }
+
     // ── Serial Output (universe 0 → Enttec USB Pro) ───────────────────────────
-    this._buildAndSendPacket(this.universes[0])
+    this._buildAndSendPacket(sendingUniverses[0])
 
     // ── Art-Net Output (all universes) ────────────────────────────────────────
-    this.networkManager?.broadcastAll(this.universes)
+    this.networkManager?.broadcastAll(sendingUniverses)
   }
 
   /**

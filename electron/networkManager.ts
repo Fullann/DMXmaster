@@ -2,25 +2,68 @@ import { app } from 'electron'
 import { promises as fs } from 'fs'
 import { join } from 'path'
 import * as dgram from 'dgram'
+import * as os from 'os'
 import type { NetworkConfig, NetworkNode } from './networkTypes'
+import { MAX_UNIVERSES } from './networkTypes'
 
 export class NetworkManager {
   private configPath = ''
   private config: NetworkConfig = { nodes: [], broadcastEnabled: true }
   
   // Single reusable UDP socket
-  private socket = dgram.createSocket('udp4')
+  private socket = dgram.createSocket({ type: 'udp4', reuseAddr: true })
   // Pre-allocated Art-Net packet buffer (18 byte header + 512 byte data)
   private packetBuffer = Buffer.alloc(530)
+  
+  // DMX-IN variables
+  private localIps: Set<string> = new Set()
+  private incomingUniverses: Uint8Array[] = Array.from(
+    { length: MAX_UNIVERSES },
+    () => new Uint8Array(512)
+  )
 
   constructor() {
     this._initPacketHeader()
     
-    // Bind to any available port to send. 
-    // We do not need to bind to 6454 locally unless we also want to *receive* Art-Net.
-    this.socket.bind(() => {
-      this.socket.setBroadcast(true) // Enable broadcast mode just in case IP is x.x.x.255
+    // Get local IPs to ignore loopback (prevent merging our own broadcasts)
+    const interfaces = os.networkInterfaces()
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name] || []) {
+        this.localIps.add(iface.address)
+      }
+    }
+    this.localIps.add('127.0.0.1')
+    
+    // Listen for incoming Art-Net packets
+    this.socket.on('message', (msg, rinfo) => this._handleMessage(msg, rinfo))
+    
+    // Bind to standard Art-Net port 6454 locally to *receive* Art-Net.
+    this.socket.bind(6454, '0.0.0.0', () => {
+      this.socket.setBroadcast(true) 
     })
+  }
+
+  private _handleMessage(msg: Buffer, rinfo: dgram.RemoteInfo): void {
+    if (this.localIps.has(rinfo.address)) return // Ignore loopback
+
+    // ArtDmx parsing (min length 18)
+    if (msg.length < 18) return
+    if (msg.toString('ascii', 0, 8) !== 'Art-Net\0') return
+
+    const opCode = msg.readUInt16LE(8)
+    if (opCode === 0x5000) { // ArtDmx
+      const portAddress = msg.readUInt16LE(14)
+      const universe = portAddress & 0x0F // Subnet/Universe mapping. Simplify to low 4 bits for MAX_UNIVERSES
+      if (universe >= 0 && universe < MAX_UNIVERSES) {
+        const length = msg.readUInt16BE(16)
+        const dmxData = msg.subarray(18, 18 + length)
+        this.incomingUniverses[universe].set(dmxData)
+      }
+    }
+  }
+
+  getIncomingUniverses(): Uint8Array[] {
+    return this.incomingUniverses
   }
 
   async initialize(): Promise<void> {
