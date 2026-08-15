@@ -21,6 +21,7 @@ export interface ParsedCommand {
   fanChannel?: string
   fanStart?: number // 0-255
   fanEnd?: number // 0-255
+  isSymmetric?: boolean
 }
 
 export function parseCommand(
@@ -40,6 +41,7 @@ export function parseCommand(
   let selectionPart = normalized
   let actionPart: string | null = null
   let isExplicitFan = false
+  let isSymmetric = false
 
   if (normalized.includes(' FAN ')) {
     const parts = normalized.split(' FAN ')
@@ -124,6 +126,10 @@ export function parseCommand(
   let fanEnd: number | undefined = undefined
 
   if (actionPart !== null) {
+    if (actionPart.includes('SYMETRIC') || actionPart.includes('SYMMETRIC')) {
+      isSymmetric = true
+    }
+
     if (isExplicitFan || actionPart.includes('THRU')) {
       hasFan = true
       // Parse FAN TILT 0 THRU 255 or 0 THRU 100
@@ -136,9 +142,6 @@ export function parseCommand(
         const beforeNumbers = actionPart.substring(0, thruMatch.index).trim()
         if (beforeNumbers && isExplicitFan) {
           fanChannel = beforeNumbers.charAt(0).toUpperCase() + beforeNumbers.slice(1).toLowerCase()
-          // For non-intensity (like Pan/Tilt), we assume DMX values 0-255 or - degrees? 
-          // Let's stick to DMX values 0-255 for now unless it's percentage. 
-          // If it's explicitly Intensity, or implicitly, we scale 0-100 to 0-255
           if (fanChannel === 'Intensity') {
              fanStart = Math.round((Math.max(0, Math.min(100, pStart)) / 100) * 255)
              fanEnd = Math.round((Math.max(0, Math.min(100, pEnd)) / 100) * 255)
@@ -177,9 +180,9 @@ export function parseCommand(
   const selectedArray = Array.from(newSelection).sort((a, b) => a - b)
 
   if (isSelectionModified && hasFan) {
-    return { type: 'mixed_fan', selectedUserNumbers: selectedArray, fanChannel, fanStart, fanEnd }
+    return { type: 'mixed_fan', selectedUserNumbers: selectedArray, fanChannel, fanStart, fanEnd, isSymmetric }
   } else if (hasFan) {
-    return { type: 'fan', selectedUserNumbers: selectedArray, fanChannel, fanStart, fanEnd }
+    return { type: 'fan', selectedUserNumbers: selectedArray, fanChannel, fanStart, fanEnd, isSymmetric }
   } else if (isSelectionModified && hasIntensity) {
     return { type: 'mixed', selectedUserNumbers: selectedArray, intensityValue }
   } else if (isSelectionModified) {

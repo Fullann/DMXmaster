@@ -12,15 +12,30 @@
         <div id="status" class="status-dot disconnected"></div>
     </header>
 
+    <div class="tabs">
+        <button id="tab-scenes" class="tab-btn active">Scenes</button>
+        <button id="tab-vc" class="tab-btn">Virtual Console</button>
+    </div>
+
     <main>
         <section class="controls-section">
             <button id="btn-blackout" class="btn-danger">SOFT BLACKOUT</button>
         </section>
 
-        <section class="scenes-section">
-            <h2>Scenes</h2>
+        <section id="section-scenes" class="tab-content active">
             <div id="scenes-container" class="grid-container">
                 <!-- Scenes will be populated here by app.js -->
+            </div>
+        </section>
+
+        <section id="section-vc" class="tab-content">
+            <div id="vc-pages-nav" class="vc-pages-nav">
+                <!-- Page buttons populated by app.js -->
+            </div>
+            <div class="vc-container-wrapper">
+                <div id="vc-container" class="vc-container">
+                    <!-- Virtual console widgets populated by app.js -->
+                </div>
             </div>
         </section>
     </main>

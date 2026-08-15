@@ -6,6 +6,8 @@ import { app } from 'electron'
 import { randomUUID } from 'crypto'
 import type { SceneManager } from './sceneManager'
 import type { FixtureManager } from './fixtureManager'
+import type { ChaserManager } from './chaserManager'
+import type { VirtualConsoleManager } from './virtualConsoleManager'
 
 export class WebServerManager {
   private app = express()
@@ -13,6 +15,8 @@ export class WebServerManager {
   private wss: WebSocketServer
   private sceneManager: SceneManager | null = null
   private fixtureManager: FixtureManager | null = null
+  private chaserManager: ChaserManager | null = null
+  private virtualConsoleManager: VirtualConsoleManager | null = null
   private port: number = 8080
 
   /** Simple bearer token generated per session — printed to console on startup */
@@ -25,9 +29,16 @@ export class WebServerManager {
     this.setupWebSockets()
   }
 
-  public initialize(sceneManager: SceneManager, fixtureManager: FixtureManager) {
+  public initialize(
+    sceneManager: SceneManager, 
+    fixtureManager: FixtureManager,
+    chaserManager: ChaserManager,
+    virtualConsoleManager: VirtualConsoleManager
+  ) {
     this.sceneManager = sceneManager
     this.fixtureManager = fixtureManager
+    this.chaserManager = chaserManager
+    this.virtualConsoleManager = virtualConsoleManager
   }
 
   public start() {
@@ -71,6 +82,13 @@ export class WebServerManager {
       }
       res.json({ scenes: this.sceneManager.getScenes() })
     })
+
+    this.app.get('/api/virtual-console', (req, res) => {
+      if (!this.virtualConsoleManager) {
+        return res.status(500).json({ error: 'Virtual console manager not initialized' })
+      }
+      res.json({ pages: this.virtualConsoleManager.getPages() })
+    })
   }
 
   private setupWebSockets() {
@@ -100,6 +118,14 @@ export class WebServerManager {
             console.log(`[WebServerManager] Triggering scene: ${data.payload}`)
             this.sceneManager?.recallScene(data.payload)
           } 
+          else if (data.type === 'startChaser' && typeof data.payload === 'string') {
+            console.log(`[WebServerManager] Starting chaser: ${data.payload}`)
+            this.chaserManager?.start(data.payload)
+          }
+          else if (data.type === 'stopChaser' && typeof data.payload === 'string') {
+            console.log(`[WebServerManager] Stopping chaser: ${data.payload}`)
+            this.chaserManager?.stop(data.payload)
+          }
           else if (data.type === 'softBlackout') {
             console.log(`[WebServerManager] Triggering soft blackout`)
             this.fixtureManager?.softBlackout()
@@ -115,3 +141,4 @@ export class WebServerManager {
     })
   }
 }
+

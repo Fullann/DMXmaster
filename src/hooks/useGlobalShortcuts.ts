@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react'
+import { useHistoryStore } from '@/store/useHistoryStore'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // useGlobalShortcuts — Attaches a single window-level keydown listener that
@@ -69,6 +70,24 @@ export function useGlobalShortcuts({
     if (digitMatch && e.altKey) { // Require Alt for page switch to free up digits for CLI
       e.preventDefault()
       onSwitchPage(parseInt(digitMatch[1], 10))
+      return
+    }
+
+    // ── Undo / Redo (Global) ────────────────────────────────────────────────
+    const isCmdOrCtrl = e.metaKey || e.ctrlKey
+    if (isCmdOrCtrl && e.code === 'KeyZ') {
+      e.preventDefault()
+      const { undo, redo } = useHistoryStore.getState()
+      if (e.shiftKey) {
+        redo()
+      } else {
+        undo()
+      }
+      return
+    }
+    if (isCmdOrCtrl && e.code === 'KeyY') {
+      e.preventDefault()
+      useHistoryStore.getState().redo()
       return
     }
 

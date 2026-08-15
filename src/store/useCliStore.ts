@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { parseCommand } from '@/utils/CommandParser'
 import { useFixturesStore } from './useFixturesStore'
 import { useScenesStore } from './useScenesStore'
+import { useHistoryStore } from './useHistoryStore'
 
 // Auto-clear timer reference
 let feedbackTimer: ReturnType<typeof setTimeout> | null = null
@@ -84,6 +85,11 @@ export const useCliStore = create<CliState>((set, get) => ({
         feedback = `Selected: ${newSelection.join(', ')}`
       }
 
+      // Capture history before modifications
+      if (['intensity', 'mixed', 'fan', 'mixed_fan'].includes(parsed.type)) {
+        useHistoryStore.getState().pushCurrentState(cmdStr)
+      }
+
       if (parsed.type === 'intensity' || parsed.type === 'mixed') {
         const val = parsed.intensityValue!
         const fixturesStore = useFixturesStore.getState()
@@ -109,7 +115,7 @@ export const useCliStore = create<CliState>((set, get) => ({
       }
 
       if (parsed.type === 'fan' || parsed.type === 'mixed_fan') {
-        const { fanChannel, fanStart, fanEnd } = parsed
+        const { fanChannel, fanStart, fanEnd, isSymmetric } = parsed
         if (fanChannel && fanStart !== undefined && fanEnd !== undefined) {
           const fixturesStore = useFixturesStore.getState()
           const patch = fixturesStore.patch
@@ -121,8 +127,14 @@ export const useCliStore = create<CliState>((set, get) => ({
           newSelection.forEach((unum, index) => {
             const fixture = byUserNumber.get(unum)
             if (fixture) {
-              // Linear interpolation
-              const fraction = total > 1 ? index / (total - 1) : 0.5
+              let fraction = total > 1 ? index / (total - 1) : 0.5
+              
+              if (isSymmetric) {
+                const center = (total - 1) / 2
+                const dist = Math.abs(index - center)
+                fraction = center === 0 ? 0.5 : 1 - (dist / center)
+              }
+              
               const val = Math.round(fanStart + fraction * (fanEnd - fanStart))
               fixturesStore.sendCommand(fixture.id, fanChannel as any, val)
               appliedCount++
@@ -130,7 +142,7 @@ export const useCliStore = create<CliState>((set, get) => ({
           })
           
           if (appliedCount > 0) {
-            feedback += (feedback ? ' | ' : '') + `FAN ${fanChannel} ${Math.round((fanStart/255)*100)}% THRU ${Math.round((fanEnd/255)*100)}%`
+            feedback += (feedback ? ' | ' : '') + `FAN ${fanChannel} ${Math.round((fanStart/255)*100)}% THRU ${Math.round((fanEnd/255)*100)}%${isSymmetric ? ' SYMMETRIC' : ''}`
           } else {
             feedback += (feedback ? ' | ' : '') + `No valid fixtures for fan.`
           }

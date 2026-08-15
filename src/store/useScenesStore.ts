@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Scene, FadeStatus, ParameterGroup } from '@/types/scenes'
+import { useHistoryStore } from './useHistoryStore'
 
 export interface ScenesState {
   scenes: Scene[]
@@ -114,6 +115,7 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
   },
 
   clearProgrammer: async () => {
+    useHistoryStore.getState().pushCurrentState('CLEAR PROGRAMMER')
     await window.fixtureAPI.clearAll()
     set({ activeId: null })
   },

@@ -51,6 +51,35 @@ header h1 {
     background-color: var(--danger);
 }
 
+.tabs {
+    display: flex;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 1rem;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.tab-btn.active {
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--accent);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 main {
     padding: 1rem;
     display: flex;
@@ -109,4 +138,69 @@ button:active {
 
 .scene-btn:hover {
     background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Virtual Console */
+.vc-pages-nav {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.vc-page-btn {
+    padding: 0.5rem 1rem;
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
+}
+
+.vc-page-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.vc-container-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.vc-container {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 4px;
+    width: 100%;
+    min-width: 300px;
+    aspect-ratio: 12 / 6;
+    background: #050505;
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.vc-widget {
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+    transition: transform 0.1s, filter 0.1s;
+    user-select: none;
+    word-break: break-word;
+    padding: 2px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+.vc-widget:active {
+    transform: scale(0.95);
+    filter: brightness(1.2);
 }

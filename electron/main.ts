@@ -155,7 +155,7 @@ app.whenReady().then(async () => {
   cuelistManager.init()
 
   // Initialize WebServerManager
-  webServerManager.initialize(sceneManager, fixtureManager)
+  webServerManager.initialize(sceneManager, fixtureManager, chaserManager, virtualConsoleManager)
 
   // 3. Wire fixture, scene, effects, and chaser managers into the 44Hz engine
   dmxEngine.setFixtureManager(fixtureManager)

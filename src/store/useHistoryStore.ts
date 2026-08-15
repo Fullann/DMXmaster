@@ -14,14 +14,29 @@ export interface HistoryState {
   lastLabel: string | null
 
   push: (label: string, states: Record<string, Record<string, number>>) => void
+  pushCurrentState: (label: string) => void
   undo: () => Promise<void>
   redo: () => Promise<void>
+  clear: () => void
 }
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   past: [],
   future: [],
   lastLabel: null,
+
+  pushCurrentState: (label) => {
+    const currentStates = useFixturesStore.getState().states
+    const currentSnapshot: Record<string, Record<string, number>> = {}
+    for (const [id, state] of Object.entries(currentStates)) {
+      currentSnapshot[id] = { ...state } as Record<string, number>
+    }
+    get().push(label, currentSnapshot)
+  },
+
+  clear: () => {
+    set({ past: [], future: [], lastLabel: null })
+  },
 
   push: (label, states) => {
     set((state) => {

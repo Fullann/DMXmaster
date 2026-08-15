@@ -5,6 +5,7 @@ import { useScenesStore } from '@/store/useScenesStore'
 import { useChaserStore } from '@/store/useChaserStore'
 import { useFixturesStore } from '@/store/useFixturesStore'
 import { useCliStore } from '@/store/useCliStore'
+import { useHistoryStore } from '@/store/useHistoryStore'
 import { Plus, Trash2, Crosshair, Palette as PaletteIcon, Play } from 'lucide-react'
 import type { Palette, PaletteType } from '@/types/palette'
 
@@ -77,6 +78,10 @@ export function PaletteView() {
       const targetFixtures = selectedUserNumbers.length > 0
         ? patch.filter(f => f.userNumber !== undefined && selectedUserNumbers.includes(f.userNumber))
         : patch.filter(f => palette.values[f.id] !== undefined)
+
+      if (targetFixtures.length > 0) {
+        useHistoryStore.getState().pushCurrentState(`Apply Palette: ${palette.name}`)
+      }
 
       for (const fixture of targetFixtures) {
         // Find stored values: use fixture's own saved values, or use any stored value as a template
