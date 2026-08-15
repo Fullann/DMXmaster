@@ -132,6 +132,7 @@ export class DmxEngine {
     if (this.loopTimer === null) return
     clearInterval(this.loopTimer)
     this.loopTimer = null
+    this.lastTickMs = 0 // Prevents a massive deltaMs jump on restart
     console.log('[DmxEngine] Universe loop stopped.')
   }
 
@@ -209,10 +210,13 @@ export class DmxEngine {
     this._rampUp()
   }
 
+  private snapshotBuffer = new Uint8Array(DMX_CHANNELS)
+
   /** Snapshot of a specific universe (0-based index). */
   getUniverseSnapshot(universeIdx = 0): Uint8Array {
     const u = Math.max(0, Math.min(MAX_UNIVERSES - 1, universeIdx))
-    return new Uint8Array(this.universes[u])
+    this.snapshotBuffer.set(this.universes[u])
+    return this.snapshotBuffer
   }
 
   /** Snapshots of all universes. */
@@ -240,11 +244,7 @@ export class DmxEngine {
   /** Returns true if ANY universe differs from its shadow. */
   private _anyUniverseChanged(): boolean {
     for (let u = 0; u < MAX_UNIVERSES; u++) {
-      const cur = this.universes[u]
-      const prev = this.prevUniverses[u]
-      for (let i = 0; i < DMX_CHANNELS; i++) {
-        if (cur[i] !== prev[i]) return true
-      }
+      if (Buffer.compare(this.universes[u], this.prevUniverses[u]) !== 0) return true
     }
     return false
   }

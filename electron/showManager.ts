@@ -94,8 +94,8 @@ export class ShowManager {
       try {
         console.log('[ShowManager] Running background auto-save...')
         const zip = new AdmZip()
-        zip.addLocalFolder(this.appDir)
-        zip.writeZip(this.autoSavePath)
+        await zip.addLocalFolderPromise(this.appDir, {})
+        await zip.writeZipPromise(this.autoSavePath)
       } catch (e) {
         console.error('[ShowManager] Auto-save failed:', e)
       }
@@ -186,11 +186,11 @@ export class ShowManager {
 
       if (canceled || !filePath) return { success: false }
 
-      // Create a zip of the entire DmxMaster directory
+      // Create a zip of the entire DmxMaster directory asynchronously
       const zip = new AdmZip()
-      zip.addLocalFolder(this.appDir)
-      
-      zip.writeZip(filePath)
+      await zip.addLocalFolderPromise(this.appDir, {})
+      await zip.writeZipPromise(filePath)
+
       await this.saveRecentShow(filePath)
       console.log(`[ShowManager] Exported show to ${filePath}`)
       

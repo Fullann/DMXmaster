@@ -13,33 +13,32 @@ export class VirtualConsoleManager {
     this.pagesPath = path.join(userData, 'VirtualConsole.json')
   }
 
-  public init() {
-    this.load()
+  public async init() {
+    await this.load()
   }
 
-  private load() {
-    if (fs.existsSync(this.pagesPath)) {
-      try {
-        const data = fs.readFileSync(this.pagesPath, 'utf8')
-        this.pages = JSON.parse(data)
-      } catch (err) {
+  private async load() {
+    try {
+      await fs.promises.access(this.pagesPath)
+      const data = await fs.promises.readFile(this.pagesPath, 'utf8')
+      this.pages = JSON.parse(data)
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') {
         console.error('Failed to parse VirtualConsole.json:', err)
-        this.createDefaultPage()
       }
-    } else {
-      this.createDefaultPage()
+      await this.createDefaultPage()
     }
   }
 
-  private save() {
+  private async save() {
     try {
-      fs.writeFileSync(this.pagesPath, JSON.stringify(this.pages, null, 2))
+      await fs.promises.writeFile(this.pagesPath, JSON.stringify(this.pages, null, 2))
     } catch (err) {
       console.error('Failed to save VirtualConsole.json:', err)
     }
   }
 
-  private createDefaultPage() {
+  private async createDefaultPage() {
     this.pages = [
       {
         id: crypto.randomUUID(),
@@ -47,15 +46,15 @@ export class VirtualConsoleManager {
         widgets: []
       }
     ]
-    this.save()
+    await this.save()
   }
 
   public getPages(): VirtualConsolePage[] {
     return this.pages
   }
 
-  public savePages(pages: VirtualConsolePage[]) {
+  public async savePages(pages: VirtualConsolePage[]) {
     this.pages = pages
-    this.save()
+    await this.save()
   }
 }

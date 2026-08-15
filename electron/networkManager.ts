@@ -21,6 +21,9 @@ export class NetworkManager {
     { length: MAX_UNIVERSES },
     () => new Uint8Array(512)
   )
+  
+  // Timeout references to clear incoming universes if source drops
+  private incomingTimeouts: (NodeJS.Timeout | null)[] = Array(MAX_UNIVERSES).fill(null)
 
   constructor() {
     this._initPacketHeader()
@@ -58,6 +61,16 @@ export class NetworkManager {
         const length = msg.readUInt16BE(16)
         const dmxData = msg.subarray(18, 18 + length)
         this.incomingUniverses[universe].set(dmxData)
+        
+        // Reset timeout for this universe
+        if (this.incomingTimeouts[universe]) {
+          clearTimeout(this.incomingTimeouts[universe]!)
+        }
+        this.incomingTimeouts[universe] = setTimeout(() => {
+          this.incomingUniverses[universe].fill(0)
+          this.incomingTimeouts[universe] = null
+          console.log(`[NetworkManager] Cleared incoming DMX for universe ${universe} due to timeout`)
+        }, 2000)
       }
     }
   }
@@ -138,10 +151,8 @@ export class NetworkManager {
 
       const targetUniverseData = universes[uIdx]
 
-      // Copy the corresponding DMX data payload into our UDP packet buffer
-      for (let i = 0; i < 512; i++) {
-        this.packetBuffer[18 + i] = targetUniverseData[i]
-      }
+      // Copy universe data directly into the packet buffer payload section
+      this.packetBuffer.set(targetUniverseData, 18)
 
       // Calculate 15-bit Art-Net port address
       // Bit 15: 0

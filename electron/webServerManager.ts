@@ -3,6 +3,7 @@ import http from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import { join } from 'path'
 import { app } from 'electron'
+import { randomUUID } from 'crypto'
 import type { SceneManager } from './sceneManager'
 import type { FixtureManager } from './fixtureManager'
 
@@ -13,6 +14,9 @@ export class WebServerManager {
   private sceneManager: SceneManager | null = null
   private fixtureManager: FixtureManager | null = null
   private port: number = 8080
+
+  /** Simple bearer token generated per session — printed to console on startup */
+  private authToken: string = randomUUID()
 
   constructor() {
     this.server = http.createServer(this.app)
@@ -29,6 +33,7 @@ export class WebServerManager {
   public start() {
     this.server.listen(this.port, () => {
       console.log(`[WebServerManager] Companion App running at http://localhost:${this.port}`)
+      console.log(`[WebServerManager] Auth Token: ${this.authToken}`)
     })
   }
 
@@ -36,6 +41,11 @@ export class WebServerManager {
     this.wss.close()
     this.server.close()
     console.log('[WebServerManager] Stopped.')
+  }
+
+  /** Returns the current auth token (for displaying in UI) */
+  public getAuthToken(): string {
+    return this.authToken
   }
 
   private setupRoutes() {
@@ -46,6 +56,15 @@ export class WebServerManager {
       
     this.app.use(express.static(publicDir))
 
+    // ── Auth middleware for API routes ─────────────────────────────────────────
+    this.app.use('/api', (req, res, next) => {
+      const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token
+      if (token !== this.authToken) {
+        return res.status(401).json({ error: 'Unauthorized. Provide a valid Bearer token.' })
+      }
+      next()
+    })
+
     this.app.get('/api/scenes', (req, res) => {
       if (!this.sceneManager) {
         return res.status(500).json({ error: 'Scene manager not initialized' })
@@ -55,14 +74,29 @@ export class WebServerManager {
   }
 
   private setupWebSockets() {
-    this.wss.on('connection', (ws: WebSocket) => {
-      console.log('[WebServerManager] Companion connected via WebSocket')
+    this.wss.on('connection', (ws: WebSocket, req) => {
+      // ── WebSocket Auth: require ?token=xxx in the upgrade URL ──────────────
+      const url = new URL(req.url || '', `http://localhost:${this.port}`)
+      const token = url.searchParams.get('token')
+      if (token !== this.authToken) {
+        console.warn('[WebServerManager] Rejected WebSocket: invalid token')
+        ws.close(4001, 'Unauthorized')
+        return
+      }
+
+      console.log('[WebServerManager] Companion connected via WebSocket (authenticated)')
 
       ws.on('message', (message: string) => {
         try {
           const data = JSON.parse(message.toString())
           
-          if (data.type === 'triggerScene' && data.payload) {
+          // Validate message structure
+          if (!data || typeof data.type !== 'string') {
+            console.warn('[WebServerManager] Invalid message format')
+            return
+          }
+
+          if (data.type === 'triggerScene' && typeof data.payload === 'string') {
             console.log(`[WebServerManager] Triggering scene: ${data.payload}`)
             this.sceneManager?.recallScene(data.payload)
           } 

@@ -23,37 +23,36 @@ export class CuelistManager {
     this.cuelistsPath = path.join(userData, 'Cuelists.json')
   }
 
-  public init() {
-    this.load()
+  public async init() {
+    await this.load()
   }
 
   public setUpdateCallback(cb: (state: CuelistPlaybackState) => void) {
     this.updateCallback = cb
   }
 
-  private load() {
-    if (fs.existsSync(this.cuelistsPath)) {
-      try {
-        const data = fs.readFileSync(this.cuelistsPath, 'utf8')
-        this.cuelists = JSON.parse(data)
-      } catch (err) {
+  private async load() {
+    try {
+      await fs.promises.access(this.cuelistsPath)
+      const data = await fs.promises.readFile(this.cuelistsPath, 'utf8')
+      this.cuelists = JSON.parse(data)
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') {
         console.error('Failed to parse Cuelists.json:', err)
-        this.createDefault()
       }
-    } else {
-      this.createDefault()
+      await this.createDefault()
     }
   }
 
-  private save() {
+  private async save() {
     try {
-      fs.writeFileSync(this.cuelistsPath, JSON.stringify(this.cuelists, null, 2))
+      await fs.promises.writeFile(this.cuelistsPath, JSON.stringify(this.cuelists, null, 2))
     } catch (err) {
       console.error('Failed to save Cuelists.json:', err)
     }
   }
 
-  private createDefault() {
+  private async createDefault() {
     this.cuelists = [
       {
         id: crypto.randomUUID(),
@@ -61,16 +60,16 @@ export class CuelistManager {
         cues: []
       }
     ]
-    this.save()
+    await this.save()
   }
 
   public getCuelists(): Cuelist[] {
     return this.cuelists
   }
 
-  public saveCuelists(cuelists: Cuelist[]) {
+  public async saveCuelists(cuelists: Cuelist[]) {
     this.cuelists = cuelists
-    this.save()
+    await this.save()
   }
 
   // ── Playback Engine ────────────────────────────────────────────────────────

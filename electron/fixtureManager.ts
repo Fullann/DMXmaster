@@ -178,6 +178,14 @@ export class FixtureManager {
     }
   }
 
+  async unpatchAll(): Promise<void> {
+    const count = this.patch.length
+    this.patch = []
+    this.fixtureStates.clear()
+    await this.savePatch()
+    console.log(`[FixtureManager] Unpatched all (${count} fixtures removed).`)
+  }
+
   getPatch(): PatchedFixture[] {
     return this.patch
   }
@@ -233,6 +241,15 @@ export class FixtureManager {
   async saveGroups(newGroups: FixtureGroup[]): Promise<void> {
     this.groups = newGroups
     await fs.writeFile(this.groupsPath, JSON.stringify(this.groups, null, 2), 'utf8')
+  }
+
+  async renameGroup(id: string, name: string): Promise<void> {
+    const group = this.groups.find(g => g.id === id)
+    if (group) {
+      group.name = name
+      await this.saveGroups(this.groups)
+      console.log(`[FixtureManager] Renamed group ${id} to "${name}"`)
+    }
   }
 
   // ── Submaster API ─────────────────────────────────────────────────────────
@@ -351,7 +368,17 @@ export class FixtureManager {
    *   universeIndex = (startAddress − 1) + (channel.number − 1)
    *                 = startAddress + channel.number − 2
    */
-  applyToUniverses(universes: Uint8Array[], fxOffsets?: Record<string, Record<string, number>>): void {
+  applyToUniverses(universes: Uint8Array[], fxOffsets: Record<string, Partial<FixtureLogicalState>> | null): void {
+    // Pre-calculate highest submaster level for each fixture to avoid O(N*M) lookups inside the loop
+    const fixtureSubmasters = new Map<string, number>()
+    for (const g of this.groups) {
+      const lvl = this.submasters.has(g.id) ? this.submasters.get(g.id)! : 1.0
+      for (const fid of g.fixtureIds) {
+        const current = fixtureSubmasters.get(fid) ?? -1
+        if (lvl > current) fixtureSubmasters.set(fid, lvl)
+      }
+    }
+
     for (const fixture of this.patch) {
       const state = this.fixtureStates.get(fixture.id)
       if (!state) continue
@@ -395,13 +422,8 @@ export class FixtureManager {
         // ── Submaster & Grand Master (Intensity channels only) ────────────────
         if (ch.type === 'Intensity') {
           // HTP: find the highest submaster among all groups this fixture belongs to
-          let highestSub = -1
-          for (const g of this.groups) {
-            if (g.fixtureIds.includes(fixture.id)) {
-              const lvl = this.submasters.has(g.id) ? this.submasters.get(g.id)! : 1.0
-              if (lvl > highestSub) highestSub = lvl
-            }
-          }
+          const highestSub = fixtureSubmasters.get(fixture.id) ?? -1
+          
           // Only apply a group submaster if the fixture is actually in a group
           if (highestSub >= 0) v = v * highestSub
           // Always apply grand master

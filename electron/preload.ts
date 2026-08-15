@@ -120,7 +120,7 @@ import type { Scene, FadeStatus } from './sceneTypes'
 export interface SceneAPI {
   getScenes:          () => Promise<{ success: boolean; scenes?: Scene[]; error?: string }>
   getScene:           (id: string) => Promise<{ success: boolean; scene?: Scene; error?: string }>
-  saveCurrentAsScene: (name: string, fadeTimeMs: number, filterMask?: string) => Promise<{ success: boolean; scene?: Scene; error?: string }>
+  saveCurrentAsScene: (name: string, fadeTimeMs: number, filterMask?: string, includeFx?: boolean) => Promise<{ success: boolean; scene?: Scene; error?: string }>
   recallScene:        (id: string) => Promise<{ success: boolean; error?: string }>
   deleteScene:        (id: string) => Promise<{ success: boolean; error?: string }>
   cancelFade:         () => Promise<{ success: boolean; error?: string }>
@@ -130,7 +130,7 @@ export interface SceneAPI {
 const sceneAPI: SceneAPI = {
   getScenes:          ()                    => ipcRenderer.invoke('scene:getScenes'),
   getScene:           (id)                  => ipcRenderer.invoke('scene:getScene', id),
-  saveCurrentAsScene: (n, f, m)             => ipcRenderer.invoke('scene:saveCurrentAsScene', n, f, m),
+  saveCurrentAsScene: (n, f, m, fx)          => ipcRenderer.invoke('scene:saveCurrentAsScene', n, f, m, fx),
   recallScene:        (id)                  => ipcRenderer.invoke('scene:recallScene', id),
   deleteScene:        (id)                  => ipcRenderer.invoke('scene:deleteScene', id),
   cancelFade:         ()                    => ipcRenderer.invoke('scene:cancelFade'),

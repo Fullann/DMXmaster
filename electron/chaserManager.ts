@@ -137,15 +137,24 @@ export class ChaserManager {
     if (!this.activeChaser) return
     const { steps, bpmSync, beatsPerStep } = this.activeChaser
 
-    const stepHoldMs = bpmSync
-      ? (60_000 / this.bpm) * beatsPerStep // e.g. 120bpm → 500ms/beat
-      : steps[this.currentStep].holdMs
-
     this.stepElapsedMs += deltaMs
 
-    if (this.stepElapsedMs >= stepHoldMs) {
-      this.stepElapsedMs = 0
-      this.currentStep = (this.currentStep + 1) % steps.length
+    let stepChanged = false
+    while (true) {
+      const stepHoldMs = bpmSync
+        ? (60_000 / this.bpm) * beatsPerStep // e.g. 120bpm → 500ms/beat
+        : steps[this.currentStep].holdMs
+
+      if (this.stepElapsedMs >= stepHoldMs && stepHoldMs > 0) {
+        this.stepElapsedMs -= stepHoldMs
+        this.currentStep = (this.currentStep + 1) % steps.length
+        stepChanged = true
+      } else {
+        break
+      }
+    }
+
+    if (stepChanged) {
       this._recallCurrentStep()
     }
   }

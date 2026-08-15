@@ -61,6 +61,24 @@ function createWindow(): BrowserWindow {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
+  // ── Content Security Policy ───────────────────────────────────────────────
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+          "script-src 'self'; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "font-src 'self' https://fonts.gstatic.com; " +
+          "img-src 'self' data: blob:; " +
+          "media-src 'self' blob:; " +
+          "connect-src 'self' ws://localhost:*;"
+        ]
+      }
+    })
+  })
+
   mainWindow.once('ready-to-show', () => {
     mainWindow.show()
     if (process.env.NODE_ENV === 'development' || process.env['ELECTRON_RENDERER_URL']) {

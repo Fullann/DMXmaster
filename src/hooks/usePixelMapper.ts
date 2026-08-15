@@ -58,7 +58,11 @@ export function usePixelMapper() {
 
   const loadMedia = useCallback((file: File) => {
     const url = URL.createObjectURL(file)
-    setMediaUrl(url)
+    setMediaUrl((prevUrl) => {
+      if (prevUrl) URL.revokeObjectURL(prevUrl)
+      return url
+    })
+    
     setActiveGenerator(null)
     if (file.type.startsWith('video/')) {
       setMediaType('video')
@@ -72,6 +76,13 @@ export function usePixelMapper() {
       imageRef.current = img
     }
   }, [])
+
+  // Cleanup object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaUrl) URL.revokeObjectURL(mediaUrl)
+    }
+  }, [mediaUrl])
 
   const setGenerator = useCallback((type: 'Rainbow' | 'Plasma' | 'Strobe') => {
     setMediaType('generator')
