@@ -66,24 +66,28 @@ export interface FixtureAPI {
   saveProfile:    (p: FixtureProfile) => Promise<{ success: boolean; key?: string; error?: string }>
   deleteProfile:  (key: string) => Promise<{ success: boolean; error?: string }>
   reloadProfiles: () => Promise<{ success: boolean; profiles?: ProfileEntry[]; error?: string }>
+  importGdtf:     () => Promise<{ success: boolean; profile?: FixtureProfile; error?: string }>
   getPatch:       () => Promise<{ success: boolean; patch?: PatchedFixture[]; error?: string }>
-  patchFixture:   (key: string, addr: number, label?: string, universeIdx?: number) => Promise<{ success: boolean; fixture?: PatchedFixture; error?: string }>
+  savePatch:      (patch: PatchedFixture[]) => Promise<{ success: boolean; error?: string }>
+  patchFixture:   (key: string, addr: number, label: string, uIdx: number) => Promise<{ success: boolean; fixture?: PatchedFixture; error?: string }>
   removePatch:    (id: string) => Promise<{ success: boolean; error?: string }>
-  unpatchAll: () => Promise<{ success: boolean; error?: string }>
-  setFixtureTransform: (id: string, position: [number, number, number], rotation: [number, number, number]) => Promise<{ success: boolean; error?: string }>
-  setPosition: (id: string, pos: [number, number, number]) => Promise<{ success: boolean; error?: string }>
-  setRotation: (id: string, rot: [number, number, number]) => Promise<{ success: boolean; error?: string }>
-  setUniverse: (id: string, uIdx: number) => Promise<{ success: boolean; error?: string }>
-  renameGroup: (id: string, name: string) => Promise<{ success: boolean; error?: string }>
+  unpatchAll:     () => Promise<{ success: boolean; error?: string }>
+  morphFixture:   (id: string, key: string, addr?: number) => Promise<{ success: boolean; fixture?: PatchedFixture; error?: string }>
+  cloneFixture:   (src: string, dest: string) => Promise<{ success: boolean; error?: string }>
+  setTransform:   (id: string, pos: [number,number,number], rot: [number,number,number]) => Promise<{ success: boolean; error?: string }>
+  setPosition:    (id: string, pos: [number,number,number]) => Promise<{ success: boolean; error?: string }>
+  setRotation:    (id: string, rot: [number,number,number]) => Promise<{ success: boolean; error?: string }>
+  setUniverse:    (id: string, uIdx: number) => Promise<{ success: boolean; error?: string }>
+  renameGroup:    (id: string, name: string) => Promise<{ success: boolean; error?: string }>
   sendCommand:    (id: string, type: ChannelType, val: number) => Promise<{ success: boolean; error?: string }>
   sendColor:      (id: string, r: number, g: number, b: number, w?: number) => Promise<{ success: boolean; error?: string }>
   getStates:      () => Promise<{ success: boolean; states?: Record<string, FixtureLogicalState>; error?: string }>
   clearAll:       () => Promise<{ success: boolean; error?: string }>
-  setStates:      (statesMap: Record<string, Record<string, number>>) => Promise<{ success: boolean; error?: string }>
+  setStates:      (m: Record<string, Record<string, number>>) => Promise<{ success: boolean; error?: string }>
   getGroups:      () => Promise<{ success: boolean; groups?: FixtureGroup[]; error?: string }>
-  saveGroups:     (groups: FixtureGroup[]) => Promise<{ success: boolean; error?: string }>
-  setGrandMaster: (level: number) => void
-  setSubmaster:   (groupId: string, level: number) => void
+  saveGroups:     (g: FixtureGroup[]) => Promise<{ success: boolean; error?: string }>
+  setGrandMaster: (l: number) => void
+  setSubmaster:   (g: string, l: number) => void
 }
 
 const fixtureAPI: FixtureAPI = {
@@ -91,11 +95,15 @@ const fixtureAPI: FixtureAPI = {
   saveProfile:    (p)                => ipcRenderer.invoke('fixture:saveProfile', p),
   deleteProfile:  (k)                => ipcRenderer.invoke('fixture:deleteProfile', k),
   reloadProfiles: ()                 => ipcRenderer.invoke('fixture:reloadProfiles'),
+  importGdtf:     ()                 => ipcRenderer.invoke('fixture:importGdtf'),
   getPatch:       ()                 => ipcRenderer.invoke('fixture:getPatch'),
-  patchFixture:   (k, a, l, u)       => ipcRenderer.invoke('fixture:patchFixture', k, a, l, u),
+  savePatch:      (p)                => ipcRenderer.invoke('fixture:savePatch', p),
+  patchFixture:   (k, a, l, uIdx)    => ipcRenderer.invoke('fixture:patchFixture', k, a, l, uIdx),
   removePatch:    (id)               => ipcRenderer.invoke('fixture:removePatch', id),
   unpatchAll:     ()                 => ipcRenderer.invoke('fixture:unpatchAll'),
-  setFixtureTransform: (id, pos, rot)=> ipcRenderer.invoke('fixture:setTransform', id, pos, rot),
+  morphFixture:   (id, key, addr)    => ipcRenderer.invoke('fixture:morphFixture', id, key, addr),
+  cloneFixture:   (src, dest)        => ipcRenderer.invoke('fixture:cloneFixture', src, dest),
+  setTransform:   (id, pos, rot)     => ipcRenderer.invoke('fixture:setTransform', id, pos, rot),
   setPosition:    (id, pos)          => ipcRenderer.invoke('fixture:setPosition', id, pos),
   setRotation:    (id, rot)          => ipcRenderer.invoke('fixture:setRotation', id, rot),
   setUniverse:    (id, uIdx)         => ipcRenderer.invoke('fixture:setUniverse', id, uIdx),
@@ -195,6 +203,7 @@ import type { AudioTrigger } from '../electron/audioTypes'
 
 export interface AudioAPI {
   updateBands:   (lows: number, mids: number, highs: number) => void
+  emitBeat:      () => void
   addTrigger:    (trigger: Omit<AudioTrigger, 'id'>) => Promise<{ success: boolean; id?: string; error?: string }>
   removeTrigger: (id: string) => Promise<{ success: boolean; error?: string }>
   getTriggers:   () => Promise<{ success: boolean; triggers?: AudioTrigger[]; error?: string }>
@@ -202,6 +211,7 @@ export interface AudioAPI {
 
 const audioAPI: AudioAPI = {
   updateBands:   (l, m, h) => ipcRenderer.send('audio:updateBands', l, m, h), // Fire-and-forget
+  emitBeat:      ()        => ipcRenderer.send('audio:emitBeat'),
   addTrigger:    (t)       => ipcRenderer.invoke('audio:addTrigger', t),
   removeTrigger: (id)      => ipcRenderer.invoke('audio:removeTrigger', id),
   getTriggers:   ()        => ipcRenderer.invoke('audio:getTriggers'),
@@ -217,11 +227,13 @@ import type { NetworkConfig } from '../electron/networkTypes'
 export interface NetworkAPI {
   getConfig:  () => Promise<{ success: boolean; config?: NetworkConfig; error?: string }>
   saveConfig: (config: NetworkConfig) => Promise<{ success: boolean; error?: string }>
+  onDmxInChange: (callback: (data: { universe: number, channel: number, value: number }) => void) => void
 }
 
 const networkAPI: NetworkAPI = {
   getConfig:  ()  => ipcRenderer.invoke('network:getConfig'),
-  saveConfig: (c) => ipcRenderer.invoke('network:saveConfig', c)
+  saveConfig: (c) => ipcRenderer.invoke('network:saveConfig', c),
+  onDmxInChange: (cb) => ipcRenderer.on('dmxIn:change', (_e, data) => cb(data))
 }
 
 contextBridge.exposeInMainWorld('networkAPI', networkAPI)
@@ -277,6 +289,7 @@ export interface AppAPI {
   getRecentShows: () => Promise<{ success: boolean; shows?: RecentShow[]; error?: string }>
   openRecentShow: (filePath: string) => Promise<{ success: boolean; error?: string }>
   openVisualizerWindow: () => Promise<void>
+  onBackupComplete: (callback: (timeMs: number) => void) => void
 }
 
 const appAPI: AppAPI = {
@@ -286,6 +299,7 @@ const appAPI: AppAPI = {
   getRecentShows: () => ipcRenderer.invoke('app:getRecentShows'),
   openRecentShow: (filePath) => ipcRenderer.invoke('app:openRecentShow', filePath),
   openVisualizerWindow: () => ipcRenderer.invoke('app:openVisualizer'),
+  onBackupComplete: (callback) => ipcRenderer.on('backup:complete', (_e, timeMs) => callback(timeMs))
 }
 
 contextBridge.exposeInMainWorld('appAPI', appAPI)

@@ -12,6 +12,8 @@ export function PatchView() {
           patch={fixtures.patch}
           onPatch={fixtures.patchFixture}
           onRemovePatch={fixtures.removePatch}
+          onMorphPatch={fixtures.morphFixture}
+          onClonePatch={fixtures.cloneFixture}
         />
       </div>
     </div>

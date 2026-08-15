@@ -12,18 +12,27 @@ interface PatchGridProps {
   patch:         PatchedFixture[]
   onPatch:       (profileKey: string, startAddress: number, label?: string) => Promise<void>
   onRemovePatch: (id: string) => Promise<void>
+  onMorphPatch?: (id: string, key: string, addr?: number) => Promise<PatchedFixture | null>
+  onClonePatch?: (src: string, dest: string) => Promise<boolean>
 }
 
 const PROFILE_COLORS = [
   'var(--ch1-color)', 'var(--ch2-color)', 'var(--ch3-color)', 'var(--ch4-color)',
 ]
 
-export function PatchGrid({ profiles, patch, onPatch, onRemovePatch }: PatchGridProps) {
+export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatch, onClonePatch }: PatchGridProps) {
   const [selectedProfile, setSelectedProfile] = useState(profiles[0]?.key ?? '')
   const [startAddress,    setStartAddress]    = useState(1)
   const [label,           setLabel]           = useState('')
   const [isPatching,      setIsPatching]      = useState(false)
   const [error,           setError]           = useState<string | null>(null)
+  
+  // Morph & Clone Modals
+  const [morphingId, setMorphingId] = useState<string | null>(null)
+  const [cloningId, setCloningId] = useState<string | null>(null)
+  const [morphProfile, setMorphProfile] = useState<string>('')
+  const [morphAddr, setMorphAddr] = useState<number>(1)
+  const [cloneSrcId, setCloneSrcId] = useState<string>('')
 
   const network = useNetwork()
   const [netName, setNetName] = useState('')
@@ -121,13 +130,37 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch }: PatchGrid
                     </span>
                   </div>
 
-                  <button
-                    className="btn btn-ghost patch-remove-btn"
-                    onClick={() => onRemovePatch(fixture.id)}
-                    title="Remove from patch"
-                  >
-                    ×
-                  </button>
+                  <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ fontSize: '0.8rem', padding: '4px 8px' }}
+                      onClick={() => {
+                        setMorphingId(fixture.id)
+                        setMorphProfile(fixture.profileKey)
+                        setMorphAddr(fixture.startAddress)
+                      }}
+                    >
+                      Morph
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ fontSize: '0.8rem', padding: '4px 8px' }}
+                      onClick={() => {
+                        setCloningId(fixture.id)
+                        setCloneSrcId(patch.find(f => f.id !== fixture.id)?.id || '')
+                      }}
+                      disabled={patch.length < 2}
+                    >
+                      Clone From
+                    </button>
+                    <button
+                      className="btn btn-ghost patch-remove-btn"
+                      onClick={() => onRemovePatch(fixture.id)}
+                      title="Remove from patch"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               )
             })}
@@ -272,6 +305,54 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch }: PatchGrid
           </div>
         </div>
       </div>
+      {/* Morph Modal */}
+      {morphingId && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--bg-card)', padding: '2rem', borderRadius: 'var(--radius-md)', width: '400px', border: '1px solid var(--border)' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Morph Fixture</h3>
+            <div className="form-group">
+              <label className="form-label">New Profile</label>
+              <select className="styled-select" value={morphProfile} onChange={e => setMorphProfile(e.target.value)}>
+                {profiles.map(p => <option key={p.key} value={p.key}>{p.profile.manufacturer} {p.profile.model} ({p.profile.mode})</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">New Start Address (Optional)</label>
+              <input type="number" className="styled-input" value={morphAddr} onChange={e => setMorphAddr(Number(e.target.value))} />
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setMorphingId(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={async () => {
+                if (onMorphPatch) await onMorphPatch(morphingId, morphProfile, morphAddr)
+                setMorphingId(null)
+              }}>Apply Morph</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clone Modal */}
+      {cloningId && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--bg-card)', padding: '2rem', borderRadius: 'var(--radius-md)', width: '400px', border: '1px solid var(--border)' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Clone Programming</h3>
+            <p className="text-muted" style={{ marginBottom: '1rem' }}>Copy all scenes, palettes, and group memberships from the source fixture into this fixture.</p>
+            <div className="form-group">
+              <label className="form-label">Source Fixture</label>
+              <select className="styled-select" value={cloneSrcId} onChange={e => setCloneSrcId(e.target.value)}>
+                {patch.filter(f => f.id !== cloningId).map(f => <option key={f.id} value={f.id}>{f.label} (CH {f.startAddress})</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setCloningId(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={async () => {
+                if (onClonePatch && cloneSrcId) await onClonePatch(cloneSrcId, cloningId)
+                setCloningId(null)
+              }}>Clone Programming</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -18,4 +18,6 @@ export interface NetworkNode {
 export interface NetworkConfig {
   nodes:             NetworkNode[]
   broadcastEnabled:  boolean
+  /** Maps incoming universe index (0-7) to its routing mode. Default is 'htp' */
+  inputRouting?:     Record<number, 'htp' | 'remote'>
 }

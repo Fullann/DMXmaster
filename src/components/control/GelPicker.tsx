@@ -50,16 +50,16 @@ export function GelPicker({ onSelectColor }: GelPickerProps) {
       </div>
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         
         {activeTab === 'Wheel' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
             <ColorWheel onColorChange={handleWheelColor} size={240} />
           </div>
         )}
 
         {activeTab === 'Gels' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, minHeight: 0 }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-dark)', padding: '2px', borderRadius: '8px' }}>
@@ -104,6 +104,7 @@ export function GelPicker({ onSelectColor }: GelPickerProps) {
               gridTemplateColumns: 'repeat(auto-fill, minmax(65px, 1fr))', 
               gap: '0.5rem',
               overflowY: 'auto',
+              flex: 1,
               paddingRight: '4px',
               paddingBottom: '1rem'
             }}>

@@ -10,8 +10,11 @@ export class NetworkManager {
   private configPath = ''
   private config: NetworkConfig = { nodes: [], broadcastEnabled: true }
   
-  // Single reusable UDP socket
+  // Single reusable UDP socket for Art-Net
   private socket = dgram.createSocket({ type: 'udp4', reuseAddr: true })
+  // Single reusable UDP socket for sACN
+  private sacnSocket = dgram.createSocket({ type: 'udp4', reuseAddr: true })
+  
   // Pre-allocated Art-Net packet buffer (18 byte header + 512 byte data)
   private packetBuffer = Buffer.alloc(530)
   
@@ -38,15 +41,30 @@ export class NetworkManager {
     this.localIps.add('127.0.0.1')
     
     // Listen for incoming Art-Net packets
-    this.socket.on('message', (msg, rinfo) => this._handleMessage(msg, rinfo))
+    this.socket.on('message', (msg, rinfo) => this._handleArtNet(msg, rinfo))
     
     // Bind to standard Art-Net port 6454 locally to *receive* Art-Net.
     this.socket.bind(6454, '0.0.0.0', () => {
       this.socket.setBroadcast(true) 
     })
+
+    // Listen for incoming sACN packets
+    this.sacnSocket.on('message', (msg, rinfo) => this._handleSacn(msg, rinfo))
+    
+    // Bind to standard sACN port 5568 locally to *receive* sACN.
+    this.sacnSocket.bind(5568, '0.0.0.0', () => {
+      // Join multicast groups for the first MAX_UNIVERSES
+      for (let u = 1; u <= MAX_UNIVERSES; u++) {
+        try {
+          this.sacnSocket.addMembership(`239.255.${u >> 8}.${u & 0xFF}`)
+        } catch (e) {
+          // Ignore membership errors (e.g., no default interface)
+        }
+      }
+    })
   }
 
-  private _handleMessage(msg: Buffer, rinfo: dgram.RemoteInfo): void {
+  private _handleArtNet(msg: Buffer, rinfo: dgram.RemoteInfo): void {
     if (this.localIps.has(rinfo.address)) return // Ignore loopback
 
     // ArtDmx parsing (min length 18)
@@ -60,19 +78,55 @@ export class NetworkManager {
       if (universe >= 0 && universe < MAX_UNIVERSES) {
         const length = msg.readUInt16BE(16)
         const dmxData = msg.subarray(18, 18 + length)
-        this.incomingUniverses[universe].set(dmxData)
-        
-        // Reset timeout for this universe
-        if (this.incomingTimeouts[universe]) {
-          clearTimeout(this.incomingTimeouts[universe]!)
-        }
-        this.incomingTimeouts[universe] = setTimeout(() => {
-          this.incomingUniverses[universe].fill(0)
-          this.incomingTimeouts[universe] = null
-          console.log(`[NetworkManager] Cleared incoming DMX for universe ${universe} due to timeout`)
-        }, 2000)
+        this._updateIncoming(universe, dmxData)
       }
     }
+  }
+
+  private _handleSacn(msg: Buffer, rinfo: dgram.RemoteInfo): void {
+    if (this.localIps.has(rinfo.address)) return // Ignore loopback
+
+    // sACN parsing (min length 126 for data)
+    if (msg.length < 126) return
+    if (msg.toString('ascii', 4, 16) !== 'ASC-E1.17\0\0\0') return
+
+    // Universe is at offset 113 (Big Endian)
+    const universe = msg.readUInt16BE(113) - 1 // sACN universes start at 1, map to 0-indexed
+    
+    if (universe >= 0 && universe < MAX_UNIVERSES) {
+      // DMX values start at offset 126 (after the 1-byte START code at 125)
+      const length = msg.readUInt16BE(123)
+      const dmxLength = Math.min(length - 1, 512) // Subtract START code
+      const dmxData = msg.subarray(126, 126 + dmxLength)
+      this._updateIncoming(universe, dmxData)
+    }
+  }
+
+  private _updateIncoming(universe: number, dmxData: Buffer): void {
+    const oldData = this.incomingUniverses[universe]
+    const isRemote = this.config.inputRouting?.[universe] === 'remote'
+    
+    if (isRemote) {
+      // For remote control, emit IPC events for changed channels
+      for (let i = 0; i < dmxData.length; i++) {
+        if (dmxData[i] !== oldData[i]) {
+          const w = require('electron').BrowserWindow.getAllWindows()[0]
+          if (w) w.webContents.send('dmxIn:change', { universe, channel: i, value: dmxData[i] })
+        }
+      }
+    }
+    
+    this.incomingUniverses[universe].set(dmxData)
+    
+    // Reset timeout for this universe
+    if (this.incomingTimeouts[universe]) {
+      clearTimeout(this.incomingTimeouts[universe]!)
+    }
+    this.incomingTimeouts[universe] = setTimeout(() => {
+      this.incomingUniverses[universe].fill(0)
+      this.incomingTimeouts[universe] = null
+      console.log(`[NetworkManager] Cleared incoming DMX for universe ${universe} due to timeout`)
+    }, 2000)
   }
 
   getIncomingUniverses(): Uint8Array[] {
@@ -90,7 +144,8 @@ export class NetworkManager {
       const parsed = JSON.parse(data)
       this.config = {
         nodes: parsed.nodes || [],
-        broadcastEnabled: parsed.broadcastEnabled ?? true
+        broadcastEnabled: parsed.broadcastEnabled ?? true,
+        inputRouting: parsed.inputRouting ?? {}
       }
       console.log(`[NetworkManager] Loaded ${this.config.nodes.length} nodes from disk.`)
     } catch (e: any) {
@@ -98,6 +153,7 @@ export class NetworkManager {
         console.error('[NetworkManager] Error loading config:', e.message)
       }
       // Save default
+      this.config.inputRouting = {}
       await this.saveConfig(this.config)
     }
   }

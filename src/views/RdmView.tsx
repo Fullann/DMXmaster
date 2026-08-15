@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { useRdmStore } from '@/store/useRdmStore'
+import { useNetworkStore } from '@/store/useNetworkStore'
 import { Search, Info, Settings2, Power } from 'lucide-react'
 import type { RdmDevice } from '@/types/rdm'
 
 export function RdmView() {
   const { isDiscovering, devices, discoverDevices, setDeviceAddress, loadDevices } = useRdmStore()
+  const inputRouting = useNetworkStore(s => s.config.inputRouting) || {}
+  const setInputRouting = useNetworkStore(s => s.setInputRouting)
   
   const [editingDevice, setEditingDevice] = useState<RdmDevice | null>(null)
   const [newAddress, setNewAddress] = useState<string>('')
@@ -57,16 +60,40 @@ export function RdmView() {
       </header>
 
       {/* ── Info Box ─────────────────────────────────────────────────────── */}
-      <div style={{ padding: '1rem 1.5rem' }}>
+      <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem' }}>
         <div style={{ 
           background: 'rgba(0,188,212,0.1)', border: '1px solid rgba(0,188,212,0.3)', 
-          padding: '1rem', borderRadius: '8px', display: 'flex', gap: '1rem', alignItems: 'flex-start' 
+          padding: '1rem', borderRadius: '8px', display: 'flex', gap: '1rem', alignItems: 'flex-start', flex: 1
         }}>
           <Info size={24} color="#00bcd4" />
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.4' }}>
             RDM requires an ANSI E1.20 compliant DMX interface (like Enttec USB Pro), a bi-directional RDM splitter, 
             and RDM-compatible fixtures. During discovery, DMX transmission may be briefly interrupted.
           </p>
+        </div>
+      </div>
+
+      {/* ── DMX-IN Routing ───────────────────────────────────────────────── */}
+      <div style={{ padding: '0 1.5rem 1rem 1.5rem' }}>
+        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text)' }}>DMX-IN Routing (Art-Net & sACN)</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+          {Array.from({ length: 8 }).map((_, i) => {
+            const mode = inputRouting[i] || 'htp'
+            return (
+              <div key={i} className="panel" style={{ padding: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 'bold' }}>Univ {i + 1}</span>
+                <select 
+                  className="styled-input" 
+                  value={mode}
+                  onChange={(e) => setInputRouting(i, e.target.value as 'htp' | 'remote')}
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
+                >
+                  <option value="htp">HTP Merge</option>
+                  <option value="remote">Remote Control</option>
+                </select>
+              </div>
+            )
+          })}
         </div>
       </div>
 

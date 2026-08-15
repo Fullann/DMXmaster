@@ -19,6 +19,10 @@ export function useAudioAnalyzer() {
   // Real-time local state for UI (60fps)
   const [bands, setBands] = useState<AudioBands>({ lows: 0, mids: 0, highs: 0 })
   
+  const [isBeat, setIsBeat] = useState(false)
+  const [autoBpmEnabled, setAutoBpmEnabled] = useState(false)
+  const [beatThreshold, setBeatThreshold] = useState(180)
+  
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -26,6 +30,14 @@ export function useAudioAnalyzer() {
   
   const animationFrameRef = useRef<number>(0)
   const lastIpcSendMs = useRef<number>(0)
+  const lastBeatTimeRef = useRef<number>(0)
+  const beatTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Sync state to static properties for the requestAnimationFrame closure
+  useEffect(() => {
+    useAudioAnalyzer.globalAutoBpmEnabled = autoBpmEnabled
+    useAudioAnalyzer.globalBeatThreshold = beatThreshold
+  }, [autoBpmEnabled, beatThreshold])
 
   // ── Device Enumeration ──────────────────────────────────────────────────────
 
@@ -89,8 +101,21 @@ export function useAudioAnalyzer() {
     // Update local React state for smooth 60fps UI
     setBands(currentBands)
 
-    // Throttle IPC send to ~30Hz (every 33ms) to avoid bottlenecking Electron bridge
+    // ── Beat Detection (Auto-BPM) ─────────────────────────────────────────────
     const now = performance.now()
+    if (useAudioAnalyzer.globalAutoBpmEnabled) { // Static access so we don't need to depend on the closure changing
+      if (currentBands.lows > useAudioAnalyzer.globalBeatThreshold) {
+        if (now - lastBeatTimeRef.current > 300) { // Debounce: 300ms minimum between beats (~200 BPM max)
+          lastBeatTimeRef.current = now
+          window.audioAPI.emitBeat()
+          setIsBeat(true)
+          if (beatTimeoutRef.current) clearTimeout(beatTimeoutRef.current)
+          beatTimeoutRef.current = setTimeout(() => setIsBeat(false), 150)
+        }
+      }
+    }
+
+    // Throttle IPC send to ~30Hz (every 33ms) to avoid bottlenecking Electron bridge
     if (now - lastIpcSendMs.current >= 33) {
       window.audioAPI.updateBands(currentBands.lows, currentBands.mids, currentBands.highs)
       lastIpcSendMs.current = now
@@ -153,6 +178,14 @@ export function useAudioAnalyzer() {
     isListening,
     startListening,
     stopListening,
-    bands
+    bands,
+    isBeat,
+    autoBpmEnabled,
+    setAutoBpmEnabled,
+    beatThreshold,
+    setBeatThreshold
   }
 }
+
+useAudioAnalyzer.globalAutoBpmEnabled = false
+useAudioAnalyzer.globalBeatThreshold = 180

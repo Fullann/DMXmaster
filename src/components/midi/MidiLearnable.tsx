@@ -1,4 +1,5 @@
 import { useMidiMappingStore, MidiActionType } from '@/store/useMidiMappingStore'
+import { useDmxMappingStore } from '@/store/useDmxMappingStore'
 import { Target } from 'lucide-react'
 import './MidiLearnable.css'
 
@@ -9,18 +10,26 @@ interface Props {
 }
 
 export function MidiLearnable({ action, label, children }: Props) {
-  const isLearning = useMidiMappingStore(s => s.learnMode)
-  const targetAction = useMidiMappingStore(s => s.targetAction)
-  const setTargetAction = useMidiMappingStore(s => s.setTargetAction)
+  const isMidiLearning = useMidiMappingStore(s => s.learnMode)
+  const midiTargetAction = useMidiMappingStore(s => s.targetAction)
+  const setMidiTargetAction = useMidiMappingStore(s => s.setTargetAction)
+
+  const isDmxLearning = useDmxMappingStore(s => s.learnMode)
+  const dmxTargetAction = useDmxMappingStore(s => s.targetAction)
+  const setDmxTargetAction = useDmxMappingStore(s => s.setTargetAction)
+
+  const isLearning = isMidiLearning || isDmxLearning
 
   if (!isLearning) return <>{children}</>
 
-  const isTarget = targetAction && JSON.stringify(targetAction) === JSON.stringify(action)
+  const isTarget = (midiTargetAction && JSON.stringify(midiTargetAction) === JSON.stringify(action)) || 
+                   (dmxTargetAction && JSON.stringify(dmxTargetAction) === JSON.stringify(action))
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    setTargetAction(action, label)
+    if (isMidiLearning) setMidiTargetAction(action, label)
+    if (isDmxLearning) setDmxTargetAction(action as any, label)
   }
 
   return (
@@ -31,7 +40,7 @@ export function MidiLearnable({ action, label, children }: Props) {
       <div className="midi-learnable-overlay">
         {isTarget ? (
           <span className="learning-text">
-            <Target size={14} className="pulse-icon" /> Waiting for MIDI...
+            <Target size={14} className="pulse-icon" /> Waiting for {isMidiLearning ? 'MIDI' : 'DMX'}...
           </span>
         ) : (
           <span className="learn-label">{label}</span>

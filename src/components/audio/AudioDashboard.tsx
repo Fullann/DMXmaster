@@ -109,6 +109,10 @@ export function AudioDashboard({ patch, effects }: AudioDashboardProps) {
           <div className="eq-band">
             <div className="eq-bar-wrap">
               <div className="eq-bar lows" style={{ height: `${(audio.bands.lows / 255) * 100}%` }} />
+              {/* Threshold line for lows */}
+              {audio.autoBpmEnabled && (
+                <div style={{ position: 'absolute', bottom: `${(audio.beatThreshold / 255) * 100}%`, left: 0, right: 0, height: '2px', background: '#ef4444', zIndex: 10, pointerEvents: 'none' }} />
+              )}
             </div>
             <span className="eq-label">BASS</span>
           </div>
@@ -124,6 +128,41 @@ export function AudioDashboard({ patch, effects }: AudioDashboardProps) {
             </div>
             <span className="eq-label">HIGHS</span>
           </div>
+        </div>
+
+        {/* ── Auto BPM Controls ────────────────────────────────────────────── */}
+        <div className="form-group" style={{ marginTop: '1.5rem', background: 'var(--bg-dark)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Auto-BPM Sync
+              <div style={{
+                width: 12, height: 12, borderRadius: '50%',
+                background: audio.isBeat ? '#ef4444' : '#333',
+                boxShadow: audio.isBeat ? '0 0 10px #ef4444' : 'none',
+                transition: audio.isBeat ? 'none' : 'all 0.2s ease-out'
+              }} />
+            </label>
+            <label className="switch">
+              <input type="checkbox" checked={audio.autoBpmEnabled} onChange={e => audio.setAutoBpmEnabled(e.target.checked)} />
+              <span className="slider round"></span>
+            </label>
+          </div>
+          
+          {audio.autoBpmEnabled && (
+            <div className="form-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-muted" style={{ fontSize: '0.8rem' }}>Bass Threshold</span>
+                <span className="text-muted" style={{ fontSize: '0.8rem' }}>{Math.round((audio.beatThreshold / 255) * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="10" max="250"
+                value={audio.beatThreshold}
+                onChange={e => audio.setBeatThreshold(Number(e.target.value))}
+                className="styled-slider"
+              />
+            </div>
+          )}
         </div>
       </div>
 

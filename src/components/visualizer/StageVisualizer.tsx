@@ -79,7 +79,6 @@ export function StageVisualizer() {
         <color attach="background" args={['#050505']} />
         
         <ambientLight intensity={0.1} />
-        <Environment preset="night" />
 
         {/* Floor */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>

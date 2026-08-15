@@ -87,15 +87,64 @@ export class ShowManager {
     }
   }
 
-  startAutoSave(intervalMs: number): void {
+  startAutoSave(intervalMs: number, engine?: import('./dmxEngine').DmxEngine): void {
     if (this.autoSaveTimer) clearInterval(this.autoSaveTimer)
     
     this.autoSaveTimer = setInterval(async () => {
       try {
         console.log('[ShowManager] Running background auto-save...')
+        
+        // 1. Save live programmer state if engine is provided
+        if (engine) {
+          await engine.saveProgrammerState()
+        }
+
+        // 2. Create the Backups directory if it doesn't exist
+        const backupsDir = join(this.appDir, 'Backups')
+        try { await fs.mkdir(backupsDir, { recursive: true }) } catch {}
+
+        // 3. Create the new auto-save zip
+        const now = new Date()
+        const timestamp = now.toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0]
+        const backupName = `AutoSave_${timestamp}.dmxshow`
+        const backupPath = join(backupsDir, backupName)
+        
         const zip = new AdmZip()
-        await zip.addLocalFolderPromise(this.appDir, {})
+        // Add everything except the Backups folder to avoid recursion
+        const files = await fs.readdir(this.appDir, { withFileTypes: true })
+        for (const file of files) {
+          if (file.name === 'Backups') continue
+          const fullPath = join(this.appDir, file.name)
+          if (file.isDirectory()) {
+            await zip.addLocalFolderPromise(fullPath, { zipPath: file.name })
+          } else {
+            zip.addLocalFile(fullPath)
+          }
+        }
+        await zip.writeZipPromise(backupPath)
+        
+        // Also overwrite the main AutoSave.dmxshow for the crash recovery popup
         await zip.writeZipPromise(this.autoSavePath)
+
+        // 4. Rotate old backups (keep max 20)
+        const maxBackups = 20
+        const backupFiles = await fs.readdir(backupsDir)
+        const validBackups = backupFiles.filter(f => f.startsWith('AutoSave_') && f.endsWith('.dmxshow'))
+        validBackups.sort()
+
+        if (validBackups.length > maxBackups) {
+          const toDelete = validBackups.slice(0, validBackups.length - maxBackups)
+          for (const oldBackup of toDelete) {
+            await fs.rm(join(backupsDir, oldBackup), { force: true })
+            console.log(`[ShowManager] Deleted old backup: ${oldBackup}`)
+          }
+        }
+        
+        // 5. Notify the UI
+        import('electron').then(({ BrowserWindow }) => {
+          BrowserWindow.getAllWindows().forEach(w => w.webContents.send('backup:complete', Date.now()))
+        })
+
       } catch (e) {
         console.error('[ShowManager] Auto-save failed:', e)
       }

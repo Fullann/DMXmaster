@@ -13,6 +13,7 @@ export interface NetworkState {
   removeNode: (id: string) => void
   refresh: () => Promise<void>
   init: () => void
+  setInputRouting: (universe: number, mode: 'htp' | 'remote') => void
 }
 
 export const useNetworkStore = create<NetworkState>((set, get) => ({
@@ -64,5 +65,12 @@ export const useNetworkStore = create<NetworkState>((set, get) => ({
 
   init: () => {
     get().loadConfig()
+  },
+
+  setInputRouting: (universe, mode) => {
+    const config = get().config
+    const routing = { ...(config.inputRouting || {}) }
+    routing[universe] = mode
+    get().saveConfig({ ...config, inputRouting: routing })
   }
 }))

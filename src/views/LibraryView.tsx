@@ -94,6 +94,23 @@ export function LibraryView() {
     }
   }
 
+  const handleImportGdtf = async () => {
+    setSuccessMsg('')
+    setErrorMsg('')
+    const res = await (window as any).fixtureAPI.importGdtf()
+    if (!res.success) {
+      if (res.error !== 'Canceled') setErrorMsg(res.error || 'Failed to import GDTF.')
+      return
+    }
+    if (res.profile) {
+      setManufacturer(res.profile.manufacturer)
+      setModel(res.profile.model)
+      setMode(res.profile.mode)
+      setChannels(res.profile.channels)
+      setSuccessMsg('GDTF imported successfully! Review and click Save.')
+    }
+  }
+
   return (
     <div className="view-full" style={{ padding: '1.5rem', display: 'flex', gap: '2rem', overflowY: 'auto' }}>
       
@@ -104,14 +121,25 @@ export function LibraryView() {
             <h2>Fixture Library & Builder</h2>
             <p className="text-muted">Create custom DMX fixture profiles or import them. Saved profiles are instantly available in Patch.</p>
           </div>
-          <button 
-            className="btn btn-primary" 
-            onClick={handleSave} 
-            disabled={isSaving}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <Save size={16} /> Save Profile
-          </button>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button 
+              onClick={handleImportGdtf}
+              style={{ 
+                background: '#8b5cf6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 'var(--radius-md)', 
+                cursor: 'pointer', fontWeight: 500, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px'
+              }}
+            >
+              Import .GDTF
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSave} 
+              disabled={isSaving}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Save size={16} /> Save Profile
+            </button>
+          </div>
         </header>
 
         {successMsg && <div style={{ color: 'var(--status-ok)', background: 'rgba(52, 211, 153, 0.1)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>{successMsg}</div>}

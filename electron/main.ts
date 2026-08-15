@@ -63,17 +63,20 @@ function createWindow(): BrowserWindow {
 
   // ── Content Security Policy ───────────────────────────────────────────────
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
+    const scriptSrc = isDev ? "'self' 'unsafe-inline' 'unsafe-eval'" : "'self'"
+    
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self'; " +
-          "script-src 'self'; " +
+          "default-src 'self' http://localhost:*; " +
+          `script-src ${scriptSrc}; ` +
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "font-src 'self' https://fonts.gstatic.com; " +
-          "img-src 'self' data: blob:; " +
+          "img-src 'self' data: blob: http://localhost:*; " +
           "media-src 'self' blob:; " +
-          "connect-src 'self' ws://localhost:*;"
+          "connect-src 'self' ws://localhost:* http://localhost:*;"
         ]
       }
     })
@@ -168,11 +171,12 @@ app.whenReady().then(async () => {
 
   // 5. Create window + start engine & web server
   const mainWindow = createWindow()
+  await dmxEngine.loadProgrammerState()
   dmxEngine.start()
   webServerManager.start()
   
   // Start auto-save every 5 minutes (300,000 ms)
-  showManager.startAutoSave(5 * 60 * 1000)
+  showManager.startAutoSave(5 * 60 * 1000, dmxEngine)
   
   console.log('[Main] DMX engine started.')
 

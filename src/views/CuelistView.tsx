@@ -12,7 +12,7 @@ export function CuelistView() {
 
   useEffect(() => {
     loadCuelists()
-    fetchScenes()
+    loadScenes()
     initListener()
   }, [])
 

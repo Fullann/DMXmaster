@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Show, ShowEvent } from '@/types/timeline'
 import { useMidiStore } from '@/store/useMidiStore'
 

@@ -1,14 +1,32 @@
-import { ipcMain } from 'electron'
+import { ipcMain, dialog } from 'electron'
 import type { FixtureManager } from '../fixtureManager'
+import type { SceneManager } from '../sceneManager'
+import type { PaletteManager } from '../paletteManager'
 import type { FixtureProfile, ChannelType } from '../fixtureTypes'
 import { handle } from './ipcUtils'
+import { parseGdtf } from '../gdtfParser'
 
-export function registerFixtureIpc(fixture: FixtureManager): void {
+export function registerFixtureIpc(fixture: FixtureManager, scene: SceneManager, palette: PaletteManager): void {
   // Profiles
   handle('fixture:getProfiles', () => ({ profiles: fixture.getProfiles() }))
   handle('fixture:reloadProfiles', async () => { await fixture.loadProfiles(); return { profiles: fixture.getProfiles() } })
   handle('fixture:saveProfile', async (p) => ({ key: await fixture.saveProfile(p as FixtureProfile) }))
   handle('fixture:deleteProfile', (id) => fixture.deleteProfile(id as string))
+  
+  handle('fixture:importGdtf', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Import GDTF Fixture Profile',
+      filters: [{ name: 'GDTF Files', extensions: ['gdtf'] }],
+      properties: ['openFile']
+    })
+    if (canceled || filePaths.length === 0) return { success: false, error: 'Canceled' }
+    try {
+      const profile = parseGdtf(filePaths[0])
+      return { success: true, profile }
+    } catch (e: any) {
+      return { success: false, error: e.message }
+    }
+  })
 
   // Patch
   handle('fixture:getPatch', () => ({ patch: fixture.getPatch() }))
@@ -20,6 +38,16 @@ export function registerFixtureIpc(fixture: FixtureManager): void {
   handle('fixture:setPosition',     async (id, pos)       => { await fixture.setFixturePosition(id as string, pos as [number, number, number]) })
   handle('fixture:setRotation',     async (id, rot)       => { await fixture.setFixtureRotation(id as string, rot as [number, number, number]) })
   handle('fixture:setUniverse',     async (id, uIdx)      => { await fixture.setFixtureUniverse(id as string, uIdx as number) })
+  handle('fixture:morphFixture',    async (id, key, addr) => { 
+    const f = await fixture.morphFixture(id as string, key as string, addr as number | undefined)
+    return { fixture: f }
+  })
+  handle('fixture:cloneFixture',    async (src, dest) => {
+    await fixture.cloneFixtureGroups(src as string, dest as string)
+    await scene.cloneFixtureStates(src as string, dest as string)
+    await palette.cloneFixtureStates(src as string, dest as string)
+    return { success: true }
+  })
 
   // Groups
   handle('fixture:getGroups', () => ({ groups: fixture.getGroups() }))

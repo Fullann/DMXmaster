@@ -178,6 +178,25 @@ export class FixtureManager {
     }
   }
 
+  async morphFixture(id: string, newProfileKey: string, newStartAddress?: number): Promise<PatchedFixture> {
+    const fixture = this.patch.find(f => f.id === id)
+    if (!fixture) throw new Error(`Fixture not found: ${id}`)
+    
+    const profile = this.profiles.get(newProfileKey)
+    if (!profile) throw new Error(`Profile not found: "${newProfileKey}"`)
+    
+    fixture.profileKey = newProfileKey
+    fixture.profile = profile
+    if (newStartAddress !== undefined) {
+      fixture.startAddress = newStartAddress
+    }
+    
+    // Label can stay the same, or we can update it if the user wants. We'll leave it unchanged so they don't lose their custom name.
+    await this.savePatch()
+    console.log(`[FixtureManager] Morphed "${fixture.label}" to profile ${newProfileKey}.`)
+    return fixture
+  }
+
   async unpatchAll(): Promise<void> {
     const count = this.patch.length
     this.patch = []
@@ -249,6 +268,20 @@ export class FixtureManager {
       group.name = name
       await this.saveGroups(this.groups)
       console.log(`[FixtureManager] Renamed group ${id} to "${name}"`)
+    }
+  }
+
+  async cloneFixtureGroups(sourceId: string, destId: string): Promise<void> {
+    let changed = false
+    for (const g of this.groups) {
+      if (g.fixtureIds.includes(sourceId) && !g.fixtureIds.includes(destId)) {
+        g.fixtureIds.push(destId)
+        changed = true
+      }
+    }
+    if (changed) {
+      await this.saveGroups(this.groups)
+      console.log(`[FixtureManager] Cloned group memberships from ${sourceId} to ${destId}`)
     }
   }
 

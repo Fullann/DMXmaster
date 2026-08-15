@@ -1,3 +1,6 @@
+import { app } from 'electron'
+import { promises as fs } from 'fs'
+import * as path from 'path'
 import type { SerialManager } from './serialManager'
 import type { AudioEngine } from './audioEngine'
 import type { NetworkManager } from './networkManager'
@@ -316,9 +319,12 @@ export class DmxEngine {
 
     // ── DMX-IN (HTP Merge) ────────────────────────────────────────────────────
     const incoming = this.networkManager?.getIncomingUniverses()
+    const routing = this.networkManager?.getConfig()?.inputRouting || {}
+    
     if (incoming) {
       for (let u = 0; u < MAX_UNIVERSES; u++) {
         if (!incoming[u]) continue
+        if (routing[u] === 'remote') continue // Skip HTP Merge if reserved for Remote Control
         for (let i = 0; i < DMX_CHANNELS; i++) {
           if (incoming[u][i] > this.universes[u][i]) {
             this.universes[u][i] = incoming[u][i]
@@ -379,6 +385,44 @@ export class DmxEngine {
 
     // ── Art-Net Output (all universes) ────────────────────────────────────────
     this.networkManager?.broadcastAll(sendingUniverses)
+  }
+
+  // ── Auto-Save Programmer State ──────────────────────────────────────────────
+  
+  public async saveProgrammerState(): Promise<void> {
+    try {
+      const appDir = path.join(app.getPath('documents'), 'DmxMaster')
+      const filePath = path.join(appDir, 'programmer.json')
+      const data = this.universes.map(u => Array.from(u))
+      await fs.writeFile(filePath, JSON.stringify(data), 'utf-8')
+      console.log('[DmxEngine] Programmer state saved.')
+    } catch (err) {
+      console.error('[DmxEngine] Failed to save programmer state:', err)
+    }
+  }
+
+  public async loadProgrammerState(): Promise<void> {
+    try {
+      const appDir = path.join(app.getPath('documents'), 'DmxMaster')
+      const filePath = path.join(appDir, 'programmer.json')
+      const raw = await fs.readFile(filePath, 'utf-8')
+      const data = JSON.parse(raw) as number[][]
+      if (Array.isArray(data)) {
+        for (let i = 0; i < Math.min(MAX_UNIVERSES, data.length); i++) {
+          if (Array.isArray(data[i])) {
+            for (let j = 0; j < Math.min(DMX_CHANNELS, data[i].length); j++) {
+              this.universes[i][j] = data[i][j]
+            }
+          }
+        }
+      }
+      this._rampUp()
+      console.log('[DmxEngine] Programmer state loaded.')
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') {
+        console.error('[DmxEngine] Failed to load programmer state:', err)
+      }
+    }
   }
 
   /**

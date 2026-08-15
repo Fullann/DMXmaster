@@ -67,4 +67,18 @@ export class PaletteManager {
       }
     }
   }
+
+  async cloneFixtureStates(sourceId: string, destId: string): Promise<void> {
+    let changed = false
+    for (const palette of this.palettes.values()) {
+      if (palette.values[sourceId]) {
+        palette.values[destId] = { ...palette.values[sourceId] }
+        await this.savePalette(palette)
+        changed = true
+      }
+    }
+    if (changed) {
+      console.log(`[PaletteManager] Cloned states from ${sourceId} to ${destId} in palettes`)
+    }
+  }
 }

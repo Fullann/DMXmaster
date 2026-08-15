@@ -283,6 +283,20 @@ export class SceneManager {
     return this.scenes.get(id)
   }
 
+  async cloneFixtureStates(sourceId: string, destId: string): Promise<void> {
+    let changed = false
+    for (const [id, scene] of this.scenes.entries()) {
+      if (scene.fixtureStates[sourceId]) {
+        scene.fixtureStates[destId] = { ...scene.fixtureStates[sourceId] }
+        this._writeSceneDebounced(scene)
+        changed = true
+      }
+    }
+    if (changed) {
+      console.log(`[SceneManager] Cloned states from ${sourceId} to ${destId} in scenes`)
+    }
+  }
+
   getFadeStatus(): FadeStatus {
     if (!this.activeFade) {
       return { isActive: false, sceneId: null, sceneName: null, fadeTimeMs: 0, elapsedMs: 0, progress: 0 }

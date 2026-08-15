@@ -19,6 +19,8 @@ export interface FixturesState {
   setFixturePosition: (id: string, pos: [number, number, number]) => Promise<void>
   setFixtureRotation: (id: string, rot: [number, number, number]) => Promise<void>
   setFixtureUniverse: (id: string, universeIdx: number) => Promise<void>
+  morphFixture: (id: string, key: string, addr?: number) => Promise<PatchedFixture | null>
+  cloneFixture: (src: string, dest: string) => Promise<boolean>
   sendCommand: (fixtureId: string, type: ChannelType, value: number) => Promise<void>
   sendColor: (fixtureId: string, r: number, g: number, b: number, w?: number) => Promise<void>
   init: () => void
@@ -114,6 +116,26 @@ export const useFixturesStore = create<FixturesState>((set, get) => ({
   setFixtureUniverse: async (id, universeIdx) => {
     set((state) => ({ patch: state.patch.map(f => f.id === id ? { ...f, universeIndex: universeIdx } : f) }))
     await window.fixtureAPI.setUniverse(id, universeIdx)
+  },
+
+  morphFixture: async (id, key, addr) => {
+    set({ error: null })
+    const result = await window.fixtureAPI.morphFixture(id, key, addr)
+    if (result.success && result.fixture) {
+      const f = result.fixture
+      set((state) => ({ patch: state.patch.map(p => p.id === id ? f : p) }))
+      return f
+    }
+    set({ error: result.error ?? 'Failed to morph fixture' })
+    return null
+  },
+
+  cloneFixture: async (src, dest) => {
+    set({ error: null })
+    const result = await window.fixtureAPI.cloneFixture(src, dest)
+    if (result.success) return true
+    set({ error: result.error ?? 'Failed to clone fixture' })
+    return false
   },
 
   sendCommand: async (fixtureId, type, value) => {
