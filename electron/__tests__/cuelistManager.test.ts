@@ -4,7 +4,16 @@ import type { SceneManager } from '../sceneManager'
 import type { Cuelist } from '../../src/types/cuelist'
 import * as fs from 'fs'
 
-vi.mock('fs')
+vi.mock('fs', () => ({
+  promises: {
+    access: vi.fn(),
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+  },
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
+}))
 vi.mock('electron', () => ({
   app: {
     getPath: vi.fn().mockReturnValue('/mock/userData')
@@ -33,16 +42,16 @@ describe('CuelistManager', () => {
     vi.useRealTimers()
   })
 
-  it('should create default cuelist if none exists', () => {
-    vi.mocked(fs.existsSync).mockReturnValue(false)
-    manager.init()
+  it('should create default cuelist if none exists', async () => {
+    vi.mocked(fs.promises.access).mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+    await manager.init()
     
     const cuelists = manager.getCuelists()
     expect(cuelists).toHaveLength(1)
     expect(cuelists[0].name).toBe('Main Show')
   })
 
-  it('should handle go() and update playback state', () => {
+  it('should handle go() and update playback state', async () => {
     const mockCuelists: Cuelist[] = [{
       id: 'list-1',
       name: 'Show',
@@ -52,10 +61,10 @@ describe('CuelistManager', () => {
       ]
     }]
     
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockCuelists))
+    vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+    vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify(mockCuelists))
     
-    manager.init()
+    await manager.init()
     
     // State should be stopped initially
     expect(manager.getPlaybackState().state).toBe('stopped')
@@ -75,7 +84,7 @@ describe('CuelistManager', () => {
     expect(manager.getPlaybackState().nextCueId).toBeNull()
   })
 
-  it('should handle delayTime', () => {
+  it('should handle delayTime', async () => {
     const mockCuelists: Cuelist[] = [{
       id: 'list-1',
       name: 'Show',
@@ -83,10 +92,10 @@ describe('CuelistManager', () => {
         { id: 'cue-1', number: 1, name: 'C1', sceneId: 'sc-1', fadeTime: 0, delayTime: 2000, trigger: 'manual', followTime: 0 },
       ]
     }]
+    vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+    vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify(mockCuelists))
     
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockCuelists))
-    manager.init()
+    await manager.init()
     
     manager.go('list-1')
     
@@ -98,7 +107,7 @@ describe('CuelistManager', () => {
     expect(mockSceneManager.recallSceneWithFade).toHaveBeenCalledWith('sc-1', 0)
   })
 
-  it('should handle follow trigger', () => {
+  it('should handle follow trigger', async () => {
     const mockCuelists: Cuelist[] = [{
       id: 'list-1',
       name: 'Show',
@@ -107,10 +116,10 @@ describe('CuelistManager', () => {
         { id: 'cue-2', number: 2, name: 'C2', sceneId: 'sc-2', fadeTime: 0, delayTime: 0, trigger: 'manual', followTime: 0 },
       ]
     }]
+    vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+    vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify(mockCuelists))
     
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockCuelists))
-    manager.init()
+    await manager.init()
     
     manager.go('list-1')
     expect(mockSceneManager.recallSceneWithFade).toHaveBeenCalledWith('sc-1', 0)
@@ -126,7 +135,7 @@ describe('CuelistManager', () => {
     expect(manager.getPlaybackState().currentCueId).toBe('cue-2')
   })
 
-  it('should stop playback and clear timeouts when stop() is called', () => {
+  it('should stop playback and clear timeouts when stop() is called', async () => {
     const mockCuelists: Cuelist[] = [{
       id: 'list-1',
       name: 'Show',
@@ -135,9 +144,10 @@ describe('CuelistManager', () => {
         { id: 'cue-2', number: 2, name: 'C2', sceneId: 'sc-2', fadeTime: 0, delayTime: 0, trigger: 'manual', followTime: 0 },
       ]
     }]
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockCuelists))
-    manager.init()
+    vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+    vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify(mockCuelists))
+    
+    await manager.init()
     
     manager.go('list-1')
     

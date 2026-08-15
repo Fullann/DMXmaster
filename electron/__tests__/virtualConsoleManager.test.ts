@@ -5,7 +5,17 @@ import * as path from 'path'
 import { app } from 'electron'
 import type { VirtualConsolePage } from '../../src/types/virtualConsole'
 
-vi.mock('fs')
+vi.mock('fs', () => ({
+  promises: {
+    access: vi.fn(),
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+  },
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
+}))
+
 vi.mock('electron', () => ({
   app: {
     getPath: vi.fn().mockReturnValue('/mock/userData')
@@ -21,60 +31,61 @@ describe('VirtualConsoleManager', () => {
     manager = new VirtualConsoleManager()
   })
 
-  it('should initialize and load default page if no file exists', () => {
-    vi.mocked(fs.existsSync).mockReturnValue(false)
+  it('should initialize and load default page if no file exists', async () => {
+    vi.mocked(fs.promises.access).mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     
-    manager.init()
+    await manager.init()
     
     const pages = manager.getPages()
     expect(pages).toHaveLength(1)
     expect(pages[0].name).toBe('Page 1')
     expect(pages[0].widgets).toEqual([])
     
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(
       mockPath,
       expect.stringContaining('Page 1')
     )
   })
 
-  it('should load pages from file if it exists', () => {
-    vi.mocked(fs.existsSync).mockReturnValue(true)
+  it('should load pages from file if it exists', async () => {
+    vi.mocked(fs.promises.access).mockResolvedValue(undefined)
     
     const mockPages: VirtualConsolePage[] = [
       { id: '1', name: 'Test Page', widgets: [] }
     ]
     
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockPages))
+    vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify(mockPages))
     
-    manager.init()
+    await manager.init()
     
     const pages = manager.getPages()
     expect(pages).toHaveLength(1)
     expect(pages[0].name).toBe('Test Page')
   })
 
-  it('should fallback to default if file contains invalid JSON', () => {
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.readFileSync).mockReturnValue('invalid-json')
+  it('should fallback to default if file contains invalid JSON', async () => {
+    vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+    vi.mocked(fs.promises.readFile).mockResolvedValue('invalid-json')
     
-    manager.init()
+    await manager.init()
     
     const pages = manager.getPages()
     expect(pages).toHaveLength(1)
     expect(pages[0].name).toBe('Page 1') // Default generated
   })
 
-  it('should save pages and update state', () => {
-    manager.init()
-    
+  it('should save pages and update state', async () => {
+    vi.mocked(fs.promises.access).mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+    await manager.init() // load defaults first
+
     const newPages: VirtualConsolePage[] = [
       { id: '2', name: 'Saved Page', widgets: [] }
     ]
     
-    manager.savePages(newPages)
+    await manager.savePages(newPages)
     
     expect(manager.getPages()[0].name).toBe('Saved Page')
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(
       mockPath,
       JSON.stringify(newPages, null, 2)
     )
