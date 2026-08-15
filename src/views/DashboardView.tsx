@@ -140,36 +140,26 @@ export function DashboardView() {
   
   const isMidiBridgeActive = midi.lastMessage?.type === 'noteOn' || midi.lastMessage?.type === 'noteOff'
 
+  // Compute the grid only when the patch changes (expensive: 512 slots)
+  // selectedUserNumbers intentionally excluded — checked via selectedSet at render time
   const gridItems = useMemo(() => {
-    const items = []
+    const items: { type: 'fixture'; fixture: (typeof patch)[0]; startAddress: number } | { type: 'generic'; ch: number }[] = []
     let i = 1
     while (i <= 512) {
       const fixture = patch.find(f => f.startAddress === i)
       if (fixture) {
-        items.push(
-          <FixtureGroup 
-            key={`fix-${i}`} 
-            fixture={fixture} 
-            startAddress={i} 
-            setActiveChannel={setActiveChannel} 
-            isSelected={selectedUserNumbers.includes(fixture.userNumber)}
-          />
-        )
+        items.push({ type: 'fixture', fixture, startAddress: i })
         i += fixture.profile.channels.length
       } else {
-        const ch = i
-        items.push(
-          <GenericChannel 
-            key={ch} 
-            ch={ch} 
-            onClick={() => setActiveChannel(ch)} 
-          />
-        )
+        items.push({ type: 'generic', ch: i })
         i++
       }
     }
     return items
   }, [patch])
+
+  // O(1) lookup set — cheap to recompute on CLI selection change
+  const selectedSet = useMemo(() => new Set(selectedUserNumbers), [selectedUserNumbers])
 
   return (
     <>
@@ -224,7 +214,26 @@ export function DashboardView() {
           flex: 1, 
           alignContent: 'start' 
         }}>
-          {gridItems}
+          {gridItems.map(item => {
+            if (item.type === 'fixture') {
+              return (
+                <FixtureGroup
+                  key={`fix-${item.startAddress}`}
+                  fixture={item.fixture}
+                  startAddress={item.startAddress}
+                  setActiveChannel={setActiveChannel}
+                  isSelected={selectedSet.has(item.fixture.userNumber)}
+                />
+              )
+            }
+            return (
+              <GenericChannel
+                key={item.ch}
+                ch={item.ch}
+                onClick={() => setActiveChannel(item.ch)}
+              />
+            )
+          })}
         </div>
       </main>
 

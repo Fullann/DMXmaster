@@ -36,6 +36,26 @@ export class FixtureManager {
   // ── Masters State ─────────────────────────────────────────────────────────
   private grandMaster = 1.0
   private submasters = new Map<string, number>()
+  // Cache: precomputed HTP submaster per fixture, invalidated on group/submaster changes
+  private _submasterCache: Map<string, number> | null = null
+
+  private _invalidateSubmasterCache(): void {
+    this._submasterCache = null
+  }
+
+  private _getFixtureSubmasters(): Map<string, number> {
+    if (this._submasterCache) return this._submasterCache
+    const m = new Map<string, number>()
+    for (const g of this.groups) {
+      const lvl = this.submasters.has(g.id) ? this.submasters.get(g.id)! : 1.0
+      for (const fid of g.fixtureIds) {
+        const current = m.get(fid) ?? -1
+        if (lvl > current) m.set(fid, lvl)
+      }
+    }
+    this._submasterCache = m
+    return m
+  }
 
   // ── Initialization ──────────────────────────────────────────────────────────
 
@@ -147,6 +167,10 @@ export class FixtureManager {
   }
 
   async deleteProfile(key: string): Promise<void> {
+    // 🔒 Security: prevent path traversal attacks (e.g. key = '../../SensitiveFile')
+    if (!key || /[/\\\.]/.test(key)) {
+      throw new Error(`Invalid profile key: "${key}"`)
+    }
     const filePath = path.join(this.profilesDir, `${key}.json`)
     try {
       await fs.unlink(filePath)
@@ -291,6 +315,7 @@ export class FixtureManager {
 
   async saveGroups(newGroups: FixtureGroup[]): Promise<void> {
     this.groups = newGroups
+    this._invalidateSubmasterCache()
     await fs.writeFile(this.groupsPath, JSON.stringify(this.groups, null, 2), 'utf8')
   }
 
@@ -321,10 +346,12 @@ export class FixtureManager {
 
   setGrandMaster(level: number): void {
     this.grandMaster = Math.max(0, Math.min(1.0, level))
+    // Grand master does not affect submaster cache; no invalidation needed
   }
 
   setSubmaster(groupId: string, level: number): void {
     this.submasters.set(groupId, Math.max(0, Math.min(1.0, level)))
+    this._invalidateSubmasterCache()
   }
 
   // ── Logical commands ─────────────────────────────────────────────────────────
@@ -349,6 +376,10 @@ export class FixtureManager {
       case 'Speed':     state.speed = v;     break
       case 'Effect':    state.effect = v;    break
       case 'Color':     state.color = v;     break
+      case 'Gobo':      state.gobo = v;      break
+      case 'Prism':     state.prism = v;     break
+      case 'Zoom':      state.zoom = v;      break
+      case 'Focus':     state.focus = v;     break
       default: break
     }
   }
@@ -481,15 +512,8 @@ export class FixtureManager {
    *                 = startAddress + channel.number − 2
    */
   applyToUniverses(universes: Uint8Array[], fxOffsets: Record<string, Partial<FixtureLogicalState>> | null): void {
-    // Pre-calculate highest submaster level for each fixture to avoid O(N*M) lookups inside the loop
-    const fixtureSubmasters = new Map<string, number>()
-    for (const g of this.groups) {
-      const lvl = this.submasters.has(g.id) ? this.submasters.get(g.id)! : 1.0
-      for (const fid of g.fixtureIds) {
-        const current = fixtureSubmasters.get(fid) ?? -1
-        if (lvl > current) fixtureSubmasters.set(fid, lvl)
-      }
-    }
+    // Use the cached fixture→submaster map (invalidated on group/submaster changes)
+    const fixtureSubmasters = this._getFixtureSubmasters()
 
     for (const fixture of this.patch) {
       const liveState = this.fixtureStates.get(fixture.id)
@@ -525,6 +549,10 @@ export class FixtureManager {
           case 'Speed':     v = liveState.speed;     bv = blindState?.speed ?? v;     break
           case 'Effect':    v = liveState.effect;    bv = blindState?.effect ?? v;    break
           case 'Color':     v = liveState.color;     bv = blindState?.color ?? v;     break
+          case 'Gobo':      v = liveState.gobo;      bv = blindState?.gobo ?? v;      break
+          case 'Prism':     v = liveState.prism;     bv = blindState?.prism ?? v;     break
+          case 'Zoom':      v = liveState.zoom;      bv = blindState?.zoom ?? v;      break
+          case 'Focus':     v = liveState.focus;     bv = blindState?.focus ?? v;     break
           default:          continue // Skip updating DMX universe for custom/unknown channels
         }
 

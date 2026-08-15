@@ -171,6 +171,8 @@ app.whenReady().then(async () => {
 
   // 5. Create window + start engine & web server
   const mainWindow = createWindow()
+  // Wire window reference so NetworkManager can push DMX-IN events without dynamic require()
+  networkManager.setBrowserWindow(mainWindow)
   await dmxEngine.loadProgrammerState()
   dmxEngine.start()
   webServerManager.start()

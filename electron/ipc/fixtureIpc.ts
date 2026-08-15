@@ -31,7 +31,13 @@ export function registerFixtureIpc(fixture: FixtureManager, scene: SceneManager,
   // Patch
   handle('fixture:getPatch', () => ({ patch: fixture.getPatch() }))
   handle('fixture:savePatch', (p) => fixture.savePatch(p as any))
-  handle('fixture:patchFixture',    (key, addr, label, uIdx) => ({ fixture: fixture.patchFixture(key as string, addr as number, label as string, uIdx as number) }))
+  handle('fixture:patchFixture', (key, addr, label, uIdx) => {
+    if (typeof key !== 'string' || !key) throw new Error('Invalid profileKey')
+    if (typeof addr !== 'number' || addr < 1 || addr > 512) throw new Error(`Invalid address: ${addr} (must be 1–512)`)
+    const safeLabel = typeof label === 'string' ? label : undefined
+    const safeUIdx  = typeof uIdx  === 'number' ? Math.max(0, Math.min(7, uIdx)) : 0
+    return { fixture: fixture.patchFixture(key, addr, safeLabel, safeUIdx) }
+  })
   handle('fixture:removePatch',     (id)                  => { fixture.removePatchedFixture(id as string) })
   handle('fixture:unpatchAll',      ()                   => fixture.unpatchAll())
   handle('fixture:setTransform',    (id, pos, rot)       => fixture.setFixtureTransform(id as string, pos as [number,number,number], rot as [number,number,number]))
@@ -59,13 +65,24 @@ export function registerFixtureIpc(fixture: FixtureManager, scene: SceneManager,
   ipcMain.on('fixture:setSubmaster',   (_e, groupId, level) => { fixture.setSubmaster(groupId as string, level as number) })
 
   // Logical commands
-  handle('fixture:sendCommand', (id, type, val) => { fixture.sendCommand(id as string, type as ChannelType, val as number) })
-  handle('fixture:sendColor',   (id, r, g, b, w) => { fixture.sendColor(id as string, r as number, g as number, b as number, (w as number) ?? 0) })
+  handle('fixture:sendCommand', (id, type, val) => {
+    if (typeof val !== 'number' || val < 0 || val > 255) throw new Error(`Invalid DMX value: ${val}`)
+    fixture.sendCommand(id as string, type as ChannelType, val)
+  })
+  handle('fixture:sendColor', (id, r, g, b, w) => {
+    for (const [name, v] of [['r',r],['g',g],['b',b],['w',w ?? 0]] as [string, unknown][]) {
+      if (typeof v !== 'number' || (v as number) < 0 || (v as number) > 255) throw new Error(`Invalid color channel ${name}: ${v}`)
+    }
+    fixture.sendColor(id as string, r as number, g as number, b as number, (w as number) ?? 0)
+  })
   handle('fixture:getStates',   ()               => ({ states: fixture.getFixtureStates() }))
   handle('fixture:clearAll',    ()               => { fixture.clearAll() })
   handle('fixture:setStates',   (statesMap)      => { fixture.setLogicalStates(statesMap as Record<string, Record<string, number>>) })
   
   // Blind Mode
   handle('fixture:setBlindMode', (active) => fixture.setBlindMode(active as boolean))
-  handle('fixture:setBlindCrossfader', (val) => fixture.setBlindCrossfader(val as number))
+  handle('fixture:setBlindCrossfader', (val) => {
+    if (typeof val !== 'number' || val < 0 || val > 1) throw new Error(`Invalid crossfader value: ${val} (must be 0.0–1.0)`)
+    fixture.setBlindCrossfader(val)
+  })
 }

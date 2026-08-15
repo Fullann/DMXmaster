@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { promises as fs } from 'fs'
 import { join } from 'path'
 import * as dgram from 'dgram'
@@ -27,6 +27,13 @@ export class NetworkManager {
   
   // Timeout references to clear incoming universes if source drops
   private incomingTimeouts: (NodeJS.Timeout | null)[] = Array(MAX_UNIVERSES).fill(null)
+  // Reference to the main BrowserWindow for IPC push events (DMX-IN)
+  private mainWindow: BrowserWindow | null = null
+
+  /** Called once the main window is created to enable DMX-IN IPC push. */
+  setBrowserWindow(win: BrowserWindow): void {
+    this.mainWindow = win
+  }
 
   constructor() {
     this._initPacketHeader()
@@ -108,10 +115,11 @@ export class NetworkManager {
     
     if (isRemote) {
       // For remote control, emit IPC events for changed channels
-      for (let i = 0; i < dmxData.length; i++) {
-        if (dmxData[i] !== oldData[i]) {
-          const w = require('electron').BrowserWindow.getAllWindows()[0]
-          if (w) w.webContents.send('dmxIn:change', { universe, channel: i, value: dmxData[i] })
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        for (let i = 0; i < dmxData.length; i++) {
+          if (dmxData[i] !== oldData[i]) {
+            this.mainWindow.webContents.send('dmxIn:change', { universe, channel: i, value: dmxData[i] })
+          }
         }
       }
     }

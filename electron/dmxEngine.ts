@@ -215,11 +215,15 @@ export class DmxEngine {
 
   private snapshotBuffer = new Uint8Array(DMX_CHANNELS)
 
-  /** Snapshot of a specific universe (0-based index). */
+  /**
+   * Snapshot of a specific universe (0-based index).
+   * Returns a *copy* (not aliased) so callers can safely read it asynchronously
+   * without risking corruption from a concurrent tick overwriting the same buffer.
+   */
   getUniverseSnapshot(universeIdx = 0): Uint8Array {
     const u = Math.max(0, Math.min(MAX_UNIVERSES - 1, universeIdx))
-    this.snapshotBuffer.set(this.universes[u])
-    return this.snapshotBuffer
+    // Return a fresh copy — avoids aliasing bugs when IPC push and tick overlap
+    return new Uint8Array(this.universes[u])
   }
 
   /** Snapshots of all universes. */

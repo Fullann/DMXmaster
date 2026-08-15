@@ -3,6 +3,9 @@ import { parseCommand } from '@/utils/CommandParser'
 import { useFixturesStore } from './useFixturesStore'
 import { useScenesStore } from './useScenesStore'
 
+// Auto-clear timer reference
+let feedbackTimer: ReturnType<typeof setTimeout> | null = null
+
 export interface CliState {
   commandBuffer: string
   selectedUserNumbers: number[]
@@ -43,9 +46,12 @@ export const useCliStore = create<CliState>((set, get) => ({
         const fixturesStore = useFixturesStore.getState()
         const patch = fixturesStore.patch
         
+        // Pre-index by userNumber for O(1) lookup instead of O(n) per fixture
+        const byUserNumber = new Map(patch.map(f => [f.userNumber, f]))
+        
         let appliedCount = 0
         for (const unum of newSelection) {
-          const fixture = patch.find(f => f.userNumber === unum)
+          const fixture = byUserNumber.get(unum)
           if (fixture) {
             fixturesStore.sendCommand(fixture.id, 'Intensity', val)
             appliedCount++
@@ -69,6 +75,13 @@ export const useCliStore = create<CliState>((set, get) => ({
       selectedUserNumbers: newSelection,
       lastFeedback: feedback
     })
+
+    // Auto-clear feedback after 3 seconds
+    if (feedbackTimer) clearTimeout(feedbackTimer)
+    feedbackTimer = setTimeout(() => {
+      useCliStore.setState({ lastFeedback: '' })
+      feedbackTimer = null
+    }, 3000)
   },
 
   clearSelection: () => set({ selectedUserNumbers: [] })
