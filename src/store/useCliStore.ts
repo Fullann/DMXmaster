@@ -108,6 +108,35 @@ export const useCliStore = create<CliState>((set, get) => ({
         }
       }
 
+      if (parsed.type === 'fan' || parsed.type === 'mixed_fan') {
+        const { fanChannel, fanStart, fanEnd } = parsed
+        if (fanChannel && fanStart !== undefined && fanEnd !== undefined) {
+          const fixturesStore = useFixturesStore.getState()
+          const patch = fixturesStore.patch
+          const byUserNumber = new Map(patch.map(f => [f.userNumber, f]))
+          
+          let appliedCount = 0
+          const total = newSelection.length
+          
+          newSelection.forEach((unum, index) => {
+            const fixture = byUserNumber.get(unum)
+            if (fixture) {
+              // Linear interpolation
+              const fraction = total > 1 ? index / (total - 1) : 0.5
+              const val = Math.round(fanStart + fraction * (fanEnd - fanStart))
+              fixturesStore.sendCommand(fixture.id, fanChannel as any, val)
+              appliedCount++
+            }
+          })
+          
+          if (appliedCount > 0) {
+            feedback += (feedback ? ' | ' : '') + `FAN ${fanChannel} ${Math.round((fanStart/255)*100)}% THRU ${Math.round((fanEnd/255)*100)}%`
+          } else {
+            feedback += (feedback ? ' | ' : '') + `No valid fixtures for fan.`
+          }
+        }
+      }
+
       if (parsed.type === 'unknown') {
         feedback = 'Syntax Error'
       }

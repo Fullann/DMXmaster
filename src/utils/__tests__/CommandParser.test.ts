@@ -68,4 +68,22 @@ describe('CommandParser', () => {
     expect(res.selectedUserNumbers).toEqual([10, 11, 12])
     expect(res.intensityValue).toBe(255)
   })
+
+  it('should parse fan intensity command', () => {
+    const res = parseCommand('1 THRU 5 @ 0 THRU 100')
+    expect(res.type).toBe('mixed_fan')
+    expect(res.selectedUserNumbers).toEqual([1, 2, 3, 4, 5])
+    expect(res.fanChannel).toBe('Intensity')
+    expect(res.fanStart).toBe(0)
+    expect(res.fanEnd).toBe(255)
+  })
+
+  it('should parse fan specific channel command', () => {
+    const res = parseCommand('1 THRU 5 FAN TILT 0 THRU 255')
+    expect(res.type).toBe('mixed_fan')
+    expect(res.selectedUserNumbers).toEqual([1, 2, 3, 4, 5])
+    expect(res.fanChannel).toBe('Tilt')
+    expect(res.fanStart).toBe(0)
+    expect(res.fanEnd).toBe(255)
+  })
 })

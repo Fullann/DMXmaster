@@ -191,12 +191,34 @@ export class FixtureManager {
 
   // ── Patch management ─────────────────────────────────────────────────────────
 
+  private _checkPatchConflict(startAddress: number, channelCount: number, universeIndex: number, excludeFixtureId?: string): void {
+    const endAddress = startAddress + channelCount - 1
+    if (endAddress > 512) {
+      throw new Error(`Invalid patch: fixture extends beyond universe boundary (end address ${endAddress})`)
+    }
+
+    for (const fixture of this.patch) {
+      if (excludeFixtureId && fixture.id === excludeFixtureId) continue
+      if ((fixture.universeIndex ?? 0) !== universeIndex) continue
+
+      const fixStart = fixture.startAddress
+      const fixEnd = fixStart + fixture.profile.channels.length - 1
+
+      // Check for overlap: max(start1, start2) <= min(end1, end2)
+      if (Math.max(startAddress, fixStart) <= Math.min(endAddress, fixEnd)) {
+        throw new Error(`Patch conflict: overlaps with "${fixture.label}" (channels ${fixStart}-${fixEnd} on Universe ${universeIndex + 1})`)
+      }
+    }
+  }
+
   patchFixture(profileKey: string, startAddress: number, label?: string, universeIndex = 0): PatchedFixture {
     const profile = this.profiles.get(profileKey)
     if (!profile) throw new Error(`Profile not found: "${profileKey}"`)
     if (startAddress < 1 || startAddress > 512) {
       throw new Error(`Invalid DMX start address: ${startAddress} (must be 1–512)`)
     }
+
+    this._checkPatchConflict(startAddress, profile.channels.length, universeIndex)
 
     const id: string = randomUUID()
     const maxUserNumber = this.patch.reduce((max, f) => Math.max(max, f.userNumber || 0), 0)
@@ -240,11 +262,12 @@ export class FixtureManager {
     const profile = this.profiles.get(newProfileKey)
     if (!profile) throw new Error(`Profile not found: "${newProfileKey}"`)
     
+    const targetAddress = newStartAddress !== undefined ? newStartAddress : fixture.startAddress
+    this._checkPatchConflict(targetAddress, profile.channels.length, fixture.universeIndex ?? 0, id)
+
     fixture.profileKey = newProfileKey
     fixture.profile = profile
-    if (newStartAddress !== undefined) {
-      fixture.startAddress = newStartAddress
-    }
+    fixture.startAddress = targetAddress
     
     // Label can stay the same, or we can update it if the user wants. We'll leave it unchanged so they don't lose their custom name.
     await this.savePatch()

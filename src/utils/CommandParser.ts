@@ -15,9 +15,12 @@
  */
 
 export interface ParsedCommand {
-  type: 'selection' | 'intensity' | 'mixed' | 'clear' | 'unknown'
+  type: 'selection' | 'intensity' | 'mixed' | 'clear' | 'unknown' | 'fan' | 'mixed_fan'
   selectedUserNumbers: number[]
   intensityValue?: number // 0-255
+  fanChannel?: string
+  fanStart?: number // 0-255
+  fanEnd?: number // 0-255
 }
 
 export function parseCommand(
@@ -33,10 +36,21 @@ export function parseCommand(
     return { type: 'clear', selectedUserNumbers: [] }
   }
 
-  // Split selection part and intensity part
-  const parts = normalized.split('@')
-  const selectionPart = parts[0].trim()
-  const intensityPart = parts.length > 1 ? parts[1].trim() : null
+  // Split selection part and action part (intensity or fan)
+  let selectionPart = normalized
+  let actionPart: string | null = null
+  let isExplicitFan = false
+
+  if (normalized.includes(' FAN ')) {
+    const parts = normalized.split(' FAN ')
+    selectionPart = parts[0].trim()
+    actionPart = parts.slice(1).join(' FAN ').trim()
+    isExplicitFan = true
+  } else if (normalized.includes('@')) {
+    const parts = normalized.split('@')
+    selectionPart = parts[0].trim()
+    actionPart = parts.slice(1).join('@').trim()
+  }
 
   let newSelection = new Set<number>(currentSelection)
   let isSelectionModified = false
@@ -104,27 +118,69 @@ export function parseCommand(
   let intensityValue: number | undefined = undefined
   let hasIntensity = false
 
-  if (intensityPart !== null) {
-    hasIntensity = true
-    if (intensityPart === 'FULL' || intensityPart === 'FF') {
-      intensityValue = 255
-    } else if (intensityPart === 'OUT') {
-      intensityValue = 0
-    } else {
-      const val = parseInt(intensityPart, 10)
-      if (!isNaN(val)) {
-        // Percentage (0-100) converted to DMX (0-255)
-        const pct = Math.max(0, Math.min(100, val))
-        intensityValue = Math.round((pct / 100) * 255)
+  let hasFan = false
+  let fanChannel = 'Intensity'
+  let fanStart: number | undefined = undefined
+  let fanEnd: number | undefined = undefined
+
+  if (actionPart !== null) {
+    if (isExplicitFan || actionPart.includes('THRU')) {
+      hasFan = true
+      // Parse FAN TILT 0 THRU 255 or 0 THRU 100
+      const thruMatch = actionPart.match(/(-?[0-9]+)\s+THRU\s+(-?[0-9]+)/)
+      if (thruMatch) {
+        let pStart = parseInt(thruMatch[1], 10)
+        let pEnd = parseInt(thruMatch[2], 10)
+        
+        // Try to find a channel type before the numbers
+        const beforeNumbers = actionPart.substring(0, thruMatch.index).trim()
+        if (beforeNumbers && isExplicitFan) {
+          fanChannel = beforeNumbers.charAt(0).toUpperCase() + beforeNumbers.slice(1).toLowerCase()
+          // For non-intensity (like Pan/Tilt), we assume DMX values 0-255 or - degrees? 
+          // Let's stick to DMX values 0-255 for now unless it's percentage. 
+          // If it's explicitly Intensity, or implicitly, we scale 0-100 to 0-255
+          if (fanChannel === 'Intensity') {
+             fanStart = Math.round((Math.max(0, Math.min(100, pStart)) / 100) * 255)
+             fanEnd = Math.round((Math.max(0, Math.min(100, pEnd)) / 100) * 255)
+          } else {
+             fanStart = Math.max(0, Math.min(255, pStart))
+             fanEnd = Math.max(0, Math.min(255, pEnd))
+          }
+        } else {
+          // Default to Intensity (percentage)
+          fanChannel = 'Intensity'
+          fanStart = Math.round((Math.max(0, Math.min(100, pStart)) / 100) * 255)
+          fanEnd = Math.round((Math.max(0, Math.min(100, pEnd)) / 100) * 255)
+        }
       } else {
-        hasIntensity = false
+        hasFan = false // Malformed fan
+      }
+    } else {
+      hasIntensity = true
+      if (actionPart === 'FULL' || actionPart === 'FF') {
+        intensityValue = 255
+      } else if (actionPart === 'OUT') {
+        intensityValue = 0
+      } else {
+        const val = parseInt(actionPart, 10)
+        if (!isNaN(val)) {
+          // Percentage (0-100) converted to DMX (0-255)
+          const pct = Math.max(0, Math.min(100, val))
+          intensityValue = Math.round((pct / 100) * 255)
+        } else {
+          hasIntensity = false
+        }
       }
     }
   }
 
   const selectedArray = Array.from(newSelection).sort((a, b) => a - b)
 
-  if (isSelectionModified && hasIntensity) {
+  if (isSelectionModified && hasFan) {
+    return { type: 'mixed_fan', selectedUserNumbers: selectedArray, fanChannel, fanStart, fanEnd }
+  } else if (hasFan) {
+    return { type: 'fan', selectedUserNumbers: selectedArray, fanChannel, fanStart, fanEnd }
+  } else if (isSelectionModified && hasIntensity) {
     return { type: 'mixed', selectedUserNumbers: selectedArray, intensityValue }
   } else if (isSelectionModified) {
     return { type: 'selection', selectedUserNumbers: selectedArray }
