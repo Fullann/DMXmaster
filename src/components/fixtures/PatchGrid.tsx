@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import type { PatchedFixture, ProfileEntry } from '@/types/fixtures'
 import { useNetwork } from '@/hooks/useNetwork'
 import { GroupManager } from './GroupManager'
@@ -26,6 +26,18 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatc
   const [label,           setLabel]           = useState('')
   const [isPatching,      setIsPatching]      = useState(false)
   const [error,           setError]           = useState<string | null>(null)
+
+  // Compute conflict for the current address + selected profile in real-time
+  const conflictingFixture = useMemo(() => {
+    const profile = profiles.find(p => p.key === selectedProfile)
+    if (!profile) return null
+    const numCh = profile.profile.channels.length
+    const endAddr = startAddress + numCh - 1
+    return patch.find(f => {
+      const fEnd = f.startAddress + f.profile.channels.length - 1
+      return Math.max(startAddress, f.startAddress) <= Math.min(endAddr, fEnd)
+    }) ?? null
+  }, [selectedProfile, startAddress, patch, profiles])
   
   // Morph & Clone Modals
   const [morphingId, setMorphingId] = useState<string | null>(null)
@@ -43,6 +55,10 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatc
     if (!selectedProfile) return
     if (startAddress < 1 || startAddress > 512) {
       setError('Address must be 1–512')
+      return
+    }
+    if (conflictingFixture) {
+      setError(`Conflict: overlaps with "${conflictingFixture.label}" (CH ${conflictingFixture.startAddress}–${conflictingFixture.startAddress + conflictingFixture.profile.channels.length - 1})`)
       return
     }
     setError(null)
@@ -212,7 +228,13 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatc
                 className="styled-input patch-address-input"
                 value={startAddress}
                 onChange={e => setStartAddress(Math.max(1, Math.min(512, Number(e.target.value))))}
+                style={conflictingFixture ? { borderColor: '#ef4444', boxShadow: '0 0 0 2px rgba(239,68,68,0.25)' } : {}}
               />
+              {conflictingFixture && (
+                <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  ⚠ Conflicts with "{conflictingFixture.label}" (CH {conflictingFixture.startAddress}–{conflictingFixture.startAddress + conflictingFixture.profile.channels.length - 1})
+                </div>
+              )}
             </div>
 
             {/* Label */}

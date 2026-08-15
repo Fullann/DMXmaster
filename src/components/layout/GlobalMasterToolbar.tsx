@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { MidiLearnable } from '@/components/midi/MidiLearnable'
-import { Power, PauseCircle, Activity, Maximize2 } from 'lucide-react'
+import { Power, PauseCircle, Activity, Maximize2, Radio, Eye } from 'lucide-react'
 import { useCliStore } from '@/store/useCliStore'
+import { useFixturesStore } from '@/store/useFixturesStore'
 import './GlobalMasterToolbar.css'
 
 export function GlobalMasterToolbar() {
@@ -43,8 +44,50 @@ export function GlobalMasterToolbar() {
     }
   }
 
+  const isBlindMode = useFixturesStore(s => s.isBlindMode)
+  
+  // Derive the current mode
+  const mode: 'blind' | 'live' = isBlindMode ? 'blind' : 'live'
+  const modeColors = {
+    live:  { bg: '#22c55e', text: '#166534', label: 'LIVE',  icon: <Radio size={11} /> },
+    blind: { bg: '#f59e0b', text: '#78350f', label: 'BLIND', icon: <Eye size={11} /> },
+  }
+  const modeStyle = modeColors[mode]
+
   return (
-    <div className="global-master-toolbar">
+    <>
+      {/* Mode indicator stripe above toolbar */}
+      <div style={{
+        position: 'fixed',
+        bottom: 56,
+        left: 200,
+        right: 0,
+        height: '3px',
+        background: modeStyle.bg,
+        transition: 'background 0.4s ease',
+        zIndex: 999,
+        boxShadow: `0 0 12px ${modeStyle.bg}`,
+      }} />
+
+      <div className="global-master-toolbar">
+        {/* Mode pill */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          background: modeStyle.bg,
+          color: modeStyle.text,
+          borderRadius: '100px',
+          padding: '3px 10px',
+          fontSize: '0.7rem',
+          fontWeight: 800,
+          letterSpacing: '0.08em',
+          flexShrink: 0,
+        }}>
+          {modeStyle.icon}
+          {isBlackout ? 'BLACKOUT' : modeStyle.label}
+        </div>
+
       {/* ── Soft Blackout & Pause All ─────────────────────────────────────── */}
       <div className="toolbar-controls">
         <MidiLearnable action={{ type: 'softBlackout' }} label="Toggle Soft Blackout">
@@ -165,6 +208,7 @@ export function GlobalMasterToolbar() {
         </div>
       </div>
 
-    </div>
+      </div>
+    </>
   )
 }

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { usePaletteStore } from '@/store/usePaletteStore'
 import { useDmxStore } from '@/store/useDmxStore'
 import { useScenesStore } from '@/store/useScenesStore'
 import { useChaserStore } from '@/store/useChaserStore'
-import { Plus, Trash2, Crosshair, Palette as PaletteIcon } from 'lucide-react'
+import { useFixturesStore } from '@/store/useFixturesStore'
+import { useCliStore } from '@/store/useCliStore'
+import { Plus, Trash2, Crosshair, Palette as PaletteIcon, Play } from 'lucide-react'
 import type { Palette, PaletteType } from '@/types/palette'
 
 export function PaletteView() {
@@ -11,9 +13,11 @@ export function PaletteView() {
   const { programmer } = useDmxStore()
   const { scenes } = useScenesStore()
   const { chasers } = useChaserStore()
+  const fixturesStore = useFixturesStore()
   
   const [newPaletteName, setNewPaletteName] = useState('')
   const [newPaletteType, setNewPaletteType] = useState<PaletteType>('position')
+  const [applyingId, setApplyingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadPalettes()
@@ -62,6 +66,41 @@ export function PaletteView() {
     setNewPaletteName('')
   }
 
+  /** Apply a palette: recall its stored values onto the currently selected fixtures (or all stored fixtures if none selected) */
+  const handleApplyPalette = useCallback(async (palette: Palette) => {
+    setApplyingId(palette.id)
+    try {
+      const { patch, states, sendCommand } = fixturesStore
+      const selectedUserNumbers = useCliStore.getState().selectedUserNumbers
+      
+      // If fixtures are selected in CLI, apply only to them; else apply to all stored
+      const targetFixtures = selectedUserNumbers.length > 0
+        ? patch.filter(f => f.userNumber !== undefined && selectedUserNumbers.includes(f.userNumber))
+        : patch.filter(f => palette.values[f.id] !== undefined)
+
+      for (const fixture of targetFixtures) {
+        // Find stored values: use fixture's own saved values, or use any stored value as a template
+        const storedEntry = palette.values[fixture.id] ?? Object.values(palette.values)[0]
+        if (!storedEntry) continue
+
+        if (palette.type === 'position') {
+          if (storedEntry.pan !== undefined) await sendCommand(fixture.id, 'Pan', storedEntry.pan)
+          if (storedEntry.tilt !== undefined) await sendCommand(fixture.id, 'Tilt', storedEntry.tilt)
+        } else if (palette.type === 'color') {
+          if (storedEntry.r !== undefined) await sendCommand(fixture.id, 'Red', storedEntry.r)
+          if (storedEntry.g !== undefined) await sendCommand(fixture.id, 'Green', storedEntry.g)
+          if (storedEntry.b !== undefined) await sendCommand(fixture.id, 'Blue', storedEntry.b)
+          if (storedEntry.w !== undefined) await sendCommand(fixture.id, 'White', storedEntry.w)
+          if (storedEntry.color !== undefined) await sendCommand(fixture.id, 'Color', storedEntry.color)
+        } else if (palette.type === 'gobo') {
+          if (storedEntry.gobo !== undefined) await sendCommand(fixture.id, 'Gobo', storedEntry.gobo)
+        }
+      }
+    } finally {
+      setApplyingId(null)
+    }
+  }, [fixturesStore])
+
   const handleDeletePalette = (id: string, name: string) => {
     let usageCount = 0
     scenes.forEach(s => {
@@ -88,7 +127,7 @@ export function PaletteView() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2>Palettes</h2>
-          <p className="text-muted">Save positions and colors to update multiple scenes automatically.</p>
+          <p className="text-muted">Save positions and colors to update multiple scenes automatically. Select fixtures in CLI first to apply only to them.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'var(--bg-card)', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
           <select 
@@ -116,40 +155,69 @@ export function PaletteView() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
         
-        <PaletteSection title="Positions" icon={<Crosshair size={20} />} items={positions} onDelete={handleDeletePalette} />
-        <PaletteSection title="Colors" icon={<PaletteIcon size={20} />} items={colors} onDelete={handleDeletePalette} />
-        <PaletteSection title="Gobos" icon={<PaletteIcon size={20} />} items={gobos} onDelete={handleDeletePalette} />
+        <PaletteSection title="Positions" icon={<Crosshair size={20} />} items={positions} onDelete={handleDeletePalette} onApply={handleApplyPalette} applyingId={applyingId} />
+        <PaletteSection title="Colors" icon={<PaletteIcon size={20} />} items={colors} onDelete={handleDeletePalette} onApply={handleApplyPalette} applyingId={applyingId} />
+        <PaletteSection title="Gobos" icon={<PaletteIcon size={20} />} items={gobos} onDelete={handleDeletePalette} onApply={handleApplyPalette} applyingId={applyingId} />
 
       </div>
     </div>
   )
 }
 
-function PaletteSection({ title, icon, items, onDelete }: { title: string, icon: any, items: Palette[], onDelete: (id: string, name: string) => void }) {
-  if (items.length === 0) return null
-
+function PaletteSection({ title, icon, items, onDelete, onApply, applyingId }: { 
+  title: string
+  icon: any
+  items: Palette[]
+  onDelete: (id: string, name: string) => void 
+  onApply: (palette: Palette) => void
+  applyingId: string | null
+}) {
   return (
     <div>
       <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
         {icon} {title}
       </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        {items.map(p => (
-          <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-            <div>
-              <div style={{ fontWeight: '600' }}>{p.name}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Used by {Object.keys(p.values).length} fixtures</div>
-            </div>
-            <button 
-              className="btn btn-ghost" 
-              style={{ color: 'var(--status-error)' }}
-              onClick={() => onDelete(p.id, p.name)}
+      {items.length === 0 ? (
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
+          No {title.toLowerCase()} palettes saved yet.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {items.map(p => (
+            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-primary)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
             >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
+              <div>
+                <div style={{ fontWeight: '600' }}>{p.name}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  {Object.keys(p.values).length} fixture{Object.keys(p.values).length !== 1 ? 's' : ''} stored
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  className="btn btn-ghost"
+                  style={{ color: 'var(--status-success)', fontSize: '0.8rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  onClick={() => onApply(p)}
+                  disabled={applyingId === p.id}
+                  title="Apply to selected fixtures (or all stored fixtures if none selected)"
+                >
+                  <Play size={13} />
+                  {applyingId === p.id ? '…' : 'Apply'}
+                </button>
+                <button 
+                  className="btn btn-ghost" 
+                  style={{ color: 'var(--status-error)' }}
+                  onClick={() => onDelete(p.id, p.name)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
+
