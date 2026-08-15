@@ -22,7 +22,10 @@ export interface FixturesState {
   morphFixture: (id: string, key: string, addr?: number) => Promise<PatchedFixture | null>
   cloneFixture: (src: string, dest: string) => Promise<boolean>
   sendCommand: (fixtureId: string, type: ChannelType, value: number) => Promise<void>
-  sendColor: (fixtureId: string, r: number, g: number, b: number, w?: number) => Promise<void>
+  isBlindMode: boolean
+  blindCrossfader: number
+  setBlindMode: (active: boolean) => Promise<void>
+  setBlindCrossfader: (val: number) => Promise<void>
   init: () => void
 }
 
@@ -44,6 +47,8 @@ export const useFixturesStore = create<FixturesState>((set, get) => ({
   states: {},
   isLoading: false,
   error: null,
+  isBlindMode: false,
+  blindCrossfader: 0.0,
 
   loadProfiles: async () => {
     set({ isLoading: true })
@@ -156,6 +161,20 @@ export const useFixturesStore = create<FixturesState>((set, get) => ({
       return { states: { ...state.states, [fixtureId]: { ...fstate, r, g, b, w } } }
     })
     await window.fixtureAPI.sendColor(fixtureId, r, g, b, w)
+  },
+
+  setBlindMode: async (active) => {
+    set({ isBlindMode: active })
+    await window.fixtureAPI.setBlindMode(active)
+  },
+
+  setBlindCrossfader: async (val) => {
+    set({ blindCrossfader: val })
+    await window.fixtureAPI.setBlindCrossfader(val)
+    if (val >= 1.0) {
+      set({ isBlindMode: false, blindCrossfader: 0.0 })
+      get().loadStates() // Refresh UI with the merged blind states
+    }
   },
 
   init: () => {

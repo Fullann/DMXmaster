@@ -66,6 +66,8 @@ export interface PatchedFixture {
   startAddress: number
   /** Human-readable label shown in the UI */
   label:        string
+  /** 1-based unique identifier for the CLI (e.g., Fixture 1, 2) */
+  userNumber:   number
   /** 0-based universe index (0–7). Defaults to 0. */
   universeIndex?: number
   /** 3D world position [x, y, z] for the stage visualizer. Defaults to auto-layout. */

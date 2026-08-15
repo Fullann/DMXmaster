@@ -66,10 +66,18 @@ export function useGlobalShortcuts({
 
     // ── Digit 0–7 → Switch page bank ────────────────────────────────────────
     const digitMatch = e.code.match(/^Digit([0-7])$/)
-    if (digitMatch) {
+    if (digitMatch && e.altKey) { // Require Alt for page switch to free up digits for CLI
       e.preventDefault()
       onSwitchPage(parseInt(digitMatch[1], 10))
       return
+    }
+
+    // ── Auto-focus CLI ──────────────────────────────────────────────────────
+    if (/^[0-9]$/.test(e.key) || ['@', '+', '-', 't', 'h', 'r', 'u', 'f', 'u', 'l', 'o', 'c', 'e', 'a'].includes(e.key.toLowerCase())) {
+      const cliInput = document.getElementById('global-cli-input')
+      if (cliInput && document.activeElement !== cliInput) {
+        cliInput.focus()
+      }
     }
   }, [onSoftBlackout, onTriggerFirstRow, onSwitchPage])
 

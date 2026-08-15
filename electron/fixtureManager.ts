@@ -27,6 +27,11 @@ export class FixtureManager {
   private patch: PatchedFixture[] = []
   private groups: FixtureGroup[] = []
   private fixtureStates = new Map<string, FixtureLogicalState>()
+  
+  // ── Blind Mode State ──────────────────────────────────────────────────────
+  private isBlindMode = false
+  private blindCrossfaderValue = 0.0
+  private blindStates = new Map<string, FixtureLogicalState>()
 
   // ── Masters State ─────────────────────────────────────────────────────────
   private grandMaster = 1.0
@@ -69,11 +74,32 @@ export class FixtureManager {
       const data = await fs.readFile(this.patchPath, 'utf8')
       this.patch = JSON.parse(data)
       
+      let maxUserNumber = 0
+      
       // Initialize logical states for all patched fixtures
       for (const fixture of this.patch) {
         if (!this.fixtureStates.has(fixture.id)) {
           this.fixtureStates.set(fixture.id, { ...DEFAULT_LOGICAL_STATE })
         }
+        if (!this.blindStates.has(fixture.id)) {
+          this.blindStates.set(fixture.id, { ...DEFAULT_LOGICAL_STATE })
+        }
+        if (fixture.userNumber) {
+          maxUserNumber = Math.max(maxUserNumber, fixture.userNumber)
+        }
+      }
+      
+      // Backward compatibility: assign userNumber to existing fixtures that don't have one
+      let needsSave = false
+      for (const fixture of this.patch) {
+        if (fixture.userNumber === undefined) {
+          maxUserNumber++
+          fixture.userNumber = maxUserNumber
+          needsSave = true
+        }
+      }
+      if (needsSave) {
+        await this.savePatch(this.patch)
       }
     } catch (e: any) {
       if (e.code !== 'ENOENT') console.error('[FixtureManager] Error loading patch:', e.message)
@@ -149,12 +175,15 @@ export class FixtureManager {
     }
 
     const id: string = randomUUID()
+    const maxUserNumber = this.patch.reduce((max, f) => Math.max(max, f.userNumber || 0), 0)
+    
     const fixture: PatchedFixture = {
       id,
       profileKey,
       profile,
       startAddress,
       label: label?.trim() || `${profile.manufacturer} ${profile.model}`,
+      userNumber: maxUserNumber + 1,
       universeIndex,
       position3d: [0, 0, 0], // Default position, visualizer auto-layout might override this or use it
       rotation3d: [0, 0, 0],
@@ -163,6 +192,7 @@ export class FixtureManager {
     this.patch.push(fixture)
     const initialState: FixtureLogicalState = { ...DEFAULT_LOGICAL_STATE }
     this.fixtureStates.set(id, initialState)
+    this.blindStates.set(id, { ...DEFAULT_LOGICAL_STATE })
     this.savePatch(this.patch).catch(err => console.error('[FixtureManager] Error saving patch after patchFixture:', err))
 
     console.log(`[FixtureManager] Patched "${fixture.label}" at CH ${startAddress}.`)
@@ -175,6 +205,7 @@ export class FixtureManager {
       console.log(`[FixtureManager] Removed patch: ${this.patch[idx].label}`)
       this.patch.splice(idx, 1)
       this.fixtureStates.delete(id)
+      this.blindStates.delete(id)
     }
   }
 
@@ -201,6 +232,7 @@ export class FixtureManager {
     const count = this.patch.length
     this.patch = []
     this.fixtureStates.clear()
+    this.blindStates.clear()
     await this.savePatch()
     console.log(`[FixtureManager] Unpatched all (${count} fixtures removed).`)
   }
@@ -298,7 +330,8 @@ export class FixtureManager {
   // ── Logical commands ─────────────────────────────────────────────────────────
 
   sendCommand(fixtureId: string, type: ChannelType, value: number): void {
-    const state = this.fixtureStates.get(fixtureId)
+    const targetMap = this.isBlindMode ? this.blindStates : this.fixtureStates
+    const state = targetMap.get(fixtureId)
     if (!state) return
 
     const v = Math.max(0, Math.min(255, value))
@@ -325,7 +358,8 @@ export class FixtureManager {
    * More efficient than three separate sendCommand calls.
    */
   sendColor(fixtureId: string, r: number, g: number, b: number, w = 0): void {
-    const state = this.fixtureStates.get(fixtureId)
+    const targetMap = this.isBlindMode ? this.blindStates : this.fixtureStates
+    const state = targetMap.get(fixtureId)
     if (!state) return
     state.r = Math.max(0, Math.min(255, r))
     state.g = Math.max(0, Math.min(255, g))
@@ -339,6 +373,7 @@ export class FixtureManager {
    * left untouched (tracking model).
    */
   setLogicalState(fixtureId: string, updates: Record<string, number>): void {
+    // Note: Scene playback always targets live fixtureStates, not blind.
     const state = this.fixtureStates.get(fixtureId)
     if (!state) return
     for (const [key, val] of Object.entries(updates)) {
@@ -355,7 +390,15 @@ export class FixtureManager {
    */
   setLogicalStates(statesMap: Record<string, Record<string, number>>): void {
     for (const [fixtureId, updates] of Object.entries(statesMap)) {
-      this.setLogicalState(fixtureId, updates)
+      // Respect blind mode for full programmer clear/restore
+      const targetMap = this.isBlindMode ? this.blindStates : this.fixtureStates
+      const state = targetMap.get(fixtureId)
+      if (!state) continue
+      for (const [key, val] of Object.entries(updates)) {
+        if (key in state) {
+          ;(state as Record<string, number>)[key] = Math.max(0, Math.min(255, val))
+        }
+      }
     }
   }
 
@@ -369,10 +412,11 @@ export class FixtureManager {
    * Used by the "Clear Programmer" button.
    */
   clearAll(): void {
-    for (const id of this.fixtureStates.keys()) {
-      this.fixtureStates.set(id, { ...DEFAULT_LOGICAL_STATE })
+    const targetMap = this.isBlindMode ? this.blindStates : this.fixtureStates
+    for (const id of targetMap.keys()) {
+      targetMap.set(id, { ...DEFAULT_LOGICAL_STATE })
     }
-    console.log('[FixtureManager] Programmer cleared.')
+    console.log(`[FixtureManager] ${this.isBlindMode ? 'Blind ' : ''}Programmer cleared.`)
   }
 
   /**
@@ -389,6 +433,41 @@ export class FixtureManager {
 
   getFixtureStates(): Record<string, FixtureLogicalState> {
     return Object.fromEntries(this.fixtureStates.entries())
+  }
+
+  // ── Blind Mode API ────────────────────────────────────────────────────────
+
+  getIsBlindMode(): boolean {
+    return this.isBlindMode
+  }
+
+  setBlindMode(active: boolean): void {
+    this.isBlindMode = active
+    if (active) {
+      // When entering blind mode, the blind programmer copies the live programmer to avoid jumps
+      for (const [id, liveState] of this.fixtureStates.entries()) {
+        this.blindStates.set(id, { ...liveState })
+      }
+    }
+    console.log(`[FixtureManager] Blind mode ${active ? 'ENABLED' : 'DISABLED'}.`)
+  }
+
+  setBlindCrossfader(value: number): void {
+    this.blindCrossfaderValue = Math.max(0, Math.min(1, value))
+    
+    // Auto-commit and disable blind mode when reaching 100%
+    if (this.blindCrossfaderValue >= 1.0) {
+      for (const [id, blindState] of this.blindStates.entries()) {
+        this.fixtureStates.set(id, { ...blindState })
+      }
+      this.isBlindMode = false
+      this.blindCrossfaderValue = 0.0
+      console.log(`[FixtureManager] Blind crossfade complete. Blind mode disabled.`)
+    }
+  }
+
+  getBlindCrossfader(): number {
+    return this.blindCrossfaderValue
   }
 
   // ── Universe resolution (hot path — called at ~44 Hz) ────────────────────────
@@ -413,8 +492,12 @@ export class FixtureManager {
     }
 
     for (const fixture of this.patch) {
-      const state = this.fixtureStates.get(fixture.id)
-      if (!state) continue
+      const liveState = this.fixtureStates.get(fixture.id)
+      const blindState = this.blindStates.get(fixture.id)
+      if (!liveState) continue
+
+      const c = this.blindCrossfaderValue
+      const useBlind = c > 0 && blindState
 
       const uIdx = fixture.universeIndex ?? 0
       if (uIdx < 0 || uIdx >= universes.length) continue
@@ -427,21 +510,26 @@ export class FixtureManager {
         if (idx < 0 || idx >= 512) continue
 
         let v: number = ch.defaultValue
+        let bv: number = ch.defaultValue
         switch (ch.type) {
-          case 'Intensity': v = state.intensity; break
-          case 'Red':       v = state.r;         break
-          case 'Green':     v = state.g;         break
-          case 'Blue':      v = state.b;         break
-          case 'White':     v = state.w;         break
-          case 'Smoke':     v = state.smoke;     break
-          case 'Pan':       v = state.pan;       break
-          case 'Tilt':      v = state.tilt;      break
+          case 'Intensity': v = liveState.intensity; bv = blindState?.intensity ?? v; break
+          case 'Red':       v = liveState.r;         bv = blindState?.r ?? v;         break
+          case 'Green':     v = liveState.g;         bv = blindState?.g ?? v;         break
+          case 'Blue':      v = liveState.b;         bv = blindState?.b ?? v;         break
+          case 'White':     v = liveState.w;         bv = blindState?.w ?? v;         break
+          case 'Smoke':     v = liveState.smoke;     bv = blindState?.smoke ?? v;     break
+          case 'Pan':       v = liveState.pan;       bv = blindState?.pan ?? v;       break
+          case 'Tilt':      v = liveState.tilt;      bv = blindState?.tilt ?? v;      break
           case 'Shutter':
-          case 'Strobe':    v = state.shutter;   break
-          case 'Speed':     v = state.speed;     break
-          case 'Effect':    v = state.effect;    break
-          case 'Color':     v = state.color;     break
-          default:          continue // Skip updating DMX universe for custom/unknown channels so Dashboard can control them
+          case 'Strobe':    v = liveState.shutter;   bv = blindState?.shutter ?? v;   break
+          case 'Speed':     v = liveState.speed;     bv = blindState?.speed ?? v;     break
+          case 'Effect':    v = liveState.effect;    bv = blindState?.effect ?? v;    break
+          case 'Color':     v = liveState.color;     bv = blindState?.color ?? v;     break
+          default:          continue // Skip updating DMX universe for custom/unknown channels
+        }
+
+        if (useBlind) {
+          v = v * (1 - c) + bv * c
         }
 
         // Apply dynamic FX offset (LTP addition) if one exists for this channel type

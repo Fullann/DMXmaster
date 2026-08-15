@@ -88,6 +88,8 @@ export interface FixtureAPI {
   saveGroups:     (g: FixtureGroup[]) => Promise<{ success: boolean; error?: string }>
   setGrandMaster: (l: number) => void
   setSubmaster:   (g: string, l: number) => void
+  setBlindMode:   (active: boolean) => Promise<{ success: boolean; error?: string }>
+  setBlindCrossfader: (val: number) => Promise<{ success: boolean; error?: string }>
 }
 
 const fixtureAPI: FixtureAPI = {
@@ -117,6 +119,8 @@ const fixtureAPI: FixtureAPI = {
   saveGroups:     (g)                => ipcRenderer.invoke('fixture:saveGroups', g),
   setGrandMaster: (l)                => ipcRenderer.send('fixture:setGrandMaster', l),
   setSubmaster:   (g, l)             => ipcRenderer.send('fixture:setSubmaster', g, l),
+  setBlindMode:   (active)           => ipcRenderer.invoke('fixture:setBlindMode', active),
+  setBlindCrossfader: (val)          => ipcRenderer.invoke('fixture:setBlindCrossfader', val),
 }
 
 contextBridge.exposeInMainWorld('fixtureAPI', fixtureAPI)

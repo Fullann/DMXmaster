@@ -64,4 +64,8 @@ export function registerFixtureIpc(fixture: FixtureManager, scene: SceneManager,
   handle('fixture:getStates',   ()               => ({ states: fixture.getFixtureStates() }))
   handle('fixture:clearAll',    ()               => { fixture.clearAll() })
   handle('fixture:setStates',   (statesMap)      => { fixture.setLogicalStates(statesMap as Record<string, Record<string, number>>) })
+  
+  // Blind Mode
+  handle('fixture:setBlindMode', (active) => fixture.setBlindMode(active as boolean))
+  handle('fixture:setBlindCrossfader', (val) => fixture.setBlindCrossfader(val as number))
 }

@@ -6,6 +6,7 @@ import { useSerialStore }        from '@/store/useSerialStore'
 import { useMidiStore }          from '@/store/useMidiStore'
 import { useDmxStore }           from '@/store/useDmxStore'
 import { useFixturesStore }      from '@/store/useFixturesStore'
+import { useCliStore }           from '@/store/useCliStore'
 
 const GenericChannel = React.memo(({ ch, onClick }: { ch: number, onClick: () => void }) => {
   const val = useDmxStore(state => state.universe[ch - 1])
@@ -62,22 +63,23 @@ const FixtureInnerChannel = React.memo(({ ch, name, onClick }: { ch: number, nam
   )
 })
 
-const FixtureGroup = React.memo(({ fixture, startAddress, setActiveChannel }: any) => {
+const FixtureGroup = React.memo(({ fixture, startAddress, setActiveChannel, isSelected }: any) => {
   const chCount = fixture.profile.channels.length
   return (
     <div 
       style={{
         gridColumn: `span ${Math.min(chCount, 12)}`,
-        background: 'rgba(255,255,255,0.08)',
-        border: '1px solid rgba(255,255,255,0.15)',
+        background: isSelected ? 'rgba(255, 170, 0, 0.15)' : 'rgba(255,255,255,0.08)',
+        border: `1px solid ${isSelected ? 'var(--status-warn)' : 'rgba(255,255,255,0.15)'}`,
         borderRadius: 'var(--radius-sm)',
         display: 'flex',
         flexDirection: 'column',
         padding: '6px',
+        transition: 'all 0.2s ease'
       }}
     >
-      <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {fixture.label} ({startAddress}-{startAddress + chCount - 1})
+      <div style={{ fontSize: '0.65rem', fontWeight: 600, color: isSelected ? 'var(--status-warn)' : 'var(--text-primary)', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ opacity: 0.6 }}>[{fixture.userNumber}]</span> {fixture.label} ({startAddress}-{startAddress + chCount - 1})
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${chCount}, 1fr)`, gap: '4px' }}>
         {Array.from({ length: chCount }, (_, j) => {
@@ -132,6 +134,7 @@ export function DashboardView() {
   const { engineBypassed, setEngineBypass } = useDmxStore()
   const patch = useFixturesStore(s => s.patch)
   const blackout = useDmxStore(s => s.blackout)
+  const selectedUserNumbers = useCliStore(s => s.selectedUserNumbers)
   
   const [activeChannel, setActiveChannel] = useState<number | null>(null)
   
@@ -149,6 +152,7 @@ export function DashboardView() {
             fixture={fixture} 
             startAddress={i} 
             setActiveChannel={setActiveChannel} 
+            isSelected={selectedUserNumbers.includes(fixture.userNumber)}
           />
         )
         i += fixture.profile.channels.length

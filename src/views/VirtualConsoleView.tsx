@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { useVirtualConsoleStore } from '@/store/useVirtualConsoleStore'
-import { Settings, Plus, Trash2, Edit2, Play, LayoutGrid } from 'lucide-react'
+import { Settings, Plus, Trash2, Edit2, Play, LayoutGrid, EyeOff } from 'lucide-react'
 import type { ConsoleWidget, WidgetTargetType } from '@/types/virtualConsole'
 import { useScenesStore } from '@/store/useScenesStore'
 import { useChaserStore } from '@/store/useChaserStore'
+import { useFixturesStore } from '@/store/useFixturesStore'
 
 const GRID_COLS = 12
 const GRID_ROWS = 6
@@ -16,6 +17,7 @@ export function VirtualConsoleView() {
 
   const { scenes, clearProgrammer } = useScenesStore()
   const { chasers } = useChaserStore()
+  const fixtures = useFixturesStore()
 
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingWidget, setEditingWidget] = useState<Partial<ConsoleWidget> | null>(null)
@@ -105,6 +107,14 @@ export function VirtualConsoleView() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button 
+            className={`btn ${fixtures.isBlindMode ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', color: fixtures.isBlindMode ? '#000' : 'var(--status-warn)', background: fixtures.isBlindMode ? 'var(--status-warn)' : 'rgba(255,170,0,0.1)' }}
+            onClick={() => fixtures.setBlindMode(!fixtures.isBlindMode)}
+          >
+            <EyeOff size={16} /> {fixtures.isBlindMode ? 'BLIND ACTIVE' : 'BLIND'}
+          </button>
+          
+          <button 
             className="btn btn-ghost"
             style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', color: 'var(--status-error)' }}
             onClick={() => clearProgrammer()}
@@ -172,6 +182,15 @@ export function VirtualConsoleView() {
             if (w.targetType === 'scene') isMissing = !scenes.some(s => s.id === w.targetId)
             if (w.targetType === 'chaser') isMissing = !chasers.some(c => c.id === w.targetId)
 
+            // Make sure the input is conditionally controlled only for 'blind' type.
+            const rangeProps: any = {
+              defaultValue: undefined,
+              value: undefined
+            }
+            if (w.targetType === 'blind') {
+              rangeProps.value = fixtures.blindCrossfader * 255
+            }
+
             return (
               <div 
                 key={w.id}
@@ -223,6 +242,7 @@ export function VirtualConsoleView() {
                     <input 
                       type="range" 
                       min={0} max={255} 
+                      {...rangeProps}
                       style={{ 
                         writingMode: 'vertical-lr', 
                         direction: 'rtl',
@@ -237,6 +257,8 @@ export function VirtualConsoleView() {
                           window.fixtureAPI.setSubmaster(w.targetId, parseInt(e.target.value) / 255)
                         } else if (w.targetType === 'grandmaster') {
                           window.fixtureAPI.setGrandMaster(parseInt(e.target.value) / 255)
+                        } else if (w.targetType === 'blind') {
+                          fixtures.setBlindCrossfader(parseInt(e.target.value) / 255)
                         }
                       }}
                     />
@@ -329,6 +351,7 @@ export function VirtualConsoleView() {
                   <>
                     <option value="submaster">Submaster (Group)</option>
                     <option value="grandmaster">Grand Master</option>
+                    <option value="blind">Blind Crossfader</option>
                   </>
                 )}
               </select>
