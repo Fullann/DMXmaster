@@ -57,4 +57,15 @@ describe('CommandParser', () => {
     expect(res.type).toBe('clear')
     expect(res.selectedUserNumbers).toEqual([])
   })
+
+  it('should handle GROUP command', () => {
+    const mockResolve = (groupName: string) => {
+      if (groupName === '1') return [10, 11, 12]
+      return []
+    }
+    const res = parseCommand('GROUP 1 @ FULL', [], mockResolve)
+    expect(res.type).toBe('mixed')
+    expect(res.selectedUserNumbers).toEqual([10, 11, 12])
+    expect(res.intensityValue).toBe(255)
+  })
 })

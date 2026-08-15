@@ -20,7 +20,11 @@ export interface ParsedCommand {
   intensityValue?: number // 0-255
 }
 
-export function parseCommand(input: string, currentSelection: number[] = []): ParsedCommand {
+export function parseCommand(
+  input: string,
+  currentSelection: number[] = [],
+  resolveGroup?: (groupName: string) => number[]
+): ParsedCommand {
   const normalized = input.trim().toUpperCase()
   if (!normalized) return { type: 'unknown', selectedUserNumbers: currentSelection }
 
@@ -40,19 +44,19 @@ export function parseCommand(input: string, currentSelection: number[] = []): Pa
   if (selectionPart) {
     // If the string starts with a number or THRU, we clear current selection
     // (unless it starts with + or -)
-    if (/^[0-9]/.test(selectionPart) || selectionPart.startsWith('THRU')) {
+    if (/^[0-9]/.test(selectionPart) || selectionPart.startsWith('THRU') || selectionPart.startsWith('GROUP')) {
       newSelection.clear()
     }
     
     // Simple state machine for parsing selection
-    // Tokens: NUMBER, +, -, THRU
-    const tokens = selectionPart.match(/([0-9]+|\+|-|THRU)/g)
+    // Tokens: NUMBER, +, -, THRU, GROUP, or words
+    const tokens = selectionPart.match(/([0-9]+|[a-zA-Z_]+|\+|-)/g)
     if (tokens) {
       let mode: 'add' | 'subtract' = 'add'
       let lastNumber: number | null = null
 
       for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i]
+        const token = tokens[i].toUpperCase()
 
         if (token === '+') {
           mode = 'add'
@@ -73,6 +77,18 @@ export function parseCommand(input: string, currentSelection: number[] = []): Pa
             }
             lastNumber = endNum
             i++ // Skip next token as we consumed it
+          }
+        } else if (token === 'GROUP') {
+          const nextToken = tokens[i + 1]
+          if (nextToken) {
+            if (resolveGroup) {
+              const groupUnums = resolveGroup(nextToken)
+              for (const n of groupUnums) {
+                if (mode === 'add') newSelection.add(n)
+                else newSelection.delete(n)
+              }
+            }
+            i++ // Skip next token
           }
         } else if (/^[0-9]+$/.test(token)) {
           const num = parseInt(token, 10)

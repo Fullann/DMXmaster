@@ -149,6 +149,12 @@ export function GlobalMasterToolbar() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               useCliStore.getState().executeCommand()
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              useCliStore.getState().navigateHistory('up')
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              useCliStore.getState().navigateHistory('down')
             }
           }}
           className="styled-input"

@@ -10,24 +10,67 @@ export interface CliState {
   commandBuffer: string
   selectedUserNumbers: number[]
   lastFeedback: string
+  history: string[]
+  historyIndex: number
   
   setCommandBuffer: (cmd: string) => void
   executeCommand: () => void
   clearSelection: () => void
+  navigateHistory: (direction: 'up' | 'down') => void
 }
 
 export const useCliStore = create<CliState>((set, get) => ({
   commandBuffer: '',
   selectedUserNumbers: [],
   lastFeedback: '',
+  history: [],
+  historyIndex: -1,
 
-  setCommandBuffer: (cmd: string) => set({ commandBuffer: cmd }),
+  setCommandBuffer: (cmd: string) => set({ commandBuffer: cmd, historyIndex: -1 }),
+
+  navigateHistory: (direction: 'up' | 'down') => {
+    const { history, historyIndex } = get()
+    if (history.length === 0) return
+
+    let newIndex = historyIndex
+    if (direction === 'up') {
+      newIndex = historyIndex === -1 ? history.length - 1 : Math.max(0, historyIndex - 1)
+    } else {
+      if (historyIndex === -1) return
+      newIndex = historyIndex < history.length - 1 ? historyIndex + 1 : -1
+    }
+
+    if (newIndex === -1) {
+      set({ historyIndex: -1, commandBuffer: '' })
+    } else {
+      set({ historyIndex: newIndex, commandBuffer: history[newIndex] })
+    }
+  },
 
   executeCommand: () => {
-    const { commandBuffer, selectedUserNumbers } = get()
-    if (!commandBuffer.trim()) return
+    const { commandBuffer, selectedUserNumbers, history } = get()
+    const cmdStr = commandBuffer.trim()
+    if (!cmdStr) return
 
-    const parsed = parseCommand(commandBuffer, selectedUserNumbers)
+    const fixturesStore = useFixturesStore.getState()
+    const resolveGroup = (groupName: string): number[] => {
+      const { groups, patch } = fixturesStore
+      // Find group by name or index
+      const group = groups.find(g => g.name.toUpperCase() === groupName.toUpperCase())
+                 || groups.find(g => g.id === groupName)
+                 || groups[parseInt(groupName, 10) - 1]
+      
+      if (!group) return []
+      
+      const unums: number[] = []
+      for (const fid of group.fixtureIds) {
+        const fix = patch.find(f => f.id === fid)
+        if (fix && fix.userNumber !== undefined) unums.push(fix.userNumber)
+      }
+      return unums
+    }
+
+    const parsed = parseCommand(cmdStr, selectedUserNumbers, resolveGroup)
     
     let newSelection = parsed.selectedUserNumbers
     let feedback = ''
@@ -70,8 +113,14 @@ export const useCliStore = create<CliState>((set, get) => ({
       }
     }
 
+    const newHistory = history.length === 0 || history[history.length - 1] !== cmdStr 
+      ? [...history.slice(-49), cmdStr] // Keep last 50
+      : history;
+
     set({ 
       commandBuffer: '', 
+      history: newHistory,
+      historyIndex: -1,
       selectedUserNumbers: newSelection,
       lastFeedback: feedback
     })
