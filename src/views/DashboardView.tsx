@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo } from 'react'
 import { SerialConnectionPanel } from '@/components/serial/SerialConnectionPanel'
 import { MidiMonitor }           from '@/components/midi/MidiMonitor'
 import { ChannelSlider }         from '@/components/dmx/ChannelSlider'
@@ -7,30 +7,17 @@ import { useMidiStore }          from '@/store/useMidiStore'
 import { useDmxStore }           from '@/store/useDmxStore'
 import { useFixturesStore }      from '@/store/useFixturesStore'
 import { useCliStore }           from '@/store/useCliStore'
+import { Cable, Server }         from 'lucide-react'
 
 const GenericChannel = React.memo(({ ch, onClick }: { ch: number, onClick: () => void }) => {
   const val = useDmxStore(state => state.universe[ch - 1])
   return (
     <div 
+      className={`dashboard-ch-generic ${val > 0 ? 'active' : ''}`}
       onClick={onClick}
-      style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 'var(--radius-sm)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '6px 0',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        boxShadow: val > 0 ? '0 0 10px rgba(10, 132, 255, 0.2)' : 'none',
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)' }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
     >
-      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{ch}</span>
-      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: val > 0 ? 'var(--accent)' : 'var(--text-primary)' }}>{val}</span>
+      <span className="dashboard-ch-num">{ch}</span>
+      <span className="dashboard-ch-val">{val}</span>
     </div>
   )
 })
@@ -39,26 +26,14 @@ const FixtureInnerChannel = React.memo(({ ch, name, onClick }: { ch: number, nam
   const val = useDmxStore(state => state.universe[ch - 1])
   return (
     <div 
+      className={`dashboard-ch-inner ${val > 0 ? 'active' : ''}`}
       onClick={onClick}
-      style={{
-        background: 'rgba(255,255,255,0.05)',
-        borderRadius: '4px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '4px 0',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        boxShadow: val > 0 ? '0 0 8px rgba(10, 132, 255, 0.3)' : 'none',
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
       title={name}
     >
-      <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+      <span className="dashboard-ch-name">
         {name.substring(0, 3).toUpperCase() || ch}
       </span>
-      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: val > 0 ? 'var(--accent)' : 'var(--text-primary)' }}>{val}</span>
+      <span className="dashboard-ch-val">{val}</span>
     </div>
   )
 })
@@ -67,21 +42,13 @@ const FixtureGroup = React.memo(({ fixture, startAddress, setActiveChannel, isSe
   const chCount = fixture.profile.channels.length
   return (
     <div 
-      style={{
-        gridColumn: `span ${Math.min(chCount, 12)}`,
-        background: isSelected ? 'rgba(255, 170, 0, 0.15)' : 'rgba(255,255,255,0.08)',
-        border: `1px solid ${isSelected ? 'var(--status-warn)' : 'rgba(255,255,255,0.15)'}`,
-        borderRadius: 'var(--radius-sm)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '6px',
-        transition: 'all 0.2s ease'
-      }}
+      className={`dashboard-fixture-group ${isSelected ? 'selected' : ''}`}
+      style={{ gridColumn: `span ${Math.min(chCount, 12)}` }}
     >
-      <div style={{ fontSize: '0.65rem', fontWeight: 600, color: isSelected ? 'var(--status-warn)' : 'var(--text-primary)', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        <span style={{ opacity: 0.6 }}>[{fixture.userNumber}]</span> {fixture.label} ({startAddress}-{startAddress + chCount - 1})
+      <div className="dashboard-fixture-title">
+        <span className="user-num">[{fixture.userNumber}]</span> {fixture.label} ({startAddress}-{startAddress + chCount - 1})
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${chCount}, 1fr)`, gap: '4px' }}>
+      <div className="dashboard-fixture-grid" style={{ gridTemplateColumns: `repeat(${chCount}, 1fr)` }}>
         {Array.from({ length: chCount }, (_, j) => {
           const ch = startAddress + j
           return (
@@ -102,21 +69,8 @@ const ActiveSliderModal = React.memo(({ activeChannel, onClose }: { activeChanne
   const val = useDmxStore(s => s.universe[activeChannel - 1])
   const updateChannel = useDmxStore(s => s.updateChannel)
   return (
-    <div 
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.4)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
-      onClick={onClose}
-    >
-      <div onClick={(e) => e.stopPropagation()} style={{ transform: 'scale(1.2)' }}>
+    <div className="dashboard-modal-overlay" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="dashboard-modal">
         <ChannelSlider
           channel={activeChannel}
           label={`CH ${activeChannel}`}
@@ -131,17 +85,14 @@ const ActiveSliderModal = React.memo(({ activeChannel, onClose }: { activeChanne
 export function DashboardView() {
   const serial = useSerialStore()
   const midi = useMidiStore()
-  const { engineBypassed, setEngineBypass } = useDmxStore()
+  const { engineBypassed, setEngineBypass, blackout } = useDmxStore()
   const patch = useFixturesStore(s => s.patch)
-  const blackout = useDmxStore(s => s.blackout)
   const selectedUserNumbers = useCliStore(s => s.selectedUserNumbers)
   
   const [activeChannel, setActiveChannel] = useState<number | null>(null)
   
   const isMidiBridgeActive = midi.lastMessage?.type === 'noteOn' || midi.lastMessage?.type === 'noteOff'
 
-  // Compute the grid only when the patch changes (expensive: 512 slots)
-  // selectedUserNumbers intentionally excluded — checked via selectedSet at render time
   const gridItems = useMemo(() => {
     const items: { type: 'fixture'; fixture: (typeof patch)[0]; startAddress: number } | { type: 'generic'; ch: number }[] = []
     let i = 1
@@ -158,62 +109,65 @@ export function DashboardView() {
     return items
   }, [patch])
 
-  // O(1) lookup set — cheap to recompute on CLI selection change
   const selectedSet = useMemo(() => new Set(selectedUserNumbers), [selectedUserNumbers])
 
   return (
-    <>
-      <aside className="sidebar">
-        <SerialConnectionPanel
-          ports={serial.ports}
-          selectedPort={serial.selectedPort}
-          isConnected={serial.isConnected}
-          isLoading={serial.isLoading}
-          error={serial.error}
-          onPortSelect={serial.setSelectedPort}
-          onConnect={() => serial.connect(serial.selectedPort)}
-          onDisconnect={serial.disconnect}
-          onRefresh={serial.listPorts}
-        />
-        <MidiMonitor
-          midiStatus={midi.midiStatus}
-          midiInputs={midi.midiInputs}
-          lastMessage={midi.lastMessage}
-        />
-        <div className="midi-bridge-info">
-          <span className={`midi-bridge-dot ${isMidiBridgeActive ? 'active' : ''}`} />
-          MIDI → CH1 bridge active
+    <div className="view-full dashboard-view">
+      
+      {/* ── Left Sidebar (Connections) ─────────────────────────────────── */}
+      <div className="dashboard-sidebar">
+        <div className="card">
+          <SerialConnectionPanel
+            ports={serial.ports}
+            selectedPort={serial.selectedPort}
+            isConnected={serial.isConnected}
+            isLoading={serial.isLoading}
+            error={serial.error}
+            onPortSelect={serial.setSelectedPort}
+            onConnect={() => serial.connect(serial.selectedPort)}
+            onDisconnect={serial.disconnect}
+            onRefresh={serial.listPorts}
+          />
         </div>
-        <button id="btn-blackout" className="btn-blackout" onClick={blackout}>
+
+        <div className="card">
+          <MidiMonitor
+            midiStatus={midi.midiStatus}
+            midiInputs={midi.midiInputs}
+            lastMessage={midi.lastMessage}
+          />
+        </div>
+
+        {isMidiBridgeActive && (
+          <div className="info-banner info">
+            <span className="badge-dot pulse"></span> MIDI → CH1 bridge active
+          </div>
+        )}
+
+        <button className="btn btn-danger dashboard-blackout-btn" onClick={blackout}>
           ◼ Blackout
         </button>
-      </aside>
+      </div>
 
-      <main className="main-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem 0' }}>
-          <div className="section-title">Universe 1 — 512 Channels</div>
-          <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-            <input 
-              type="checkbox" 
-              checked={engineBypassed} 
-              onChange={(e) => setEngineBypass(e.target.checked)}
-              style={{ accentColor: '#a855f7' }}
-            />
-            <span style={{ fontSize: '0.85rem', color: engineBypassed ? '#a855f7' : 'var(--text-muted)' }}>
-              Bypass Smart Engine
-            </span>
-          </label>
+      {/* ── Main Content (Universe Grid) ───────────────────────────────── */}
+      <div className="dashboard-main card">
+        <div className="card-header">
+          <div className="card-title"><Server size={14} style={{ verticalAlign: 'middle', marginRight: '6px' }} /> Universe 1</div>
+          <div className="card-actions">
+            <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={engineBypassed} 
+                onChange={(e) => setEngineBypass(e.target.checked)}
+              />
+              <span style={{ fontSize: 'var(--text-xs)', color: engineBypassed ? 'var(--status-warn)' : 'var(--text-muted)' }}>
+                Bypass Smart Engine
+              </span>
+            </label>
+          </div>
         </div>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(45px, 1fr))', 
-          gridAutoFlow: 'row dense',
-          gap: '6px', 
-          padding: '1.5rem', 
-          overflowY: 'auto', 
-          flex: 1, 
-          alignContent: 'start' 
-        }}>
+
+        <div className="dashboard-grid">
           {gridItems.map(item => {
             if (item.type === 'fixture') {
               return (
@@ -235,15 +189,138 @@ export function DashboardView() {
             )
           })}
         </div>
-      </main>
+      </div>
 
-      {/* Modal Popup for Slider */}
+      {/* ── Modal ──────────────────────────────────────────────────────── */}
       {activeChannel !== null && (
         <ActiveSliderModal 
           activeChannel={activeChannel} 
           onClose={() => setActiveChannel(null)} 
         />
       )}
-    </>
+
+      <style>{`
+        .dashboard-view {
+          display: flex;
+          gap: var(--space-4);
+          height: 100%;
+        }
+        .dashboard-sidebar {
+          width: 300px;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+          flex-shrink: 0;
+          overflow-y: auto;
+        }
+        .dashboard-blackout-btn {
+          width: 100%;
+          padding: var(--space-3);
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+        .dashboard-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        .dashboard-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+          grid-auto-flow: row dense;
+          gap: 6px;
+          overflow-y: auto;
+          flex: 1;
+          align-content: start;
+        }
+        
+        /* Generic Channel */
+        .dashboard-ch-generic {
+          background: var(--surface-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 6px 0;
+          cursor: pointer;
+          transition: all var(--duration-fast) ease;
+        }
+        .dashboard-ch-generic:hover { background: var(--bg-hover); }
+        .dashboard-ch-generic.active { box-shadow: 0 0 10px rgba(10, 132, 255, 0.2); }
+        .dashboard-ch-num { font-size: var(--text-2xs); color: var(--text-muted); }
+        .dashboard-ch-val { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+        .dashboard-ch-generic.active .dashboard-ch-val { color: var(--accent); }
+
+        /* Fixture Group */
+        .dashboard-fixture-group {
+          background: var(--surface-0);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          display: flex;
+          flex-direction: column;
+          padding: 6px;
+          transition: all var(--duration-fast) ease;
+        }
+        .dashboard-fixture-group.selected {
+          background: rgba(255, 170, 0, 0.08);
+          border-color: var(--status-warn);
+        }
+        .dashboard-fixture-title {
+          font-size: var(--text-2xs);
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .dashboard-fixture-group.selected .dashboard-fixture-title { color: var(--status-warn); }
+        .dashboard-fixture-title .user-num { opacity: 0.6; }
+        .dashboard-fixture-grid { display: grid; gap: 4px; }
+
+        /* Fixture Inner Channel */
+        .dashboard-ch-inner {
+          background: var(--surface-2);
+          border-radius: var(--radius-xs);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 4px 0;
+          cursor: pointer;
+          transition: all var(--duration-fast) ease;
+        }
+        .dashboard-ch-inner:hover { background: var(--surface-3); }
+        .dashboard-ch-inner.active { box-shadow: 0 0 8px rgba(10, 132, 255, 0.3); }
+        .dashboard-ch-name {
+          font-size: 0.55rem;
+          color: var(--text-muted);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+        }
+        .dashboard-ch-inner .dashboard-ch-val { font-size: var(--text-xs); }
+        .dashboard-ch-inner.active .dashboard-ch-val { color: var(--accent); }
+
+        /* Modal */
+        .dashboard-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .dashboard-modal {
+          transform: scale(1.2);
+        }
+      `}</style>
+    </div>
   )
 }

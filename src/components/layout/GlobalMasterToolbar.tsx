@@ -59,12 +59,12 @@ export function GlobalMasterToolbar() {
       {/* Mode indicator stripe above toolbar */}
       <div style={{
         position: 'fixed',
-        bottom: 56,
-        left: 200,
+        bottom: 'var(--toolbar-h)',
+        left: 'var(--sidebar-w)',
         right: 0,
         height: '3px',
         background: modeStyle.bg,
-        transition: 'background 0.4s ease',
+        transition: 'background var(--duration-normal) ease',
         zIndex: 999,
         boxShadow: `0 0 12px ${modeStyle.bg}`,
       }} />
@@ -77,9 +77,9 @@ export function GlobalMasterToolbar() {
           gap: '5px',
           background: modeStyle.bg,
           color: modeStyle.text,
-          borderRadius: '100px',
-          padding: '3px 10px',
-          fontSize: '0.7rem',
+          borderRadius: 'var(--radius-full)',
+          padding: '4px 12px',
+          fontSize: 'var(--text-2xs)',
           fontWeight: 800,
           letterSpacing: '0.08em',
           flexShrink: 0,
@@ -96,7 +96,7 @@ export function GlobalMasterToolbar() {
             onClick={toggleBlackout}
             title="Soft Blackout (Forces all intensity to 0)"
           >
-            <Power size={18} />
+            <Power size={14} />
             <span>Blackout</span>
           </button>
         </MidiLearnable>
@@ -107,7 +107,7 @@ export function GlobalMasterToolbar() {
             onClick={togglePause}
             title="Pause All (Freezes all Chasers and FX)"
           >
-            <PauseCircle size={18} />
+            <PauseCircle size={14} />
             <span>Pause All</span>
           </button>
         </MidiLearnable>
@@ -118,7 +118,7 @@ export function GlobalMasterToolbar() {
       {/* ── Grand Master (Intensity) ──────────────────────────────────────── */}
       <div className="master-fader-group">
         <div className="fader-label">
-          <Power size={12} /> Grand Master
+          <Power size={11} /> Grand
         </div>
         <MidiLearnable action={{ type: 'setGrandMaster' }} label="Grand Master Fader">
           <input
@@ -140,7 +140,7 @@ export function GlobalMasterToolbar() {
       {/* ── Master Speed ──────────────────────────────────────────────────── */}
       <div className="master-fader-group">
         <div className="fader-label">
-          <Activity size={12} /> Master Speed
+          <Activity size={11} /> Speed
         </div>
         <MidiLearnable action={{ type: 'setMasterSpeed' }} label="Master Speed Fader">
           <input
@@ -162,7 +162,7 @@ export function GlobalMasterToolbar() {
       {/* ── Master Size ───────────────────────────────────────────────────── */}
       <div className="master-fader-group">
         <div className="fader-label">
-          <Maximize2 size={12} /> Master Size
+          <Maximize2 size={11} /> Size
         </div>
         <MidiLearnable action={{ type: 'setMasterSize' }} label="Master Size Fader">
           <input
@@ -182,7 +182,7 @@ export function GlobalMasterToolbar() {
       <div className="toolbar-divider" />
 
       {/* ── Command Line Interface (CLI) ──────────────────────────────────── */}
-      <div className="cli-container" style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '0 1rem', justifyContent: 'center' }}>
+      <div className="cli-container" style={{ display: 'flex', flexDirection: 'column', flex: 1, paddingLeft: 'var(--space-2)', justifyContent: 'center' }}>
         <input
           id="global-cli-input"
           type="text"
@@ -201,9 +201,9 @@ export function GlobalMasterToolbar() {
             }
           }}
           className="styled-input"
-          style={{ width: '100%', fontFamily: 'monospace', textTransform: 'uppercase', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '4px' }}
+          style={{ width: '100%' }}
         />
-        <div style={{ fontSize: '0.75rem', color: 'var(--status-success)', minHeight: '14px', marginTop: '4px' }}>
+        <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--status-ok)', minHeight: '12px', marginTop: '2px', paddingLeft: '4px' }}>
           {useCliStore(s => s.lastFeedback)}
         </div>
       </div>

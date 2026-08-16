@@ -77,80 +77,69 @@ export function VirtualConsoleView() {
   }
 
   return (
-    <div className="view-full" style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#0a0a0a' }}>
+    <div className="view-full vc-view">
       
       {/* ── Topbar ───────────────────────────────────────────────────────── */}
-      <header style={{ 
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-        padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <LayoutGrid size={24} color="var(--primary)" />
-          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Virtual Console</h2>
-          
-          <div style={{ display: 'flex', gap: '0.25rem', marginLeft: '2rem' }}>
-            {pages.map(p => (
-              <button 
-                key={p.id}
-                className={`btn ${activePageId === p.id ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ borderRadius: '6px' }}
-                onClick={() => setActivePage(p.id)}
-              >
-                {p.name}
-              </button>
-            ))}
-            <button className="btn btn-ghost" onClick={() => addPage(`Page ${pages.length + 1}`)}>
-              <Plus size={16} />
+      <div className="view-header vc-header">
+        <LayoutGrid size={24} color="var(--accent)" />
+        <h2>Virtual Console</h2>
+        
+        <div className="vc-page-tabs">
+          {pages.map(p => (
+            <button 
+              key={p.id}
+              className={`vc-page-btn ${activePageId === p.id ? 'active' : ''}`}
+              onClick={() => setActivePage(p.id)}
+            >
+              {p.name}
             </button>
-          </div>
+          ))}
+          <button className="btn-icon-sm" onClick={() => addPage(`Page ${pages.length + 1}`)}>
+            <Plus size={16} />
+          </button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="view-header-actions vc-actions">
           <button 
-            className={`btn ${fixtures.isBlindMode ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', color: fixtures.isBlindMode ? '#000' : 'var(--status-warn)', background: fixtures.isBlindMode ? 'var(--status-warn)' : 'rgba(255,170,0,0.1)' }}
+            className={`btn ${fixtures.isBlindMode ? 'btn-danger' : 'btn-ghost'}`}
+            style={{ 
+              color: fixtures.isBlindMode ? '#fff' : 'var(--status-warn)', 
+              background: fixtures.isBlindMode ? 'var(--status-error)' : 'rgba(255,170,0,0.1)' 
+            }}
             onClick={() => fixtures.setBlindMode(!fixtures.isBlindMode)}
           >
             <EyeOff size={16} /> {fixtures.isBlindMode ? 'BLIND ACTIVE' : 'BLIND'}
           </button>
           
           <button 
-            className="btn btn-ghost"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', color: 'var(--status-error)' }}
+            className="btn btn-ghost danger-text"
             onClick={() => clearProgrammer()}
           >
             <Trash2 size={16} /> CLEAR
           </button>
           
-          <button 
-            className={`btn ${isEditMode ? 'btn-ghost' : 'btn-primary'}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}
-            onClick={() => setEditMode(false)}
-          >
-            <Play size={16} /> PLAY
-          </button>
-          <button 
-            className={`btn ${isEditMode ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', border: isEditMode ? '1px solid var(--status-warn)' : 'none', color: isEditMode ? 'var(--status-warn)' : 'inherit', background: isEditMode ? 'rgba(255,170,0,0.1)' : 'transparent' }}
-            onClick={() => setEditMode(true)}
-          >
-            <Settings size={16} /> EDIT
-          </button>
+          <div className="vc-mode-toggle">
+            <button 
+              className={`vc-mode-btn ${!isEditMode ? 'active-play' : ''}`}
+              onClick={() => setEditMode(false)}
+            >
+              <Play size={14} fill={!isEditMode ? "currentColor" : "none"} /> PLAY
+            </button>
+            <button 
+              className={`vc-mode-btn ${isEditMode ? 'active-edit' : ''}`}
+              onClick={() => setEditMode(true)}
+            >
+              <Settings size={14} /> EDIT
+            </button>
+          </div>
         </div>
-      </header>
+      </div>
 
       {/* ── Grid Container ───────────────────────────────────────────────── */}
-      <div style={{ flex: 1, padding: '1.5rem', overflow: 'auto', display: 'flex', justifyContent: 'center' }}>
-        <div style={{
-          display: 'grid',
+      <div className="vc-grid-container">
+        <div className="vc-grid" style={{
           gridTemplateColumns: `repeat(${GRID_COLS}, 80px)`,
           gridTemplateRows: `repeat(${GRID_ROWS}, 80px)`,
-          gap: '8px',
-          position: 'relative',
-          padding: '8px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid var(--border)',
-          borderRadius: '12px'
         }}>
           
           {/* Background Empty Cells for clicking in Edit Mode */}
@@ -160,17 +149,11 @@ export function VirtualConsoleView() {
             return (
               <div 
                 key={`bg-${x}-${y}`} 
+                className={`vc-bg-cell ${isEditMode ? 'edit-mode' : ''}`}
                 style={{
                   gridColumn: x + 1,
                   gridRow: y + 1,
-                  background: isEditMode ? 'rgba(255,255,255,0.05)' : 'transparent',
-                  border: isEditMode ? '1px dashed rgba(255,255,255,0.1)' : 'none',
-                  borderRadius: '8px',
-                  cursor: isEditMode ? 'pointer' : 'default',
-                  transition: 'background 0.2s'
                 }}
-                onMouseEnter={e => { if (isEditMode) e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
-                onMouseLeave={e => { if (isEditMode) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
                 onClick={() => handleCellClick(x, y)}
               />
             )
@@ -182,7 +165,6 @@ export function VirtualConsoleView() {
             if (w.targetType === 'scene') isMissing = !scenes.some(s => s.id === w.targetId)
             if (w.targetType === 'chaser') isMissing = !chasers.some(c => c.id === w.targetId)
 
-            // Make sure the input is conditionally controlled only for 'blind' type.
             const rangeProps: any = {
               defaultValue: undefined,
               value: undefined
@@ -191,66 +173,41 @@ export function VirtualConsoleView() {
               rangeProps.value = fixtures.blindCrossfader * 255
             }
 
+            const widgetBg = w.type === 'button' ? (isMissing ? 'var(--status-error)' : w.color) : 'var(--surface-0)'
+            const widgetBorder = w.type === 'button' ? 'rgba(255,255,255,0.2)' : w.color
+
             return (
               <div 
                 key={w.id}
+                className={`vc-widget ${w.type} ${isEditMode ? 'edit-mode' : ''} ${isMissing && !isEditMode ? 'missing' : ''}`}
                 onClick={(e) => handleWidgetClick(e, w)}
                 style={{
                   gridColumn: `${w.x + 1} / span ${w.width}`,
                   gridRow: `${w.y + 1} / span ${w.height}`,
-                  background: w.type === 'button' ? (isMissing ? 'var(--status-error)' : w.color) : 'rgba(0,0,0,0.5)',
-                  border: `2px solid ${w.type === 'button' ? 'rgba(255,255,255,0.2)' : w.color}`,
-                  borderRadius: '8px',
-                  cursor: isEditMode ? 'pointer' : (w.type === 'button' ? 'pointer' : 'default'),
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: w.type === 'button' ? 'center' : 'flex-end',
-                  alignItems: 'center',
-                  padding: '8px',
-                  boxShadow: w.type === 'button' && !isEditMode ? '0 4px 12px rgba(0,0,0,0.5)' : 'none',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'transform 0.1s, filter 0.1s',
-                  zIndex: 10,
-                  opacity: isMissing && !isEditMode ? 0.5 : 1
+                  background: widgetBg,
+                  borderColor: widgetBorder,
                 }}
-                onMouseDown={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'brightness(1.5)' }}
-                onMouseUp={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'none' }}
-                onMouseLeave={e => { if (!isEditMode && w.type === 'button') e.currentTarget.style.filter = 'none' }}
               >
                 {isEditMode && (
-                  <div style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: '2px' }}>
+                  <div className="vc-edit-badge">
                     <Edit2 size={12} color="white" />
                   </div>
                 )}
                 
                 {w.type === 'button' && (
-                  <span style={{ 
-                    color: 'white', 
-                    fontWeight: 700, 
-                    textAlign: 'center', 
-                    textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                    fontSize: w.width > 1 || w.height > 1 ? '1.2rem' : '0.85rem'
-                  }}>
+                  <span className="vc-button-label" style={{ fontSize: w.width > 1 || w.height > 1 ? '1.2rem' : '0.85rem' }}>
                     {isMissing ? 'Missing Target' : w.label}
                   </span>
                 )}
 
                 {w.type === 'fader' && (
                   <>
-                    <div style={{ width: '4px', height: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', position: 'absolute', top: 0 }} />
+                    <div className="vc-fader-track" />
                     <input 
                       type="range" 
+                      className="vc-fader-input"
                       min={0} max={255} 
                       {...rangeProps}
-                      style={{ 
-                        writingMode: 'vertical-lr', 
-                        direction: 'rtl',
-                        width: '100%', 
-                        height: '80%', 
-                        zIndex: 2, 
-                        cursor: isEditMode ? 'pointer' : 'grab' 
-                      }} 
                       disabled={isEditMode}
                       onChange={(e) => {
                         if (w.targetType === 'submaster' && w.targetId) {
@@ -262,9 +219,7 @@ export function VirtualConsoleView() {
                         }
                       }}
                     />
-                    <span style={{ fontSize: '0.7rem', color: 'white', marginTop: 'auto', zIndex: 2, background: 'rgba(0,0,0,0.8)', padding: '2px 4px', borderRadius: '4px', textAlign: 'center' }}>
-                      {w.label}
-                    </span>
+                    <span className="vc-fader-label">{w.label}</span>
                   </>
                 )}
               </div>
@@ -276,111 +231,120 @@ export function VirtualConsoleView() {
 
       {/* ── Editor Modal ─────────────────────────────────────────────────── */}
       {editorOpen && editingWidget && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          background: 'rgba(0,0,0,0.8)', zIndex: 1000, 
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div className="panel p-lg" style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h3 style={{ margin: 0 }}>{editingWidget.id ? 'Edit Widget' : 'New Widget'}</h3>
+        <div className="vc-modal-overlay">
+          <div className="card vc-modal">
+            <div className="card-header">
+              <span className="card-title">{editingWidget.id ? 'Edit Widget' : 'New Widget'}</span>
+            </div>
             
-            <div>
-              <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem' }}>Widget Type</label>
-              <select 
-                className="styled-input" style={{ width: '100%' }}
-                value={editingWidget.type}
-                onChange={e => setEditingWidget({...editingWidget, type: e.target.value as any})}
-              >
-                <option value="button">Button (Trigger)</option>
-                <option value="fader">Fader (Continuous)</option>
-              </select>
-            </div>
+            <div className="vc-modal-body">
+              <div className="form-group">
+                <label className="form-label">Widget Type</label>
+                <div className="select-wrapper">
+                  <select 
+                    className="styled-select" 
+                    value={editingWidget.type}
+                    onChange={e => setEditingWidget({...editingWidget, type: e.target.value as any})}
+                  >
+                    <option value="button">Button (Trigger)</option>
+                    <option value="fader">Fader (Continuous)</option>
+                  </select>
+                  <span className="select-arrow">▾</span>
+                </div>
+              </div>
 
-            <div>
-              <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem' }}>Label</label>
-              <input 
-                className="styled-input" style={{ width: '100%' }}
-                value={editingWidget.label}
-                onChange={e => setEditingWidget({...editingWidget, label: e.target.value})}
-              />
-            </div>
-
-            <div>
-              <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem' }}>Color</label>
-              <input 
-                type="color" className="styled-input" style={{ width: '100%', height: '40px', padding: 0 }}
-                value={editingWidget.color}
-                onChange={e => setEditingWidget({...editingWidget, color: e.target.value})}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ flex: 1 }}>
-                <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem' }}>Width (Cells)</label>
+              <div className="form-group">
+                <label className="form-label">Label</label>
                 <input 
-                  type="number" min={1} max={4} className="styled-input" style={{ width: '100%' }}
-                  value={editingWidget.width}
-                  onChange={e => setEditingWidget({...editingWidget, width: parseInt(e.target.value)})}
+                  className="styled-input" 
+                  value={editingWidget.label}
+                  onChange={e => setEditingWidget({...editingWidget, label: e.target.value})}
                 />
               </div>
-              <div style={{ flex: 1 }}>
-                <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem' }}>Height (Cells)</label>
+
+              <div className="form-group">
+                <label className="form-label">Color</label>
                 <input 
-                  type="number" min={1} max={4} className="styled-input" style={{ width: '100%' }}
-                  value={editingWidget.height}
-                  onChange={e => setEditingWidget({...editingWidget, height: parseInt(e.target.value)})}
+                  type="color" className="styled-input color-input" 
+                  value={editingWidget.color}
+                  onChange={e => setEditingWidget({...editingWidget, color: e.target.value})}
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem' }}>Target Type</label>
-              <select 
-                className="styled-input" style={{ width: '100%' }}
-                value={editingWidget.targetType}
-                onChange={e => setEditingWidget({...editingWidget, targetType: e.target.value as any})}
-              >
-                <option value="none">None</option>
-                {editingWidget.type === 'button' && (
-                  <>
-                    <option value="scene">Scene</option>
-                    <option value="chaser">Chaser</option>
-                  </>
-                )}
-                {editingWidget.type === 'fader' && (
-                  <>
-                    <option value="submaster">Submaster (Group)</option>
-                    <option value="grandmaster">Grand Master</option>
-                    <option value="blind">Blind Crossfader</option>
-                  </>
-                )}
-              </select>
-            </div>
-
-            {['scene', 'chaser'].includes(editingWidget.targetType || '') && (
-              <div>
-                <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem' }}>Select Target</label>
-                <select 
-                  className="styled-input" style={{ width: '100%' }}
-                  value={editingWidget.targetId}
-                  onChange={e => setEditingWidget({...editingWidget, targetId: e.target.value})}
-                >
-                  <option value="">-- Select --</option>
-                  {editingWidget.targetType === 'scene' && scenes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  {editingWidget.targetType === 'chaser' && chasers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+              <div className="vc-modal-row">
+                <div className="form-group flex-1">
+                  <label className="form-label">Width (Cells)</label>
+                  <input 
+                    type="number" min={1} max={4} className="styled-input" 
+                    value={editingWidget.width}
+                    onChange={e => setEditingWidget({...editingWidget, width: parseInt(e.target.value)})}
+                  />
+                </div>
+                <div className="form-group flex-1">
+                  <label className="form-label">Height (Cells)</label>
+                  <input 
+                    type="number" min={1} max={4} className="styled-input" 
+                    value={editingWidget.height}
+                    onChange={e => setEditingWidget({...editingWidget, height: parseInt(e.target.value)})}
+                  />
+                </div>
               </div>
-            )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Target Type</label>
+                <div className="select-wrapper">
+                  <select 
+                    className="styled-select" 
+                    value={editingWidget.targetType}
+                    onChange={e => setEditingWidget({...editingWidget, targetType: e.target.value as any})}
+                  >
+                    <option value="none">None</option>
+                    {editingWidget.type === 'button' && (
+                      <>
+                        <option value="scene">Scene</option>
+                        <option value="chaser">Chaser</option>
+                      </>
+                    )}
+                    {editingWidget.type === 'fader' && (
+                      <>
+                        <option value="submaster">Submaster (Group)</option>
+                        <option value="grandmaster">Grand Master</option>
+                        <option value="blind">Blind Crossfader</option>
+                      </>
+                    )}
+                  </select>
+                  <span className="select-arrow">▾</span>
+                </div>
+              </div>
+
+              {['scene', 'chaser'].includes(editingWidget.targetType || '') && (
+                <div className="form-group">
+                  <label className="form-label">Select Target</label>
+                  <div className="select-wrapper">
+                    <select 
+                      className="styled-select" 
+                      value={editingWidget.targetId}
+                      onChange={e => setEditingWidget({...editingWidget, targetId: e.target.value})}
+                    >
+                      <option value="">-- Select --</option>
+                      {editingWidget.targetType === 'scene' && scenes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      {editingWidget.targetType === 'chaser' && chasers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <span className="select-arrow">▾</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="vc-modal-actions">
               {editingWidget.id ? (
-                <button className="btn btn-ghost" style={{ color: 'var(--status-error)' }} onClick={handleDeleteWidget}>
+                <button className="btn btn-ghost danger-text" onClick={handleDeleteWidget}>
                   <Trash2 size={16} /> Delete
                 </button>
               ) : (
                 <div />
               )}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div className="vc-modal-actions-right">
                 <button className="btn btn-ghost" onClick={() => setEditorOpen(false)}>Cancel</button>
                 <button className="btn btn-primary" onClick={() => handleSaveWidget(editingWidget)}>Save</button>
               </div>
@@ -389,6 +353,242 @@ export function VirtualConsoleView() {
           </div>
         </div>
       )}
+
+      <style>{`
+        .vc-view {
+          display: flex;
+          flex-direction: column;
+          background: #000; /* Deep black background for VC */
+          padding: 0 !important;
+        }
+        
+        .vc-header {
+          border-bottom: 1px solid var(--border);
+          background: var(--surface-1);
+          padding: var(--space-3) var(--space-5) !important;
+        }
+
+        .vc-page-tabs {
+          display: flex;
+          gap: 4px;
+          margin-left: var(--space-6);
+        }
+        
+        .vc-page-btn {
+          background: transparent;
+          border: 1px solid transparent;
+          color: var(--text-secondary);
+          padding: 6px 12px;
+          border-radius: var(--radius-sm);
+          font-size: var(--text-sm);
+          font-weight: 500;
+          cursor: pointer;
+          transition: all var(--duration-fast) ease;
+        }
+        .vc-page-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .vc-page-btn.active {
+          background: var(--surface-2);
+          border-color: var(--border-light);
+          color: var(--text-primary);
+        }
+
+        .vc-actions { margin-left: auto; }
+        
+        .vc-mode-toggle {
+          display: flex;
+          background: var(--surface-2);
+          border-radius: var(--radius-sm);
+          padding: 2px;
+          border: 1px solid var(--border);
+        }
+        .vc-mode-btn {
+          background: transparent;
+          border: none;
+          color: var(--text-muted);
+          padding: 6px 16px;
+          font-size: var(--text-xs);
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all var(--duration-fast) ease;
+        }
+        .vc-mode-btn.active-play {
+          background: var(--status-ok);
+          color: #000;
+        }
+        .vc-mode-btn.active-edit {
+          background: var(--status-warn);
+          color: #000;
+        }
+
+        .vc-grid-container {
+          flex: 1;
+          padding: var(--space-6);
+          overflow: auto;
+          display: flex;
+          justify-content: center;
+        }
+        .vc-grid {
+          display: grid;
+          gap: 8px;
+          position: relative;
+          padding: 8px;
+          background: var(--surface-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          box-shadow: inset 0 2px 20px rgba(0,0,0,0.5);
+        }
+        
+        .vc-bg-cell {
+          background: transparent;
+          border-radius: var(--radius-md);
+          transition: background var(--duration-fast) ease;
+        }
+        .vc-bg-cell.edit-mode {
+          background: rgba(255,255,255,0.03);
+          border: 1px dashed rgba(255,255,255,0.1);
+          cursor: pointer;
+        }
+        .vc-bg-cell.edit-mode:hover { background: rgba(255,255,255,0.08); }
+        
+        .vc-widget {
+          border-radius: var(--radius-md);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 8px;
+          position: relative;
+          overflow: hidden;
+          transition: transform 0.1s, filter 0.1s;
+          z-index: 10;
+          border-width: 2px;
+          border-style: solid;
+        }
+        .vc-widget.button { justify-content: center; }
+        .vc-widget.button:not(.edit-mode) {
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .vc-widget.button:not(.edit-mode):active { filter: brightness(1.3); transform: scale(0.98); }
+        
+        .vc-widget.fader { justify-content: flex-end; }
+        .vc-widget.missing:not(.edit-mode) { opacity: 0.5; }
+        .vc-widget.edit-mode { cursor: pointer; }
+        
+        .vc-edit-badge {
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          background: rgba(0,0,0,0.6);
+          border-radius: 4px;
+          padding: 4px;
+        }
+        
+        .vc-button-label {
+          color: white;
+          font-weight: 700;
+          text-align: center;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+          line-height: 1.2;
+        }
+        
+        .vc-fader-track {
+          width: 6px;
+          height: calc(100% - 30px);
+          background: rgba(255,255,255,0.1);
+          border-radius: 3px;
+          position: absolute;
+          top: 8px;
+          box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);
+        }
+        .vc-fader-input {
+          writing-mode: vertical-lr;
+          direction: rtl;
+          width: 100%;
+          height: calc(100% - 24px);
+          z-index: 2;
+          margin-bottom: auto;
+        }
+        .vc-widget:not(.edit-mode) .vc-fader-input { cursor: grab; }
+        
+        .vc-fader-label {
+          font-size: var(--text-2xs);
+          color: white;
+          z-index: 2;
+          background: rgba(0,0,0,0.8);
+          padding: 2px 6px;
+          border-radius: 4px;
+          text-align: center;
+          margin-top: 4px;
+          width: 100%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        /* Modal Styles */
+        .vc-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          backdrop-filter: blur(4px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .vc-modal {
+          width: 400px;
+          display: flex;
+          flex-direction: column;
+        }
+        .vc-modal-body {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+          padding: var(--space-4);
+        }
+        .vc-modal-row {
+          display: flex;
+          gap: var(--space-3);
+        }
+        .flex-1 { flex: 1; }
+        .color-input {
+          height: 38px !important;
+          padding: 2px !important;
+        }
+        .vc-modal-actions {
+          display: flex;
+          justify-content: space-between;
+          padding: var(--space-3) var(--space-4);
+          border-top: 1px solid var(--border);
+          background: var(--surface-1);
+          border-bottom-left-radius: var(--radius-lg);
+          border-bottom-right-radius: var(--radius-lg);
+        }
+        .vc-modal-actions-right {
+          display: flex;
+          gap: var(--space-2);
+        }
+        
+        .danger-text { color: var(--status-error) !important; }
+        .btn-icon-sm {
+          background: transparent;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          padding: 6px;
+          border-radius: var(--radius-xs);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .btn-icon-sm:hover { background: var(--bg-hover); color: var(--text-primary); }
+      `}</style>
     </div>
   )
 }

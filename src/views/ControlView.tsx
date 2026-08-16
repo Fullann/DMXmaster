@@ -3,6 +3,7 @@ import { LogicalControl }   from '@/components/fixtures/LogicalControl'
 import { useFixturesStore } from '@/store/useFixturesStore'
 import { GelPicker }        from '@/components/control/GelPicker'
 import { getFixtureCapabilities } from '@/types/fixtures'
+import { SlidersHorizontal } from 'lucide-react'
 
 export function ControlView() {
   const fixtures = useFixturesStore()
@@ -23,13 +24,18 @@ export function ControlView() {
   }
 
   return (
-    <div className="view-full" style={{ display: 'flex', flexDirection: 'column' }}>
-      <SubmasterConsole />
+    <div className="view-full control-view">
+      <div className="control-top">
+        <SubmasterConsole />
+      </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', flex: 1, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div className="section-title" style={{ padding: '0 1.5rem', paddingTop: '1rem' }}>
-            Fixture Controls — {fixtures.patch.length} fixture{fixtures.patch.length !== 1 ? 's' : ''} active
+      <div className="control-bottom">
+        <div className="control-main card">
+          <div className="card-header">
+            <span className="card-title"><SlidersHorizontal size={16} /> Fixture Controls</span>
+            <span className="text-muted" style={{ fontSize: 'var(--text-xs)' }}>
+              {fixtures.patch.length} fixture{fixtures.patch.length !== 1 ? 's' : ''} active
+            </span>
           </div>
           <div className="control-scroll">
             <LogicalControl
@@ -41,10 +47,54 @@ export function ControlView() {
           </div>
         </div>
 
-        <div style={{ borderLeft: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
+        <div className="control-sidebar card">
           <GelPicker onSelectColor={handleApplyGel} />
         </div>
       </div>
+
+      <style>{`
+        .control-view {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+          overflow: hidden;
+        }
+        .control-top {
+          flex-shrink: 0;
+        }
+        .control-bottom {
+          display: flex;
+          gap: var(--space-4);
+          flex: 1;
+          overflow: hidden;
+        }
+        .control-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          padding: 0;
+        }
+        .control-main .card-header {
+          padding: var(--space-3) var(--space-4);
+          border-bottom: 1px solid var(--border);
+          background: var(--surface-1);
+          border-top-left-radius: var(--radius-md);
+          border-top-right-radius: var(--radius-md);
+        }
+        .control-scroll {
+          flex: 1;
+          overflow-y: auto;
+        }
+        .control-sidebar {
+          width: 320px;
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          padding: 0;
+        }
+      `}</style>
     </div>
   )
 }

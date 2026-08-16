@@ -31,162 +31,214 @@ export function RdmView() {
   }
 
   return (
-    <div className="view-full" style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#0a0a0a' }}>
-      
-      {/* ── Topbar ───────────────────────────────────────────────────────── */}
-      <header style={{ 
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-        padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Power size={24} color="var(--primary)" />
-          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Remote Device Management (RDM)</h2>
-        </div>
-
-        <div>
+    <div className="view-full rdm-view">
+      {/* ── Page Header ───────────────────────────────────────────────── */}
+      <div className="view-header">
+        <Power size={20} color="var(--accent)" />
+        <h2>Remote Device Management (RDM)</h2>
+        <div className="view-header-actions">
           <button 
             className="btn btn-primary" 
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '8px' }}
             onClick={discoverDevices}
             disabled={isDiscovering}
           >
             {isDiscovering ? (
-              <><span className="spinner" style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Discovering...</>
+              <><span className="rdm-spinner" /> Discovering...</>
             ) : (
-              <><Search size={16} /> Discover Devices</>
+              <><Search size={14} /> Discover Devices</>
             )}
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* ── Info Box ─────────────────────────────────────────────────────── */}
-      <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem' }}>
-        <div style={{ 
-          background: 'rgba(0,188,212,0.1)', border: '1px solid rgba(0,188,212,0.3)', 
-          padding: '1rem', borderRadius: '8px', display: 'flex', gap: '1rem', alignItems: 'flex-start', flex: 1
-        }}>
-          <Info size={24} color="#00bcd4" />
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.4' }}>
+      <div className="rdm-body">
+        {/* ── Info Box ──────────────────────────────────────────────────── */}
+        <div className="info-banner info">
+          <Info size={20} style={{ flexShrink: 0, marginTop: 2 }} />
+          <p>
             RDM requires an ANSI E1.20 compliant DMX interface (like Enttec USB Pro), a bi-directional RDM splitter, 
             and RDM-compatible fixtures. During discovery, DMX transmission may be briefly interrupted.
           </p>
         </div>
-      </div>
 
-      {/* ── DMX-IN Routing ───────────────────────────────────────────────── */}
-      <div style={{ padding: '0 1.5rem 1rem 1.5rem' }}>
-        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text)' }}>DMX-IN Routing (Art-Net & sACN)</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-          {Array.from({ length: 8 }).map((_, i) => {
-            const mode = inputRouting[i] || 'htp'
-            return (
-              <div key={i} className="panel" style={{ padding: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold' }}>Univ {i + 1}</span>
-                <select 
-                  className="styled-input" 
-                  value={mode}
-                  onChange={(e) => setInputRouting(i, e.target.value as 'htp' | 'remote')}
-                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
-                >
-                  <option value="htp">HTP Merge</option>
-                  <option value="remote">Remote Control</option>
-                </select>
-              </div>
-            )
-          })}
+        {/* ── DMX-IN Routing ──────────────────────────────────────────── */}
+        <div className="rdm-section">
+          <h3 className="section-title">DMX-IN Routing (Art-Net & sACN)</h3>
+          <div className="rdm-routing-grid">
+            {Array.from({ length: 8 }).map((_, i) => {
+              const mode = inputRouting[i] || 'htp'
+              return (
+                <div key={i} className="rdm-routing-card">
+                  <span className="rdm-routing-label">Univ {i + 1}</span>
+                  <select 
+                    className="styled-input rdm-routing-select" 
+                    value={mode}
+                    onChange={(e) => setInputRouting(i, e.target.value as 'htp' | 'remote')}
+                  >
+                    <option value="htp">HTP Merge</option>
+                    <option value="remote">Remote Control</option>
+                  </select>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── Device List ──────────────────────────────────────────────── */}
+        <div className="rdm-device-list">
+          {devices.length === 0 && !isDiscovering ? (
+            <div className="empty-state">
+              <Search size={40} className="empty-state-icon" />
+              <div className="empty-state-title">No RDM devices found</div>
+              <div className="empty-state-hint">Click "Discover Devices" to scan the network.</div>
+            </div>
+          ) : (
+            <div className="rdm-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>UID</th>
+                    <th>Manufacturer</th>
+                    <th>Model</th>
+                    <th>DMX Address</th>
+                    <th>Mode</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {devices.map(device => (
+                    <tr key={device.uid}>
+                      <td className="mono">{device.uid}</td>
+                      <td>{device.manufacturerLabel || `0x${device.manufacturerId.toString(16)}`}</td>
+                      <td>{device.deviceModelDescription || `0x${device.deviceId.toString(16)}`}</td>
+                      <td><span className="rdm-addr-badge">{device.dmxStartAddress}</span></td>
+                      <td className="rdm-mode-text">Personality {device.dmxPersonality} / {device.personalityCount}</td>
+                      <td>
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleEdit(device)}>
+                          <Settings2 size={14} /> Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Device List ──────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, padding: '0 1.5rem 1.5rem 1.5rem', overflow: 'auto' }}>
-        {devices.length === 0 && !isDiscovering ? (
-          <div style={{ 
-            height: '100%', display: 'flex', flexDirection: 'column', 
-            alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' 
-          }}>
-            <Search size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-            <p>No RDM devices found on the network.</p>
-            <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>Click "Discover Devices" to scan.</p>
-          </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                <th style={{ padding: '1rem' }}>UID</th>
-                <th style={{ padding: '1rem' }}>Manufacturer</th>
-                <th style={{ padding: '1rem' }}>Model</th>
-                <th style={{ padding: '1rem' }}>DMX Address</th>
-                <th style={{ padding: '1rem' }}>Mode</th>
-                <th style={{ padding: '1rem' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {devices.map(device => (
-                <tr key={device.uid} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '1rem', fontFamily: 'monospace' }}>{device.uid}</td>
-                  <td style={{ padding: '1rem' }}>{device.manufacturerLabel || `0x${device.manufacturerId.toString(16)}`}</td>
-                  <td style={{ padding: '1rem' }}>{device.deviceModelDescription || `0x${device.deviceId.toString(16)}`}</td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{ 
-                      background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', 
-                      borderRadius: '4px', fontWeight: 'bold' 
-                    }}>
-                      {device.dmxStartAddress}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    Personality {device.dmxPersonality} / {device.personalityCount}
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <button 
-                      className="btn btn-ghost" 
-                      onClick={() => handleEdit(device)}
-                      style={{ padding: '0.5rem', borderRadius: '6px' }}
-                    >
-                      <Settings2 size={16} /> Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* ── Edit Modal ───────────────────────────────────────────────────── */}
+      {/* ── Edit Modal ─────────────────────────────────────────────────── */}
       {editingDevice && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-          background: 'rgba(0,0,0,0.8)', zIndex: 1000, 
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div className="panel p-lg" style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h3 style={{ margin: 0 }}>Configure Device</h3>
-            <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-              {editingDevice.manufacturerLabel} - {editingDevice.deviceModelDescription}<br/>
-              <span style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{editingDevice.uid}</span>
+        <div className="rdm-modal-overlay" onClick={() => setEditingDevice(null)}>
+          <div className="rdm-modal" onClick={e => e.stopPropagation()}>
+            <h3>Configure Device</h3>
+            <p className="rdm-modal-device">
+              {editingDevice.manufacturerLabel} — {editingDevice.deviceModelDescription}<br/>
+              <span className="mono">{editingDevice.uid}</span>
             </p>
             
-            <div>
-              <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem' }}>DMX Start Address</label>
+            <div className="rdm-modal-field">
+              <label>DMX Start Address</label>
               <input 
                 type="number"
                 min={1} max={512}
-                className="styled-input" style={{ width: '100%', fontSize: '1.2rem', textAlign: 'center' }}
+                className="styled-input rdm-addr-input" 
                 value={newAddress}
                 onChange={e => setNewAddress(e.target.value)}
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+            <div className="rdm-modal-actions">
               <button className="btn btn-ghost" onClick={() => setEditingDevice(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSaveAddress}>Apply to Device</button>
+              <button className="btn btn-primary" onClick={handleSaveAddress}>Apply</button>
             </div>
           </div>
         </div>
       )}
       
       <style>{`
+        .rdm-view {
+          flex-direction: column !important;
+          padding: 0 !important;
+          gap: 0 !important;
+        }
+        .rdm-body {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+          padding: var(--space-4) var(--space-5);
+          overflow-y: auto;
+        }
+        .rdm-section h3 { margin-bottom: var(--space-3); }
+        .rdm-routing-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: var(--space-3);
+        }
+        .rdm-routing-card {
+          background: var(--surface-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: var(--space-3);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .rdm-routing-label { font-weight: 700; font-size: var(--text-sm); }
+        .rdm-routing-select {
+          padding: 4px 8px !important;
+          font-size: var(--text-xs) !important;
+          max-width: 140px;
+        }
+        .rdm-device-list { flex: 1; min-height: 0; }
+        .rdm-table-wrap { overflow-y: auto; }
+        .rdm-addr-badge {
+          background: var(--surface-3);
+          padding: 2px 10px;
+          border-radius: var(--radius-xs);
+          font-weight: 700;
+          font-family: var(--font-mono);
+          font-size: var(--text-sm);
+        }
+        .rdm-mode-text { font-size: var(--text-sm); color: var(--text-secondary); }
+        .mono { font-family: var(--font-mono); }
+        .rdm-spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top: 2px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          display: inline-block;
+        }
+        .rdm-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          backdrop-filter: blur(4px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .rdm-modal {
+          background: var(--surface-0);
+          border: 1px solid var(--border-light);
+          border-radius: var(--radius-lg);
+          padding: var(--space-5);
+          width: 380px;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+          box-shadow: var(--shadow-lg);
+        }
+        .rdm-modal h3 { font-size: var(--text-xl); margin: 0; }
+        .rdm-modal-device { color: var(--text-muted); font-size: var(--text-sm); margin: 0; line-height: 1.6; }
+        .rdm-modal-field label { display: block; margin-bottom: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+        .rdm-addr-input { width: 100% !important; font-size: var(--text-xl) !important; text-align: center !important; }
+        .rdm-modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+        .btn-sm { padding: 4px 10px !important; font-size: var(--text-xs) !important; display: flex; align-items: center; gap: 4px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
       `}</style>
     </div>

@@ -128,43 +128,102 @@ export function PaletteView() {
   const gobos = palettes.filter(p => p.type === 'gobo')
 
   return (
-    <div className="view-full" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
+    <div className="view-full palette-view">
+      <div className="view-header">
+        <PaletteIcon size={20} color="var(--accent)" />
+        <div className="view-header-left">
           <h2>Palettes</h2>
-          <p className="text-muted">Save positions and colors to update multiple scenes automatically. Select fixtures in CLI first to apply only to them.</p>
+          <p>Save positions and colors to update multiple scenes automatically. Select fixtures in CLI first to apply only to them.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'var(--bg-card)', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-          <select 
-            className="styled-input" 
-            value={newPaletteType} 
-            onChange={e => setNewPaletteType(e.target.value as PaletteType)}
-            style={{ width: '120px' }}
-          >
-            <option value="position">Position</option>
-            <option value="color">Color</option>
-            <option value="gobo">Gobo</option>
-          </select>
+        <div className="view-header-actions palette-save-bar">
+          <div className="select-wrapper palette-type-select">
+            <select 
+              className="styled-select" 
+              value={newPaletteType} 
+              onChange={e => setNewPaletteType(e.target.value as PaletteType)}
+            >
+              <option value="position">Position</option>
+              <option value="color">Color</option>
+              <option value="gobo">Gobo</option>
+            </select>
+            <span className="select-arrow">▾</span>
+          </div>
           <input
-            className="styled-input"
+            className="styled-input palette-name-input"
             placeholder="Palette Name (e.g. Singer, Red)"
             value={newPaletteName}
             onChange={e => setNewPaletteName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSavePalette()}
           />
-          <button className="btn btn-primary" onClick={handleSavePalette} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Plus size={16} /> Save from Programmer
+          <button className="btn btn-primary btn-save" onClick={handleSavePalette}>
+            <Plus size={14} /> Save
           </button>
         </div>
-      </header>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
-        
-        <PaletteSection title="Positions" icon={<Crosshair size={20} />} items={positions} onDelete={handleDeletePalette} onApply={handleApplyPalette} applyingId={applyingId} />
-        <PaletteSection title="Colors" icon={<PaletteIcon size={20} />} items={colors} onDelete={handleDeletePalette} onApply={handleApplyPalette} applyingId={applyingId} />
-        <PaletteSection title="Gobos" icon={<PaletteIcon size={20} />} items={gobos} onDelete={handleDeletePalette} onApply={handleApplyPalette} applyingId={applyingId} />
-
       </div>
+
+      <div className="palette-grid">
+        <PaletteSection 
+          title="Positions" 
+          icon={<Crosshair size={18} />} 
+          items={positions} 
+          onDelete={handleDeletePalette} 
+          onApply={handleApplyPalette} 
+          applyingId={applyingId} 
+        />
+        <PaletteSection 
+          title="Colors" 
+          icon={<PaletteIcon size={18} />} 
+          items={colors} 
+          onDelete={handleDeletePalette} 
+          onApply={handleApplyPalette} 
+          applyingId={applyingId} 
+        />
+        <PaletteSection 
+          title="Gobos" 
+          icon={<PaletteIcon size={18} />} 
+          items={gobos} 
+          onDelete={handleDeletePalette} 
+          onApply={handleApplyPalette} 
+          applyingId={applyingId} 
+        />
+      </div>
+
+      <style>{`
+        .palette-view {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+          overflow-y: auto;
+        }
+        .palette-view .view-header {
+          align-items: flex-start;
+        }
+        .view-header-left {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .view-header-left p { margin: 0; color: var(--text-muted); font-size: var(--text-sm); }
+        .palette-save-bar {
+          background: var(--surface-1);
+          padding: 6px;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--border);
+          display: flex;
+          gap: var(--space-2);
+          margin-left: auto;
+        }
+        .palette-type-select { width: 110px; }
+        .palette-type-select select { width: 100%; }
+        .palette-name-input { width: 220px !important; }
+        .btn-save { padding: 4px 12px !important; display: flex; align-items: center; gap: 6px; }
+        
+        .palette-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: var(--space-5);
+        }
+      `}</style>
     </div>
   )
 }
@@ -178,51 +237,104 @@ function PaletteSection({ title, icon, items, onDelete, onApply, applyingId }: {
   applyingId: string | null
 }) {
   return (
-    <div>
-      <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-        {icon} {title}
-      </h3>
+    <div className="palette-section card">
+      <div className="card-header">
+        <span className="card-title">
+          {icon} {title}
+        </span>
+      </div>
+      
       {items.length === 0 ? (
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
-          No {title.toLowerCase()} palettes saved yet.
+        <div className="empty-state">
+          <div className="empty-state-hint">No {title.toLowerCase()} palettes saved yet.</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="palette-items">
           {items.map(p => (
-            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', transition: 'border-color 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-primary)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-            >
-              <div>
-                <div style={{ fontWeight: '600' }}>{p.name}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <div key={p.id} className="palette-item">
+              <div className="palette-info">
+                <div className="palette-name">{p.name}</div>
+                <div className="palette-sub">
                   {Object.keys(p.values).length} fixture{Object.keys(p.values).length !== 1 ? 's' : ''} stored
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <div className="palette-actions">
                 <button
-                  className="btn btn-ghost"
-                  style={{ color: 'var(--status-success)', fontSize: '0.8rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  className="btn btn-ghost btn-apply"
                   onClick={() => onApply(p)}
                   disabled={applyingId === p.id}
                   title="Apply to selected fixtures (or all stored fixtures if none selected)"
                 >
-                  <Play size={13} />
+                  <Play size={12} fill="currentColor" />
                   {applyingId === p.id ? '…' : 'Apply'}
                 </button>
                 <button 
-                  className="btn btn-ghost" 
-                  style={{ color: 'var(--status-error)' }}
+                  className="btn-icon-sm danger"
                   onClick={() => onDelete(p.id, p.name)}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <style>{`
+        .palette-section.card {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+          padding-top: var(--space-3);
+        }
+        .palette-items {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+        }
+        .palette-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: var(--surface-0);
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
+          transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease;
+        }
+        .palette-item:hover {
+          background: var(--surface-1);
+          border-color: var(--border-light);
+        }
+        .palette-info { display: flex; flex-direction: column; }
+        .palette-name { font-weight: 600; font-size: var(--text-sm); }
+        .palette-sub { font-size: var(--text-xs); color: var(--text-muted); }
+        .palette-actions { display: flex; gap: var(--space-2); align-items: center; }
+        .btn-apply {
+          color: var(--status-ok) !important;
+          font-size: var(--text-xs) !important;
+          padding: 4px 10px !important;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          border-radius: var(--radius-sm);
+          background: rgba(50, 215, 75, 0.1) !important;
+        }
+        .btn-apply:hover { background: rgba(50, 215, 75, 0.2) !important; }
+        .btn-icon-sm {
+          background: transparent;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          padding: 4px;
+          border-radius: var(--radius-xs);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .btn-icon-sm:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .btn-icon-sm.danger:hover { background: rgba(255, 69, 58, 0.15); color: var(--status-error); }
+      `}</style>
     </div>
   )
 }
-

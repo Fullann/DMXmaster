@@ -185,17 +185,23 @@ export default function App() {
     )
   }
 
+  // Find the current tab label for breadcrumb
+  const currentTabLabel = WORKSPACE_TABS[workspaceMode]
+    .flatMap(g => g.items)
+    .find(t => t.id === currentView)?.label ?? currentView
+
   return (
     <div className="app-shell">
       <MidiListener />
       <DmxListener />
       <MidiFeedbackEngine />
-      {/* ── Sidebar Navigation (Formerly Tab Navigation) ────────────────────── */}
+
+      {/* ── Sidebar Navigation ──────────────────────────────────────────────── */}
       <nav className="tab-nav">
-        {/* Logo at the top of the sidebar */}
-        <div className="topbar-logo" style={{ padding: '0.5rem 0.75rem', marginBottom: '1rem', WebkitAppRegion: 'drag' } as any}>
-          <div className="topbar-logo-icon" style={{ display: 'flex', alignItems: 'center' }}>
-            <Zap size={20} color="var(--accent)" fill="var(--accent)" />
+        {/* Logo */}
+        <div className="topbar-logo" style={{ WebkitAppRegion: 'drag' } as any}>
+          <div className="topbar-logo-icon">
+            <Zap size={16} color="#fff" fill="#fff" />
           </div>
           <span className="topbar-logo-text">DMX Master</span>
         </div>
@@ -220,116 +226,97 @@ export default function App() {
 
       {/* ── Main Content Area ──────────────────────────────────────────────── */}
       <div className="app-content-wrap">
-        {/* ── Top Bar (Badges & Controls Only) ──────────────────────────────── */}
+        {/* ── Top Bar ──────────────────────────────────────────────────────── */}
         <header className="topbar">
-          
-          <div className="topbar-badges" style={{ marginLeft: 'auto', marginRight: '1rem' }}>
-            <div className="topbar-badge badge-engine">
-              <span className="badge-dot pulse" />
-              Engine Running
-            </div>
-            {patchCount > 0 && (
-              <div className="topbar-badge badge-connected">
-                <span className="badge-dot" />
-                {patchCount} Fixture{patchCount !== 1 ? 's' : ''} Patched
-              </div>
-            )}
-            {isSerialConnected ? (
-              <div className="topbar-badge badge-connected">
-                <span className="badge-dot" />
-                {serialPort.split('/').pop() ?? serialPort}
-              </div>
-            ) : (
-              <div className="topbar-badge badge-disconnected">
-                <span className="badge-dot" />
-                No Device
-              </div>
-            )}
-            {lastBackupTime && (
-              <div className="topbar-badge badge-connected" style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.2)' }} title="Auto-Save Background Backup">
-                <span className="badge-dot" style={{ background: '#a855f7', boxShadow: '0 0 8px #a855f7' }} />
-                Saved {new Date(lastBackupTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </div>
-            )}
-          </div>
-          
-          {/* Workspace Mode Selector */}
-          <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-dark)', padding: '4px', borderRadius: '12px' }}>
-            <button 
-              className={`btn ${workspaceMode === 'setup' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ padding: '6px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600 }}
-              onClick={() => handleWorkspaceChange('setup')}
-            >
-              SETUP
-            </button>
-            <button 
-              className={`btn ${workspaceMode === 'program' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ padding: '6px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600 }}
-              onClick={() => handleWorkspaceChange('program')}
-            >
-              PROGRAM
-            </button>
-            <button 
-              className={`btn ${workspaceMode === 'playback' ? 'btn-danger' : 'btn-ghost'}`}
-              style={{ padding: '6px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600 }}
-              onClick={() => handleWorkspaceChange('playback')}
-            >
-              PLAYBACK
-            </button>
+          {/* Breadcrumb */}
+          <div className="topbar-breadcrumb">
+            <span>{workspaceMode.toUpperCase()}</span>
+            <span className="topbar-breadcrumb-sep">›</span>
+            <span className="topbar-breadcrumb-current">{currentTabLabel}</span>
           </div>
 
-          {/* Global Controls & File Management */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            
-            <div style={{ display: 'flex', gap: '0.5rem', borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '1rem' }}>
-              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => window.appAPI.newShow()}>
-                <FilePlus size={14} /> New Show
-              </button>
-              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => window.appAPI.importShow()}>
-                <Upload size={14} /> Import
-              </button>
-              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => window.appAPI.exportShow()}>
-                <Download size={14} /> Export
-              </button>
+          {/* Status Badges */}
+          <div className="topbar-status">
+            <div className="topbar-badges">
+              <div className="topbar-badge badge-engine">
+                <span className="badge-dot pulse" />
+                Engine
+              </div>
+              {patchCount > 0 && (
+                <div className="topbar-badge badge-connected">
+                  <span className="badge-dot" />
+                  {patchCount} Fix
+                </div>
+              )}
+              {isSerialConnected ? (
+                <div className="topbar-badge badge-connected">
+                  <span className="badge-dot" />
+                  {serialPort.split('/').pop() ?? 'USB'}
+                </div>
+              ) : (
+                <div className="topbar-badge badge-disconnected">
+                  <span className="badge-dot" />
+                  No USB
+                </div>
+              )}
+              {lastBackupTime && (
+                <div className="topbar-badge badge-connected">
+                  <span className="badge-dot" />
+                  Saved {new Date(lastBackupTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="topbar-divider" />
+
+            {/* Workspace Mode Selector */}
+            <div className="workspace-selector">
               <button 
-                className={`btn ${isBlindMode ? 'btn-danger' : 'btn-ghost'}`}
-                style={{ 
-                  padding: '4px 16px', 
-                  borderRadius: '12px',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: isBlindMode ? '#e74c3c' : 'rgba(255,255,255,0.05)',
-                  color: isBlindMode ? 'white' : 'inherit'
-                }}
+                className={`workspace-btn ${workspaceMode === 'setup' ? 'active' : ''}`}
+                onClick={() => handleWorkspaceChange('setup')}
+              >
+                Setup
+              </button>
+              <button 
+                className={`workspace-btn ${workspaceMode === 'program' ? 'active' : ''}`}
+                onClick={() => handleWorkspaceChange('program')}
+              >
+                Program
+              </button>
+              <button 
+                className={`workspace-btn ${workspaceMode === 'playback' ? 'active-playback' : ''}`}
+                onClick={() => handleWorkspaceChange('playback')}
+              >
+                Playback
+              </button>
+            </div>
+
+            <div className="topbar-divider" />
+
+            {/* Global Controls */}
+            <div className="topbar-actions">
+              <button 
+                className={`topbar-icon-btn ${isBlindMode ? 'danger-active' : ''}`}
                 onClick={() => setBlindMode(!isBlindMode)}
                 title="Program on Visualizer only"
               >
-                <Eye size={14} /> BLIND
+                <Eye size={13} /> BLIND
               </button>
-              
-              <div className={`status-badge ${isBroadcastEnabled ? 'status-connected' : 'status-disconnected'}`} 
-                   style={{ cursor: 'pointer', padding: '0.35rem 0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '12px' }}
-                   onClick={() => toggleBroadcast(!isBroadcastEnabled)}
-                   title="Toggle Art-Net Broadcast"
+              <button 
+                className="topbar-icon-btn"
+                onClick={() => toggleBroadcast(!isBroadcastEnabled)}
+                title="Toggle Art-Net Broadcast"
               >
-                <div className="status-dot"></div>
-                Network: {isBroadcastEnabled ? 'ON' : 'OFF'}
-              </div>
-              <div className={`status-badge ${isSerialConnected ? 'status-connected' : 'status-disconnected'}`} style={{ padding: '0.35rem 0.85rem', borderRadius: '12px' }}>
-                <div className="status-dot"></div>
-                {isSerialConnected ? 'USB DMX Active' : 'USB DMX Offline'}
-              </div>
+                <span className={`badge-dot ${isBroadcastEnabled ? 'pulse' : ''}`} 
+                      style={{ background: isBroadcastEnabled ? 'var(--status-ok)' : 'var(--text-muted)' }} />
+                Net
+              </button>
             </div>
           </div>
         </header>
 
         {/* ── Content View ─────────────────────────────────────────────────── */}
-        <div className="content-area" style={{ paddingBottom: '56px' }}>
+        <div className="content-area" style={{ paddingBottom: 'var(--toolbar-h)' }}>
           {currentView === 'home' && <HomeView />}
           {currentView === 'dashboard' && <DashboardView />}
           {currentView === 'library' && <LibraryView />}

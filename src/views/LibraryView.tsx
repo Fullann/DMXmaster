@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useFixturesStore } from '@/store/useFixturesStore'
-import { Plus, Trash2, ArrowUp, ArrowDown, Save } from 'lucide-react'
+import { Plus, Trash2, ArrowUp, ArrowDown, Save, FileBox } from 'lucide-react'
 import type { FixtureProfile, FixtureChannel, ChannelType } from '@/types/fixtures'
 import { AiImportTool } from '@/components/fixtures/AiImportTool'
 
@@ -112,44 +112,31 @@ export function LibraryView() {
   }
 
   return (
-    <div className="view-full" style={{ padding: '1.5rem', display: 'flex', gap: '2rem', overflowY: 'auto' }}>
+    <div className="view-full library-view">
       
-      {/* Left Column: Builder */}
-      <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '2rem', minWidth: '0' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2>Fixture Library & Builder</h2>
-            <p className="text-muted">Create custom DMX fixture profiles or import them. Saved profiles are instantly available in Patch.</p>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button 
-              onClick={handleImportGdtf}
-              style={{ 
-                background: '#8b5cf6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: 'var(--radius-md)', 
-                cursor: 'pointer', fontWeight: 500, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px'
-              }}
-            >
+      {/* ── Left Column: Builder ───────────────────────────────────────── */}
+      <div className="library-builder">
+        <div className="view-header">
+          <FileBox size={20} color="var(--accent)" />
+          <h2>Fixture Library & Builder</h2>
+          <div className="view-header-actions">
+            <button className="btn btn-primary" onClick={handleImportGdtf} style={{ background: '#8b5cf6', borderColor: '#7c3aed' }}>
               Import .GDTF
             </button>
-            <button 
-              className="btn btn-primary" 
-              onClick={handleSave} 
-              disabled={isSaving}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-            >
-              <Save size={16} /> Save Profile
+            <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+              <Save size={14} /> Save Profile
             </button>
           </div>
-        </header>
+        </div>
 
-        {successMsg && <div style={{ color: 'var(--status-ok)', background: 'rgba(52, 211, 153, 0.1)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>{successMsg}</div>}
-        {errorMsg && <div style={{ color: 'var(--status-error)', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>{errorMsg}</div>}
+        {successMsg && <div className="info-banner success">{successMsg}</div>}
+        {errorMsg && <div className="info-banner error">{errorMsg}</div>}
 
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+        <div className="library-builder-grid">
           {/* Info Section */}
-          <div style={{ flex: '1', minWidth: '250px', background: 'var(--bg-card)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Profile Information</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="card">
+            <div className="card-header"><span className="card-title">Profile Information</span></div>
+            <div className="library-form">
               <div className="form-group">
                 <label className="form-label">Manufacturer</label>
                 <input 
@@ -181,73 +168,69 @@ export function LibraryView() {
           </div>
 
           {/* Channels Section */}
-          <div style={{ flex: '2', minWidth: '400px', background: 'var(--bg-card)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3>Channels ({channels.length})</h3>
-              <button className="btn btn-ghost" onClick={handleAddChannel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-panel)' }}>
-                <Plus size={16} /> Add Channel
+          <div className="card">
+            <div className="card-header">
+              <span className="card-title">Channels ({channels.length})</span>
+              <button className="btn btn-ghost btn-sm" onClick={handleAddChannel}>
+                <Plus size={14} /> Add
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div className="library-channels">
               {channels.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)' }}>
-                  No channels added yet.
+                <div className="empty-state">
+                  <div className="empty-state-title">No channels added</div>
+                  <div className="empty-state-hint">Click Add Channel or import a GDTF file to begin.</div>
                 </div>
               ) : (
                 channels.map((channel, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--bg-panel)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+                  <div key={idx} className="library-ch-row">
                     
                     {/* Arrows */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <button className="btn btn-ghost" style={{ padding: '0.2rem' }} disabled={idx === 0} onClick={() => handleMoveChannel(idx, -1)}>
-                        <ArrowUp size={14} />
+                    <div className="library-ch-arrows">
+                      <button className="btn-icon-sm" disabled={idx === 0} onClick={() => handleMoveChannel(idx, -1)}>
+                        <ArrowUp size={12} />
                       </button>
-                      <button className="btn btn-ghost" style={{ padding: '0.2rem' }} disabled={idx === channels.length - 1} onClick={() => handleMoveChannel(idx, 1)}>
-                        <ArrowDown size={14} />
+                      <button className="btn-icon-sm" disabled={idx === channels.length - 1} onClick={() => handleMoveChannel(idx, 1)}>
+                        <ArrowDown size={12} />
                       </button>
                     </div>
 
-                    <div style={{ width: '30px', fontWeight: 'bold', textAlign: 'center', background: 'var(--bg-base)', padding: '0.25rem', borderRadius: '4px' }}>
-                      {channel.number}
-                    </div>
+                    <div className="library-ch-num">{channel.number}</div>
                     
-                    <div style={{ flex: 1 }}>
+                    <div className="library-ch-name">
                       <input 
                         className="styled-input" 
                         placeholder="Channel Name" 
                         value={channel.name} 
                         onChange={e => handleChannelUpdate(idx, { name: e.target.value })}
-                        style={{ width: '100%' }}
                       />
                     </div>
 
-                    <div className="select-wrapper" style={{ width: '120px' }}>
+                    <div className="select-wrapper library-ch-type">
                       <select 
                         className="styled-select" 
                         value={channel.type} 
                         onChange={e => handleChannelUpdate(idx, { type: e.target.value as ChannelType })}
-                        style={{ width: '100%' }}
                       >
                         {CHANNEL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                       <span className="select-arrow">▾</span>
                     </div>
 
-                    <div style={{ width: '80px', display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '2px' }}>Default</span>
+                    <div className="library-ch-def">
+                      <label>Default</label>
                       <input 
                         type="number"
                         className="styled-input" 
                         value={channel.defaultValue}
                         min={0} max={255}
                         onChange={e => handleChannelUpdate(idx, { defaultValue: parseInt(e.target.value) || 0 })}
-                        style={{ width: '100%' }}
                       />
                     </div>
 
-                    <button className="btn btn-ghost" style={{ color: 'var(--status-error)' }} onClick={() => handleRemoveChannel(idx)}>
-                      <Trash2 size={16} />
+                    <button className="btn-icon-sm danger" onClick={() => handleRemoveChannel(idx)}>
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 ))
@@ -257,39 +240,31 @@ export function LibraryView() {
         </div>
       </div>
 
-      {/* Right Column: AI Import & Profiles */}
-      <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: '300px', maxWidth: '400px' }}>
-        <div className="panel">
+      {/* ── Right Column: AI Import & Profiles ─────────────────────────── */}
+      <div className="library-sidebar">
+        <div className="card">
           <AiImportTool onSave={saveProfile} />
         </div>
         
-        <div className="panel profile-list-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div className="panel-header">
-            <span className="panel-title">Saved Profiles ({profiles.length})</span>
-            <button className="btn btn-ghost" style={{ fontSize: '0.75rem' }} onClick={loadProfiles}>↺ Reload</button>
+        <div className="card library-profiles">
+          <div className="card-header">
+            <span className="card-title">Saved Profiles ({profiles.length})</span>
+            <button className="btn btn-ghost btn-sm" onClick={loadProfiles}>↺ Reload</button>
           </div>
           {profiles.length === 0 ? (
-            <div className="patch-empty">No profiles saved yet.</div>
+            <div className="empty-state">
+              <div className="empty-state-title">No profiles</div>
+            </div>
           ) : (
-            <div className="profile-list" style={{ overflowY: 'auto', flex: 1, paddingRight: '0.5rem' }}>
+            <div className="library-profiles-list">
               {profiles.map((p: any) => (
-                <div key={p.key} className="profile-list-item" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.75rem',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: 'var(--radius-sm)',
-                  marginBottom: '0.5rem'
-                }}>
-                  <div className="profile-list-info" style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span className="profile-list-name" style={{ fontWeight: 600 }}>{p.profile.manufacturer} {p.profile.model}</span>
-                    <span className="profile-list-sub" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.profile.mode} · {p.profile.channels.length} ch</span>
+                <div key={p.key} className="library-profile-item">
+                  <div className="library-profile-info">
+                    <span className="library-profile-name">{p.profile.manufacturer} {p.profile.model}</span>
+                    <span className="library-profile-sub">{p.profile.mode} · {p.profile.channels.length} ch</span>
                   </div>
                   <button
-                    className="btn btn-ghost"
-                    style={{ fontSize: '0.7rem', color: 'var(--status-error)', padding: '0.4rem' }}
+                    className="btn-icon-sm danger"
                     onClick={() => deleteProfile(p.key)}
                     title="Delete profile"
                   >
@@ -302,6 +277,134 @@ export function LibraryView() {
         </div>
       </div>
       
+      <style>{`
+        .library-view {
+          display: flex;
+          gap: var(--space-4);
+          padding: 0 !important;
+          overflow: hidden;
+        }
+        .library-builder {
+          flex: 2;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+          padding: var(--space-4);
+          overflow-y: auto;
+          min-width: 0;
+        }
+        .library-builder-grid {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: var(--space-4);
+          align-items: start;
+        }
+        @media (max-width: 1100px) {
+          .library-builder-grid { grid-template-columns: 1fr; }
+        }
+        .library-form {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+        .library-channels {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+        }
+        .library-ch-row {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          background: var(--surface-1);
+          padding: var(--space-2);
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border);
+        }
+        .library-ch-arrows {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .library-ch-num {
+          width: 28px;
+          font-weight: 700;
+          text-align: center;
+          background: var(--surface-3);
+          padding: 4px;
+          border-radius: var(--radius-xs);
+          font-size: var(--text-sm);
+        }
+        .library-ch-name { flex: 1; min-width: 100px; }
+        .library-ch-name input { width: 100%; }
+        .library-ch-type { width: 130px; }
+        .library-ch-type select { width: 100%; }
+        .library-ch-def {
+          width: 70px;
+          display: flex;
+          flex-direction: column;
+        }
+        .library-ch-def label {
+          font-size: var(--text-2xs);
+          color: var(--text-muted);
+          margin-bottom: 2px;
+        }
+        .library-ch-def input { width: 100%; padding: 4px 8px !important; }
+        
+        .library-sidebar {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+          padding: var(--space-4) var(--space-4) var(--space-4) 0;
+          min-width: 300px;
+          max-width: 400px;
+        }
+        .library-profiles {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
+        }
+        .library-profiles-list {
+          flex: 1;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+        }
+        .library-profile-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--space-2) var(--space-3);
+          background: var(--surface-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        .library-profile-info {
+          display: flex;
+          flex-direction: column;
+        }
+        .library-profile-name { font-weight: 600; font-size: var(--text-sm); }
+        .library-profile-sub { font-size: var(--text-xs); color: var(--text-muted); }
+        
+        .btn-icon-sm {
+          background: transparent;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          padding: 4px;
+          border-radius: var(--radius-xs);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .btn-icon-sm:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .btn-icon-sm:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-icon-sm.danger:hover { background: rgba(255, 69, 58, 0.15); color: var(--status-error); }
+        .btn-sm { padding: 4px 10px !important; font-size: var(--text-xs) !important; display: flex; align-items: center; gap: 4px; }
+      `}</style>
     </div>
   )
 }

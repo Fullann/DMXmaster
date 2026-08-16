@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { FilePlus, Upload, FolderOpen, Clock, ChevronRight, Zap } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { FilePlus, Upload, Download, FolderOpen, Clock, ChevronRight, Zap } from 'lucide-react'
 
 interface RecentShow {
   name: string
@@ -32,173 +32,93 @@ export function HomeView() {
   }
 
   return (
-    <div className="home-view" style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100%',
-      padding: '2rem',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div className="home-view">
       {/* Background Gradients */}
-      <div style={{
-        position: 'absolute',
-        top: '-10%', left: '-10%', width: '50vw', height: '50vw',
-        background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, rgba(0,0,0,0) 70%)',
-        filter: 'blur(60px)',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute',
-        bottom: '-10%', right: '-10%', width: '50vw', height: '50vw',
-        background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(0,0,0,0) 70%)',
-        filter: 'blur(60px)',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }} />
+      <div className="home-bg home-bg-purple" />
+      <div className="home-bg home-bg-blue" />
 
-      <div style={{
-        position: 'relative',
-        zIndex: 1,
-        width: '100%',
-        maxWidth: '1000px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '3rem',
-      }}>
-        {/* Header Section */}
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '80px',
-            height: '80px',
-            borderRadius: '24px',
-            background: 'linear-gradient(135deg, rgba(168,85,247,0.2) 0%, rgba(59,130,246,0.2) 100%)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            marginBottom: '1.5rem',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          }}>
-            <Zap size={40} color="var(--accent)" fill="var(--accent)" />
+      <div className="home-content">
+        {/* Header */}
+        <div className="home-header">
+          <div className="home-logo-icon">
+            <Zap size={36} color="var(--accent)" fill="var(--accent)" />
           </div>
-          <h1 style={{ 
-            fontSize: '3.5rem', 
-            fontWeight: 800, 
-            letterSpacing: '-0.02em', 
-            marginBottom: '0.5rem',
-            background: 'linear-gradient(to right, #fff, #a8a8b0)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}>
-            DMX Master
-          </h1>
-          <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', maxWidth: '500px', margin: '0 auto' }}>
-            The ultimate modern lighting control software.
-          </p>
+          <h1 className="home-title">DMX Master</h1>
+          <p className="home-subtitle">Professional Lighting Control</p>
         </div>
 
-        {/* Content Split */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '2rem',
-        }}>
-          {/* Left Column - Actions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Get Started</h2>
+        {/* Content Grid */}
+        <div className="home-grid">
+          {/* Left — Actions */}
+          <div className="home-actions">
+            <h2 className="home-section-title">Get Started</h2>
             
-            <button 
-              className="home-action-btn"
-              onClick={() => {
-                // Switching to Dashboard will just hide HomeView and show the current project
-                document.getElementById('tab-dashboard')?.click()
-              }}
-              style={actionBtnStyle}
-            >
-              <div style={iconWrapperStyle('rgba(16, 185, 129, 0.2)', '#10b981')}><FolderOpen size={24} color="#10b981" /></div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Continue Current Show</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Resume working on your active workspace</div>
+            <button className="home-action-btn" onClick={() => document.getElementById('tab-dashboard')?.click()}>
+              <div className="home-action-icon" style={{ background: 'rgba(50, 215, 75, 0.1)', borderColor: 'rgba(50, 215, 75, 0.25)' }}>
+                <FolderOpen size={22} color="#32d74b" />
+              </div>
+              <div className="home-action-text">
+                <span className="home-action-title">Continue Current Show</span>
+                <span className="home-action-desc">Resume working on your active workspace</span>
               </div>
             </button>
 
-            <button 
-              className="home-action-btn"
-              onClick={() => window.appAPI.newShow()}
-              style={actionBtnStyle}
-            >
-              <div style={iconWrapperStyle('rgba(168, 85, 247, 0.2)', 'var(--accent)')}><FilePlus size={24} color="var(--accent)" /></div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Create New Show</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Start a fresh workspace from scratch</div>
+            <button className="home-action-btn" onClick={() => window.appAPI.newShow()}>
+              <div className="home-action-icon" style={{ background: 'rgba(10, 132, 255, 0.1)', borderColor: 'rgba(10, 132, 255, 0.25)' }}>
+                <FilePlus size={22} color="var(--accent)" />
+              </div>
+              <div className="home-action-text">
+                <span className="home-action-title">Create New Show</span>
+                <span className="home-action-desc">Start a fresh workspace from scratch</span>
               </div>
             </button>
 
-            <button 
-              className="home-action-btn"
-              onClick={() => window.appAPI.importShow()}
-              style={actionBtnStyle}
-            >
-              <div style={iconWrapperStyle('rgba(59, 130, 246, 0.2)', '#3b82f6')}><Upload size={24} color="#3b82f6" /></div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Import Show</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Load an existing .dmxshow file</div>
+            <button className="home-action-btn" onClick={() => window.appAPI.importShow()}>
+              <div className="home-action-icon" style={{ background: 'rgba(94, 92, 230, 0.1)', borderColor: 'rgba(94, 92, 230, 0.25)' }}>
+                <Upload size={22} color="#5E5CE6" />
+              </div>
+              <div className="home-action-text">
+                <span className="home-action-title">Import Show</span>
+                <span className="home-action-desc">Load an existing .dmxshow file</span>
+              </div>
+            </button>
+
+            <button className="home-action-btn" onClick={() => window.appAPI.exportShow()}>
+              <div className="home-action-icon" style={{ background: 'rgba(191, 90, 242, 0.1)', borderColor: 'rgba(191, 90, 242, 0.25)' }}>
+                <Download size={22} color="#bf5af2" />
+              </div>
+              <div className="home-action-text">
+                <span className="home-action-title">Export Show</span>
+                <span className="home-action-desc">Save your current project as a file</span>
               </div>
             </button>
           </div>
 
-          {/* Right Column - Recent Projects */}
-          <div style={{ 
-            background: 'rgba(255,255,255,0.02)', 
-            border: '1px solid rgba(255,255,255,0.05)',
-            borderRadius: '24px',
-            padding: '1.5rem',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={18} color="var(--text-muted)" /> Recent Shows
+          {/* Right — Recent Shows */}
+          <div className="home-recent">
+            <h2 className="home-section-title">
+              <Clock size={15} color="var(--text-muted)" /> Recent Shows
             </h2>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', flex: 1, paddingRight: '0.5rem' }}>
+            <div className="home-recent-list">
               {isLoading ? (
-                <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>Loading...</div>
+                <div className="home-recent-empty">Loading...</div>
               ) : recentShows.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem 0', fontSize: '0.9rem' }}>
+                <div className="home-recent-empty">
                   No recent shows found.<br/>Import or save a show to see it here.
                 </div>
               ) : (
                 recentShows.map((show, idx) => (
                   <div 
                     key={`${show.path}-${idx}`}
-                    className="recent-show-item"
+                    className="home-recent-item"
                     onClick={() => handleOpenRecent(show.path)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '1rem',
-                      background: 'rgba(255,255,255,0.03)',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      border: '1px solid transparent',
-                      transition: 'all 0.2s ease',
-                    }}
                   >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflow: 'hidden' }}>
-                      <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                        {show.name}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {show.path}
-                      </span>
+                    <div className="home-recent-info">
+                      <span className="home-recent-name">{show.name}</span>
+                      <span className="home-recent-path">{show.path}</span>
                     </div>
-                    <ChevronRight size={18} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                    <ChevronRight size={16} color="var(--text-muted)" />
                   </div>
                 ))
               )}
@@ -208,44 +128,190 @@ export function HomeView() {
       </div>
 
       <style>{`
+        .home-view {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100%;
+          padding: var(--space-6);
+          position: relative;
+          overflow: hidden;
+        }
+        .home-bg {
+          position: absolute;
+          width: 45vw;
+          height: 45vw;
+          border-radius: 50%;
+          filter: blur(80px);
+          z-index: 0;
+          pointer-events: none;
+          opacity: 0.6;
+        }
+        .home-bg-purple {
+          top: -15%;
+          left: -10%;
+          background: radial-gradient(circle, rgba(94, 92, 230, 0.15) 0%, transparent 70%);
+        }
+        .home-bg-blue {
+          bottom: -15%;
+          right: -10%;
+          background: radial-gradient(circle, rgba(10, 132, 255, 0.12) 0%, transparent 70%);
+        }
+        .home-content {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          max-width: 900px;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-7);
+        }
+        .home-header {
+          text-align: center;
+        }
+        .home-logo-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 72px;
+          height: 72px;
+          border-radius: var(--radius-xl);
+          background: var(--surface-2);
+          border: 1px solid var(--border-light);
+          margin-bottom: var(--space-4);
+        }
+        .home-title {
+          font-size: 2.8rem;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          margin-bottom: var(--space-2);
+          background: linear-gradient(to right, #fff, rgba(255,255,255,0.6));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .home-subtitle {
+          font-size: var(--text-md);
+          color: var(--text-muted);
+        }
+        .home-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: var(--space-6);
+        }
+        .home-section-title {
+          font-size: var(--text-md);
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: var(--space-3);
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+        .home-actions {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+        .home-action-btn {
+          display: flex;
+          align-items: center;
+          gap: var(--space-4);
+          padding: var(--space-4);
+          background: var(--surface-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: all var(--duration-normal) var(--ease-out);
+          width: 100%;
+          text-align: left;
+        }
         .home-action-btn:hover {
-          background: rgba(255,255,255,0.08) !important;
-          border-color: rgba(255,255,255,0.15) !important;
-          transform: translateY(-2px);
+          background: var(--surface-2);
+          border-color: var(--border-light);
+          transform: translateY(-1px);
         }
-        .recent-show-item:hover {
-          background: rgba(255,255,255,0.08) !important;
-          border-color: rgba(255,255,255,0.1) !important;
+        .home-action-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          border-radius: var(--radius-sm);
+          border: 1px solid;
+          flex-shrink: 0;
         }
-        .recent-show-item:hover svg {
+        .home-action-text {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .home-action-title {
+          font-size: var(--text-md);
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+        .home-action-desc {
+          font-size: var(--text-xs);
+          color: var(--text-muted);
+        }
+        .home-recent {
+          background: var(--surface-1);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          padding: var(--space-4);
+          display: flex;
+          flex-direction: column;
+        }
+        .home-recent-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-1);
+          overflow-y: auto;
+          flex: 1;
+        }
+        .home-recent-empty {
+          color: var(--text-muted);
+          text-align: center;
+          padding: var(--space-7) 0;
+          font-size: var(--text-sm);
+          line-height: 1.6;
+        }
+        .home-recent-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--space-3);
+          background: transparent;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: all var(--duration-fast) ease;
+        }
+        .home-recent-item:hover {
+          background: var(--bg-hover);
+        }
+        .home-recent-item:hover svg {
           color: var(--accent) !important;
+        }
+        .home-recent-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          overflow: hidden;
+        }
+        .home-recent-name {
+          font-size: var(--text-md);
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+        .home-recent-path {
+          font-size: var(--text-xs);
+          color: var(--text-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       `}</style>
     </div>
   )
 }
-
-const actionBtnStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '1.25rem',
-  padding: '1.25rem',
-  background: 'rgba(255,255,255,0.03)',
-  border: '1px solid rgba(255,255,255,0.05)',
-  borderRadius: '16px',
-  cursor: 'pointer',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  width: '100%',
-}
-
-const iconWrapperStyle = (bg: string, border: string) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '50px',
-  height: '50px',
-  borderRadius: '12px',
-  background: bg,
-  border: `1px solid ${border}`,
-  flexShrink: 0,
-})
