@@ -41,7 +41,21 @@ function connectWebSocket() {
         fetchGroups();
     };
 
-    ws.onclose = () => {
+    ws.onclose = (e) => {
+        if (e.code === 4001) {
+            console.warn('Token rejected! Clearing token...');
+            localStorage.removeItem('dmxToken');
+            document.getElementById('token-overlay').style.display = 'flex';
+            statusText.innerText = 'Auth Required';
+            isConnected = false;
+            
+            // Remove token from URL without reloading
+            const url = new URL(window.location);
+            url.searchParams.delete('token');
+            window.history.replaceState({}, document.title, url.toString());
+            return;
+        }
+        
         console.log('Disconnected. Retrying in 3s...');
         statusDot.className = 'status-dot disconnected';
         statusText.innerText = 'Disconnected';
