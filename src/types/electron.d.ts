@@ -47,6 +47,10 @@ export interface FixtureAPI {
   getPatch:       () => Promise<{ success: boolean; patch?: PatchedFixture[]; error?: string }>
   patchFixture:   (profileKey: string, startAddress: number, label?: string) => Promise<{ success: boolean; fixture?: PatchedFixture; error?: string }>
   removePatch:    (id: string) => Promise<{ success: boolean; error?: string }>
+  setTransform:   (id: string, pos: [number,number,number], rot: [number,number,number]) => Promise<{ success: boolean; error?: string }>
+  setPosition:    (id: string, pos: [number,number,number]) => Promise<{ success: boolean; error?: string }>
+  setRotation:    (id: string, rot: [number,number,number]) => Promise<{ success: boolean; error?: string }>
+  setClones:      (id: string, clones: { id: string, position3d: [number, number, number], rotation3d: [number, number, number] }[]) => Promise<{ success: boolean; error?: string }>
   sendCommand:    (fixtureId: string, type: ChannelType, value: number) => Promise<{ success: boolean; error?: string }>
   sendColor:      (fixtureId: string, r: number, g: number, b: number, w?: number) => Promise<{ success: boolean; error?: string }>
   getStates:      () => Promise<{ success: boolean; states?: Record<string, FixtureLogicalState>; error?: string }>

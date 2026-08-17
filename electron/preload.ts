@@ -107,6 +107,7 @@ const fixtureAPI: FixtureAPI = {
   cloneFixture:   (src, dest)        => ipcRenderer.invoke('fixture:cloneFixture', src, dest),
   setTransform:   (id, pos, rot)     => ipcRenderer.invoke('fixture:setTransform', id, pos, rot),
   setPosition:    (id, pos)          => ipcRenderer.invoke('fixture:setPosition', id, pos),
+  setClones:      (id, clones)       => ipcRenderer.invoke('fixture:setClones', id, clones),
   setRotation:    (id, rot)          => ipcRenderer.invoke('fixture:setRotation', id, rot),
   setUniverse:    (id, uIdx)         => ipcRenderer.invoke('fixture:setUniverse', id, uIdx),
   renameGroup:    (id, name)         => ipcRenderer.invoke('fixture:renameGroup', id, name),

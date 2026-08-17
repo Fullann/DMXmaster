@@ -27,17 +27,19 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
 
     // Direct Material Mutations
     const intensityDmx = channelMap['Intensity'] !== undefined ? universe[channelMap['Intensity']] : 255
-    const rDmx = channelMap['Red'] !== undefined ? universe[channelMap['Red']] : 255
-    const gDmx = channelMap['Green'] !== undefined ? universe[channelMap['Green']] : 255
-    const bDmx = channelMap['Blue'] !== undefined ? universe[channelMap['Blue']] : 255
+    // Determine if fixture has any RGB channels
+    const hasRGB = channelMap['Red'] !== undefined || channelMap['Green'] !== undefined || channelMap['Blue'] !== undefined
+    
+    // If it has RGB channels, missing ones default to 0. Otherwise, they all default to 255 (white).
+    const defaultColor = hasRGB ? 0 : 255
+    
+    const rDmx = channelMap['Red'] !== undefined ? universe[channelMap['Red']] : defaultColor
+    const gDmx = channelMap['Green'] !== undefined ? universe[channelMap['Green']] : defaultColor
+    const bDmx = channelMap['Blue'] !== undefined ? universe[channelMap['Blue']] : defaultColor
 
     const intensity = intensityDmx / 255
     
-    // Default to white if no RGB channels are defined
     let colorHex = new THREE.Color(rDmx / 255, gDmx / 255, bDmx / 255)
-    if (colorHex.r === 0 && colorHex.g === 0 && colorHex.b === 0 && rDmx === 0 && gDmx === 0 && bDmx === 0 && channelMap['Red'] === undefined) {
-      colorHex.setHex(0xffffff)
-    }
 
     if (lensMaterialRef.current) {
       lensMaterialRef.current.color.copy(colorHex)
@@ -48,7 +50,7 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
 
     if (spotLightRef.current) {
       spotLightRef.current.color.copy(colorHex)
-      spotLightRef.current.intensity = intensity * 150
+      spotLightRef.current.intensity = intensity * 15 // Normal intensity
       spotLightRef.current.visible = intensity > 0
     }
   })
@@ -77,8 +79,10 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
         intensity={0}
         distance={25}
         castShadow
-        volumetric={true}
-        attenuation={15}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        volumetric={false}
+        attenuation={25}
         anglePower={2}
       />
       <object3D ref={targetRef} position={[0, 10, 0]} />

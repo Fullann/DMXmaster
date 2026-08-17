@@ -321,6 +321,15 @@ export class FixtureManager {
     }
   }
 
+  async setFixtureClones(id: string, clones: { id: string, position3d: [number, number, number], rotation3d: [number, number, number] }[]): Promise<void> {
+    const fixture = this.patch.find(f => f.id === id)
+    if (fixture) {
+      fixture.clones = clones
+      await this.savePatch()
+      console.log(`[FixtureManager] Saved ${clones.length} clones for ${fixture.label}`)
+    }
+  }
+
   async setFixtureUniverse(id: string, universeIndex: number): Promise<void> {
     const fixture = this.patch.find(f => f.id === id)
     if (fixture) {

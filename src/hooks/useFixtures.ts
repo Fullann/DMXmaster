@@ -115,6 +115,11 @@ export function useFixtures() {
     await window.fixtureAPI.setUniverse(id, universeIdx)
   }, [])
 
+  const setFixtureClones = useCallback(async (id: string, clones: { id: string, position3d: [number, number, number], rotation3d: [number, number, number] }[]) => {
+    setPatch(prev => prev.map(f => f.id === id ? { ...f, clones } : f))
+    await window.fixtureAPI.setClones(id, clones)
+  }, [])
+
   // ── Logical commands ───────────────────────────────────────────────────────
 
   const sendCommand = useCallback(async (fixtureId: string, type: ChannelType, value: number) => {
@@ -152,6 +157,7 @@ export function useFixtures() {
     setFixturePosition,
     setFixtureRotation,
     setFixtureUniverse,
+    setFixtureClones,
     sendCommand, sendColor,
   }
 }

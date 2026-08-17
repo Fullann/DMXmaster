@@ -42,6 +42,7 @@ export function registerFixtureIpc(fixture: FixtureManager, scene: SceneManager,
   handle('fixture:unpatchAll',      ()                   => fixture.unpatchAll())
   handle('fixture:setTransform',    (id, pos, rot)       => fixture.setFixtureTransform(id as string, pos as [number,number,number], rot as [number,number,number]))
   handle('fixture:setPosition',     async (id, pos)       => { await fixture.setFixturePosition(id as string, pos as [number, number, number]) })
+  handle('fixture:setClones',       async (id, clones)    => { await fixture.setFixtureClones(id as string, clones as any[]) })
   handle('fixture:setRotation',     async (id, rot)       => { await fixture.setFixtureRotation(id as string, rot as [number, number, number]) })
   handle('fixture:setUniverse',     async (id, uIdx)      => { await fixture.setFixtureUniverse(id as string, uIdx as number) })
   handle('fixture:morphFixture',    async (id, key, addr) => { 

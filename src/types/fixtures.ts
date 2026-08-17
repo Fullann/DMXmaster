@@ -43,6 +43,8 @@ export interface PatchedFixture {
   position3d?:  [number, number, number]
   /** 3D world rotation [x, y, z] for the stage visualizer (Euler angles). */
   rotation3d?:  [number, number, number]
+  /** Visual duplicates of the fixture for the 3D view */
+  clones?: { id: string, position3d: [number, number, number], rotation3d: [number, number, number] }[]
 }
 
 export interface FixtureLogicalState {

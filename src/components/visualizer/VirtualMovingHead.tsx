@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useRef, useEffect, useMemo } from 'react'
+import { useFrame, useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
 import { SpotLight } from '@react-three/drei'
 import { useDmxStore } from '@/store/useDmxStore'
@@ -8,6 +8,13 @@ interface Props {
   uIdx: number
   channelMap: Record<string, number>
 }
+
+// Simple gobo textures using data URIs to simulate Gobos
+const GOBO_TEXTURES = [
+  null, // 0 = Open
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACWUlEQVR42u3dMWsUQRQG4PfvXqJWIghWFiIIIggWgo2lhf+k9Q8IWomlIGhjbWMj2KYKgggiCCJoYYJ4EFEjebl7O7c7x8vD7s28Dwwzy83O++a9b3d2ZgMAAAAAAAAAAAAAAAAAAAAAAACA9bY0+O+1nI+1u8v5q+X/4fK5k/N+zgdtP2CjAZDzvZwnc37dJAD8u63rOR/L+brtv19+8Xw15622gW8sAJ4v5/Wcj5r434kP8Gk5z+R80DbgjQRAzvdyXl/Q//4qfIDLOfc18YCNBMDkO5c3jPjfiw/wSTk/axvxRgLgx8p3/hL4ANfK+ULbhjcOAM83/s5fAh/gejlPtf2AjQLA9E/oU6P+/6sY4G45P2jbATcKAEt/68/xAW418YCNAsC63vpzfID75Xy1bQdsFABGvt2f4wM8aOIhGwWABf1kH7mKAe6W80zbDhg8AHI+lfOrkb/7VzHAw3I+btsBgwfA0/Jp+Xn57v+vYoDH5Xy+bQcMHADvlvN0zvcy9V/FAPfK+VTbDhh0t03m/DDnUzmP5tw38X/XALjV9r8NfBvn4T0tH4U/tZybcy7nfND2A8YfAO//v2sA7LT9b8PoA2Dq/7sGwL62/20gABAAIQACEAEgAEIABADoPgB/XgBCAIQACAAEQAiA4AMgAEIABAAIQAgAEAAhAEIABAAIQACAAIQAAAEQAiAAQAiAAIQAAAEQAiAAQAiAAIQAAAEQAiAAgAjA3y+H6aQpT2fOswAAAABJRU5ErkJggg==', // Dot
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAADYElEQVR42u3cTWsTQRgG4HdmM/kKLaUIIgh6EBEEhR68WPToP2n/g3rxUi+C4kUQT60iiqAgBEEQBEFoaQ9NaT46O7LJrC0k22zefcI8Dwy76Sa7n9mZd2beyUoAAAAAAAAAAAAAAAAAAABwM+8O/n2a80HG23IuZHwo42MZHzc+f5jxe63N1gWAnHczPjV8wP5uxo8y3tfaXB0Aybic8d4KB2w740EZT2ltpg6AnLczvsx43YIDtpXxnozvaxuYOgByHs14n/H8ige0kfE045XabN0AyHn3hO87r8EBMw3n1+ZqB8DkvDPju4zvNHjAJxlPau2vbgAk4/KMLzPebOCAJxlfqv1f7QDIeSzj/Yxn1B/QRsa3GZ+pzVYXAMl4cMJ3no36v01lPMr4Um222gCQ827Gt42/57cZ32W8qTVbfQAk41EZb2a8rL74y7iZ8YnabLUBIOd8xpcy3ld/+A8yPqi9j1YHAKPzD8sH6g//eRmf1d7H6gBIxvUZn6s/+Pcyfqy9j1UJADnvZ/ws40v1B36U8YXa+1mVAJDzcMafMn6m/qCvMv6g/t5WAwDyA0IAhAAIQASAEEAIgABEAAgBhAAIQASAEEAIgABAAIQACAEEQAiAAEARgBAAIQACAIIACAEQAiAAQAiAEEAIgBAAAQCEAAgBEAAgBIAQQAgAEABAAIQACAEEQAiAAABCAIQACAEEACAEQAiAAEAQACEAQgAEAAgBEAIIARAAQAiAEEAIgBQA4h8IAIQACAEEQAiAAABCAIQACAAEAAgBEAIgBBAEIARACIAAAEEAhAAIARAAIAQgBEAIIARAACAEQAiAEAABAEEAhAAIAQQAIAQgBEAIIARAAIACAOUA2m3YvX3C+H/G84wntffTKgEg53HGIxlvqT/olYxval/EqwSAnLd/f/mX8XP1B/1j7aXfV175B5CMy8uXfi/UH3SZ8UXt2z5VCwA5b//47+MZX6g/4Pcynqi9/1YtAKbzD0v2Vv1BH2Q8U/ueT9UDQM6bGd9nvKn+sHcyPqu9/1YfAMm4/PN3/qWML9QfdC3ji9r3eWwAwHT+4/L93881OPiVjK/V3neqB4B5b2a8zXiqwcE/zPg24xO195nqAmA6f5PxLOMnDQ76VsaXte/x1A2AVy5nPJDxQYODvZ/x2N/5V4N/2m2xO75O6S/nAAAAAElFTkSuQmCC', // Star
+]
 
 export function VirtualMovingHead({ uIdx, channelMap }: Props) {
   const headRef = useRef<THREE.Group>(null)
@@ -43,16 +50,20 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
     
     // Direct Material Mutations
     const intensityDmx = channelMap['Intensity'] !== undefined ? universe[channelMap['Intensity']] : 255
-    const rDmx = channelMap['Red'] !== undefined ? universe[channelMap['Red']] : 255
-    const gDmx = channelMap['Green'] !== undefined ? universe[channelMap['Green']] : 255
-    const bDmx = channelMap['Blue'] !== undefined ? universe[channelMap['Blue']] : 255
+    // Determine if fixture has any RGB channels
+    const hasRGB = channelMap['Red'] !== undefined || channelMap['Green'] !== undefined || channelMap['Blue'] !== undefined
+    
+    // If it has RGB channels, missing ones default to 0. Otherwise, they all default to 255 (white).
+    const defaultColor = hasRGB ? 0 : 255
+    
+    const rDmx = channelMap['Red'] !== undefined ? universe[channelMap['Red']] : defaultColor
+    const gDmx = channelMap['Green'] !== undefined ? universe[channelMap['Green']] : defaultColor
+    const bDmx = channelMap['Blue'] !== undefined ? universe[channelMap['Blue']] : defaultColor
+    const goboDmx = channelMap['Gobo'] !== undefined ? universe[channelMap['Gobo']] : 0
 
     const intensity = intensityDmx / 255
     
     let colorHex = new THREE.Color(rDmx / 255, gDmx / 255, bDmx / 255)
-    if (colorHex.r === 0 && colorHex.g === 0 && colorHex.b === 0 && rDmx === 0 && gDmx === 0 && bDmx === 0 && channelMap['Red'] === undefined) {
-      colorHex.setHex(0xffffff)
-    }
 
     if (lensMaterialRef.current) {
       lensMaterialRef.current.color.copy(colorHex)
@@ -63,7 +74,7 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
 
     if (spotLightRef.current) {
       spotLightRef.current.color.copy(colorHex)
-      spotLightRef.current.intensity = intensity * 50
+      spotLightRef.current.intensity = intensity * 15 // Normal intensity
       spotLightRef.current.visible = intensity > 0
     }
   })
@@ -114,14 +125,16 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
             penumbra={0.5}
             color="#ffffff"
             intensity={0}
-            distance={20}
+            distance={30}
             castShadow
-            volumetric={true}
-            attenuation={20}
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+            volumetric={false}
+            attenuation={30}
             anglePower={4}
           />
           {/* Target for SpotLight */}
-          <object3D ref={targetRef} position={[0, 10, 0]} />
+          <object3D ref={targetRef} position={[0, 20, 0]} />
         </group>
       </group>
     </group>
