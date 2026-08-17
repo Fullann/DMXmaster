@@ -11,15 +11,20 @@ interface MidiState {
   isLearning: boolean
   learningWidgetId: string | null
   mappings: Record<string, MidiSignature> // WidgetId -> Signature
-  
+  // Connection
+  midiInputs: any[]
+  midiStatus: string
+  lastMessage: any | null
+
   // Actions
   toggleLearning: () => void
   setLearningWidget: (id: string | null) => void
   setMapping: (widgetId: string, sig: MidiSignature) => void
   removeMapping: (widgetId: string) => void
-  
-  // Connection
+
   init: () => () => void
+  initMidi: () => () => void // alias for old components
+  
   
   // Runtime callback registration (not persisted)
   callbacks: Map<string, (val: number) => void>
@@ -37,23 +42,30 @@ export const useMidiStore = create<MidiState>()(
         const channel = status & 0x0F
         const cmd = status >> 4
 
-        let type: 'note' | 'cc' | null = null
+        let type: 'noteOn' | 'noteOff' | 'cc' | 'pitchBend' | 'unknown' = 'unknown'
         let index = data1
         let value = data2 // 0-127
 
-        if (cmd === 9 && data2 > 0) {
-          type = 'note'
-          value = 255 // Map Note On to full 255 DMX value
-        } else if (cmd === 8 || (cmd === 9 && data2 === 0)) {
-          type = 'note'
-          value = 0 // Note Off
-        } else if (cmd === 11) {
-          type = 'cc'
-          // Map CC 0-127 to 0-255
-          value = Math.round((data2 / 127) * 255)
-        }
+        if (cmd === 9 && data2 > 0) type = 'noteOn'
+        else if (cmd === 8 || (cmd === 9 && data2 === 0)) type = 'noteOff'
+        else if (cmd === 11) type = 'cc'
+        else if (cmd === 14) type = 'pitchBend'
 
-        if (!type) return
+        set({
+          lastMessage: {
+            type,
+            channel,
+            note: index,
+            velocity: value
+          }
+        })
+
+        let sigType: 'note' | 'cc' | null = null
+        if (type === 'noteOn') { sigType = 'note'; value = 255 }
+        else if (type === 'noteOff') { sigType = 'note'; value = 0 }
+        else if (type === 'cc') { sigType = 'cc'; value = Math.round((value / 127) * 255) }
+
+        if (!sigType) return
 
         const { isLearning, learningWidgetId, mappings, callbacks, setMapping } = get()
 
@@ -82,6 +94,9 @@ export const useMidiStore = create<MidiState>()(
         learningWidgetId: null,
         mappings: {},
         callbacks: new Map(),
+        midiInputs: [],
+        midiStatus: 'unavailable',
+        lastMessage: null,
 
         toggleLearning: () => set(state => {
           if (state.isLearning) return { isLearning: false, learningWidgetId: null }
@@ -108,23 +123,34 @@ export const useMidiStore = create<MidiState>()(
           get().callbacks.delete(widgetId)
         },
 
+        initMidi: () => get().init(),
+
         init: () => {
           if (midiAccess) return () => {} // Already initialized
           
-          (async () => {
+          set({ midiStatus: 'requesting' })
+
+          ;(async () => {
             try {
               if (!(navigator as any).requestMIDIAccess) {
                 console.warn('[MIDI] Web MIDI API not supported in this environment.')
+                set({ midiStatus: 'unavailable' })
                 return
               }
               midiAccess = await (navigator as any).requestMIDIAccess()
               console.log('[MIDI] Access granted. Inputs:', midiAccess.inputs.size)
+              
+              set({ 
+                midiStatus: 'granted', 
+                midiInputs: Array.from(midiAccess.inputs.values())
+              })
               
               midiAccess.inputs.forEach((input: any) => {
                 input.onmidimessage = handleMidiMessage
               })
 
               midiAccess.onstatechange = (e: any) => {
+                set({ midiInputs: Array.from(midiAccess.inputs.values()) })
                 if (e.port.type === 'input' && e.port.state === 'connected') {
                   const input = e.port
                   input.onmidimessage = handleMidiMessage
@@ -133,6 +159,7 @@ export const useMidiStore = create<MidiState>()(
               }
             } catch (err) {
               console.error('[MIDI] Failed to initialize:', err)
+              set({ midiStatus: 'error' })
             }
           })();
 

@@ -25,6 +25,7 @@ import { useFxStore } from '@/store/useFxStore'
 import { useLiveGridStore } from '@/store/useLiveGridStore'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 // Views
 import { HomeView }       from '@/views/HomeView'
@@ -341,26 +342,28 @@ export default function App() {
 
         {/* ── Content View ─────────────────────────────────────────────────── */}
         <div className="content-area" style={{ paddingBottom: 'var(--toolbar-h)' }}>
-          {currentView === 'home' && <HomeView />}
-          {currentView === 'dashboard' && <DashboardView />}
-          {currentView === 'library' && <LibraryView />}
-          {currentView === 'patch' && <PatchView />}
-          {currentView === 'groups' && <GroupsView />}
-          {currentView === 'palette' && <PaletteView />}
-          {currentView === 'control' && <ControlView />}
-          {currentView === 'movement' && <MovementView />}
-          {currentView === 'scenes' && <ScenesView />}
-          {currentView === 'chaser' && <ChaserView />}
-          {currentView === 'console' && <VirtualConsoleView />}
-          {currentView === 'cuelist' && <CuelistView />}
-          {currentView === 'fx' && <FxView />}
-          {currentView === 'live' && <LiveView />}
-          {currentView === 'audio' && <AudioView />}
-          {currentView === 'pixel' && <PixelView />}
-          {currentView === 'timeline' && <TimelineView />}
-          {currentView === 'visualizer' && <VisualizerView />}
-          {currentView === 'midi' && <MidiView />}
-          {currentView === 'rdm' && <RdmView />}
+          <ErrorBoundary key={currentView}>
+            {currentView === 'home' && <HomeView />}
+            {currentView === 'dashboard' && <DashboardView />}
+            {currentView === 'library' && <LibraryView />}
+            {currentView === 'patch' && <PatchView />}
+            {currentView === 'groups' && <GroupsView />}
+            {currentView === 'palette' && <PaletteView />}
+            {currentView === 'control' && <ControlView />}
+            {currentView === 'movement' && <MovementView />}
+            {currentView === 'scenes' && <ScenesView />}
+            {currentView === 'chaser' && <ChaserView />}
+            {currentView === 'console' && <VirtualConsoleView />}
+            {currentView === 'cuelist' && <CuelistView />}
+            {currentView === 'fx' && <FxView />}
+            {currentView === 'live' && <LiveView />}
+            {currentView === 'audio' && <AudioView />}
+            {currentView === 'pixel' && <PixelView />}
+            {currentView === 'timeline' && <TimelineView />}
+            {currentView === 'visualizer' && <VisualizerView />}
+            {currentView === 'midi' && <MidiView />}
+            {currentView === 'rdm' && <RdmView />}
+          </ErrorBoundary>
         </div>
         
         {/* ── Global Master Toolbar (Bottom) ────────────────────────────────── */}
