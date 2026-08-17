@@ -5,7 +5,7 @@ import '@/styles/index.css'
 import { 
   Grid, LayoutDashboard, Folder, Cable, SlidersHorizontal, 
   Clapperboard, Repeat, Waves, Mic, Tv, Clock, Eye,
-  FilePlus, Download, Upload, Zap, Palette, Settings2, Wrench, Target, Home, Search, ListMusic
+  FilePlus, Download, Upload, Zap, Palette, Settings2, Wrench, Target, Home, Search, ListMusic, Users
 } from 'lucide-react'
 
 // Stores
@@ -42,6 +42,7 @@ import { PixelView }      from '@/views/PixelView'
 import { TimelineView }   from '@/views/TimelineView'
 import { VisualizerView } from '@/views/VisualizerView'
 import { MidiView }       from '@/views/MidiView'
+import { GroupsView }     from '@/views/GroupsView'
 import { VirtualConsoleView } from '@/views/VirtualConsoleView'
 import { CuelistView }    from '@/views/CuelistView'
 import { RdmView }        from '@/views/RdmView'
@@ -76,6 +77,7 @@ const WORKSPACE_TABS: Record<WorkspaceMode, TabGroup[]> = {
       label: 'Programming',
       items: [
         { id: 'dashboard', label: 'Dashboard',    icon: <LayoutDashboard size={18} /> },
+        { id: 'groups',    label: 'Groups',       icon: <Users size={18} /> },
         { id: 'control',   label: 'Control',      icon: <SlidersHorizontal size={18} /> },
         { id: 'palette',   label: 'Palettes',     icon: <Palette size={18} /> },
         { id: 'pixel',     label: 'Pixel Mapper', icon: <Tv size={18} /> },
@@ -321,6 +323,7 @@ export default function App() {
           {currentView === 'dashboard' && <DashboardView />}
           {currentView === 'library' && <LibraryView />}
           {currentView === 'patch' && <PatchView />}
+          {currentView === 'groups' && <GroupsView />}
           {currentView === 'palette' && <PaletteView />}
           {currentView === 'control' && <ControlView />}
           {currentView === 'movement' && <MovementView />}
