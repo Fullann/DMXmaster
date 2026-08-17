@@ -19,7 +19,7 @@ interface MidiState {
   removeMapping: (widgetId: string) => void
   
   // Connection
-  initMidi: () => void
+  init: () => () => void
   
   // Runtime callback registration (not persisted)
   callbacks: Map<string, (val: number) => void>
@@ -108,29 +108,41 @@ export const useMidiStore = create<MidiState>()(
           get().callbacks.delete(widgetId)
         },
 
-        initMidi: async () => {
-          if (midiAccess) return // Already initialized
-          try {
-            if (!(navigator as any).requestMIDIAccess) {
-              console.warn('[MIDI] Web MIDI API not supported in this environment.')
-              return
-            }
-            midiAccess = await (navigator as any).requestMIDIAccess()
-            console.log('[MIDI] Access granted. Inputs:', midiAccess.inputs.size)
-            
-            midiAccess.inputs.forEach((input: any) => {
-              input.onmidimessage = handleMidiMessage
-            })
-
-            midiAccess.onstatechange = (e: any) => {
-              if (e.port.type === 'input' && e.port.state === 'connected') {
-                const input = e.port
-                input.onmidimessage = handleMidiMessage
-                console.log(`[MIDI] Connected: ${input.name}`)
+        init: () => {
+          if (midiAccess) return () => {} // Already initialized
+          
+          (async () => {
+            try {
+              if (!(navigator as any).requestMIDIAccess) {
+                console.warn('[MIDI] Web MIDI API not supported in this environment.')
+                return
               }
+              midiAccess = await (navigator as any).requestMIDIAccess()
+              console.log('[MIDI] Access granted. Inputs:', midiAccess.inputs.size)
+              
+              midiAccess.inputs.forEach((input: any) => {
+                input.onmidimessage = handleMidiMessage
+              })
+
+              midiAccess.onstatechange = (e: any) => {
+                if (e.port.type === 'input' && e.port.state === 'connected') {
+                  const input = e.port
+                  input.onmidimessage = handleMidiMessage
+                  console.log(`[MIDI] Connected: ${input.name}`)
+                }
+              }
+            } catch (err) {
+              console.error('[MIDI] Failed to initialize:', err)
             }
-          } catch (err) {
-            console.error('[MIDI] Failed to initialize:', err)
+          })();
+
+          // Return a cleanup function
+          return () => {
+            if (midiAccess) {
+              midiAccess.inputs.forEach((input: any) => {
+                input.onmidimessage = null
+              })
+            }
           }
         }
       }

@@ -47,6 +47,12 @@ export interface PatchedFixture {
   clones?: { id: string, position3d: [number, number, number], rotation3d: [number, number, number] }[]
 }
 
+export interface FixtureGroup {
+  id: string
+  name: string
+  fixtureIds: string[]
+}
+
 export interface FixtureLogicalState {
   intensity: number
   r: number; g: number; b: number; w: number
