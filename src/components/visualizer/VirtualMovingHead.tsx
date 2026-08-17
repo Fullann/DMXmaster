@@ -1,4 +1,5 @@
 import { useRef, useEffect, useMemo } from 'react'
+import { calculateFixtureColor } from '../../utils/fixtureColor'
 import { useFrame, useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
 import { SpotLight } from '@react-three/drei'
@@ -50,20 +51,9 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
     
     // Direct Material Mutations
     const intensityDmx = channelMap['Intensity'] !== undefined ? universe[channelMap['Intensity']] : 255
-    // Determine if fixture has any RGB channels
-    const hasRGB = channelMap['Red'] !== undefined || channelMap['Green'] !== undefined || channelMap['Blue'] !== undefined
-    
-    // If it has RGB channels, missing ones default to 0. Otherwise, they all default to 255 (white).
-    const defaultColor = hasRGB ? 0 : 255
-    
-    const rDmx = channelMap['Red'] !== undefined ? universe[channelMap['Red']] : defaultColor
-    const gDmx = channelMap['Green'] !== undefined ? universe[channelMap['Green']] : defaultColor
-    const bDmx = channelMap['Blue'] !== undefined ? universe[channelMap['Blue']] : defaultColor
-    const goboDmx = channelMap['Gobo'] !== undefined ? universe[channelMap['Gobo']] : 0
-
     const intensity = intensityDmx / 255
-    
-    let colorHex = new THREE.Color(rDmx / 255, gDmx / 255, bDmx / 255)
+    const colorHex = calculateFixtureColor(channelMap, universe)
+    const goboDmx = channelMap['Gobo'] !== undefined ? universe[channelMap['Gobo']] : 0
 
     if (lensMaterialRef.current) {
       lensMaterialRef.current.color.copy(colorHex)
