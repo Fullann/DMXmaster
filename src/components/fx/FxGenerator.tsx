@@ -12,8 +12,8 @@ interface FxGeneratorProps {
   onRemoveEffect: (id: string) => void
 }
 
-const WAVEFORMS: Waveform[] = ['Sine', 'Triangle', 'Sawtooth', 'Pulse']
-const TARGETS: FxTarget[] = ['Intensity', 'Pan', 'Tilt', 'Red', 'Green', 'Blue', 'White', 'Color']
+const WAVEFORMS: Waveform[] = ['Sine', 'Triangle', 'Sawtooth', 'Pulse', 'Circle', 'Figure8', 'Rainbow', 'Random']
+const TARGETS: FxTarget[] = ['Intensity', 'Position', 'Pan', 'Tilt', 'Color', 'Red', 'Green', 'Blue', 'White']
 
 export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect, onSetPaused, onRemoveEffect }: FxGeneratorProps) {
   // Generator State
@@ -97,67 +97,125 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
       ctx.beginPath()
       ctx.moveTo(0, height / 2)
       ctx.lineTo(width, height / 2)
-      ctx.stroke()
-
-      // Draw theoretical wave path (for the first fixture's phase)
-      ctx.strokeStyle = 'rgba(124, 58, 237, 0.4)' // purple-ish
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      
-      const globalPhaseRad = (phase / 360) * Math.PI * 2
-      
-      for (let x = 0; x <= width; x += 2) {
-        // Map x to time offset: let's say width = 2 seconds of time
-        const timeOffset = (x / width) * 2 
-        const t = elapsedSecs + timeOffset
-        const basePhase = (t * speed * Math.PI * 2) + globalPhaseRad
-
-        let yNorm = 0
-        switch (shape) {
-          case 'Sine':
-            yNorm = Math.sin(basePhase)
-            break
-          case 'Triangle':
-            yNorm = 2 * Math.abs(2 * ((basePhase / (2 * Math.PI)) - Math.floor((basePhase / (2 * Math.PI)) + 0.5))) - 1
-            break
-          case 'Sawtooth':
-            yNorm = 2 * ((basePhase / (2 * Math.PI)) - Math.floor((basePhase / (2 * Math.PI)) + 0.5))
-            break
-          case 'Pulse':
-            yNorm = Math.sin(basePhase) >= 0 ? 1 : -1
-            break
-        }
-        
-        const y = (height / 2) - (yNorm * (size / 255) * (height / 2 - 10))
-        if (x === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
+      if (target === 'Position') {
+        ctx.moveTo(width / 2, 0)
+        ctx.lineTo(width / 2, height)
       }
       ctx.stroke()
-
-      // Draw actual fixture dots at x=0
+      
+      const globalPhaseRad = (phase / 360) * Math.PI * 2
       const spreadRad = (spread / 360) * Math.PI * 2
       const arrIds = Array.from(selectedIds)
 
-      for (let i = 0; i < arrIds.length; i++) {
-        const fixturePhase = (elapsedSecs * speed * Math.PI * 2) + globalPhaseRad + (i * spreadRad)
-        let yNorm = 0
-        switch (shape) {
-          case 'Sine': yNorm = Math.sin(fixturePhase); break
-          case 'Triangle': yNorm = 2 * Math.abs(2 * ((fixturePhase / (2 * Math.PI)) - Math.floor((fixturePhase / (2 * Math.PI)) + 0.5))) - 1; break
-          case 'Sawtooth': yNorm = 2 * ((fixturePhase / (2 * Math.PI)) - Math.floor((fixturePhase / (2 * Math.PI)) + 0.5)); break
-          case 'Pulse': yNorm = Math.sin(fixturePhase) >= 0 ? 1 : -1; break
-        }
-        
-        const y = (height / 2) - (yNorm * (size / 255) * (height / 2 - 10))
-        const x = 20 + (i * 15) // Spread dots out slightly on x-axis so they don't completely overlap if phase spread is 0
-        
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+      if (target === 'Position') {
+        // ── 2D SPATIAL PLOT (Pan / Tilt) ──
+        ctx.strokeStyle = 'rgba(124, 58, 237, 0.4)'
+        ctx.lineWidth = 2
         ctx.beginPath()
-        ctx.arc(x, y, 5, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.strokeStyle = '#000'
-        ctx.lineWidth = 1
+        for (let i = 0; i <= 100; i++) {
+          const tPhase = (i / 100) * Math.PI * 2
+          let xNorm = 0, yNorm = 0
+          switch (shape) {
+            case 'Circle': xNorm = Math.sin(tPhase); yNorm = Math.cos(tPhase); break
+            case 'Figure8': xNorm = Math.sin(tPhase); yNorm = Math.sin(tPhase * 2); break
+            case 'Random': 
+              xNorm = (Math.sin(tPhase * 1.5) + Math.cos(tPhase * 2.3) + Math.sin(tPhase * 4.1)) / 3
+              yNorm = (Math.cos(tPhase * 1.7) + Math.sin(tPhase * 2.1) + Math.cos(tPhase * 3.9)) / 3
+              break
+            default: xNorm = Math.sin(tPhase); yNorm = xNorm; break
+          }
+          const px = (width / 2) + (xNorm * (size / 255) * (height / 2 - 10))
+          const py = (height / 2) - (yNorm * (size / 255) * (height / 2 - 10))
+          if (i === 0) ctx.moveTo(px, py)
+          else ctx.lineTo(px, py)
+        }
         ctx.stroke()
+
+        // Draw fixtures on the 2D path
+        for (let i = 0; i < arrIds.length; i++) {
+          const fixturePhase = (elapsedSecs * speed * Math.PI * 2) + globalPhaseRad + (i * spreadRad)
+          let xNorm = 0, yNorm = 0
+          switch (shape) {
+            case 'Circle': xNorm = Math.sin(fixturePhase); yNorm = Math.cos(fixturePhase); break
+            case 'Figure8': xNorm = Math.sin(fixturePhase); yNorm = Math.sin(fixturePhase * 2); break
+            case 'Random': 
+              xNorm = (Math.sin(fixturePhase * 1.5) + Math.cos(fixturePhase * 2.3) + Math.sin(fixturePhase * 4.1)) / 3
+              yNorm = (Math.cos(fixturePhase * 1.7) + Math.sin(fixturePhase * 2.1) + Math.cos(fixturePhase * 3.9)) / 3
+              break
+            default: xNorm = Math.sin(fixturePhase); yNorm = xNorm; break
+          }
+          const px = (width / 2) + (xNorm * (size / 255) * (height / 2 - 10))
+          const py = (height / 2) - (yNorm * (size / 255) * (height / 2 - 10))
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+          ctx.beginPath()
+          ctx.arc(px, py, 5, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.strokeStyle = '#000'
+          ctx.lineWidth = 1
+          ctx.stroke()
+        }
+
+      } else {
+        // ── 1D TIME PLOT (Amplitude over time) ──
+        const isRainbow = shape === 'Rainbow'
+        const curvesToDraw = isRainbow ? 3 : 1
+        const colors = isRainbow 
+          ? ['rgba(255, 59, 48, 0.6)', 'rgba(52, 199, 89, 0.6)', 'rgba(0, 122, 255, 0.6)'] // R, G, B
+          : ['rgba(124, 58, 237, 0.4)']
+        const phaseOffsets = isRainbow ? [0, Math.PI * 2 / 3, Math.PI * 4 / 3] : [0]
+
+        for (let c = 0; c < curvesToDraw; c++) {
+          ctx.strokeStyle = colors[c]
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          
+          for (let x = 0; x <= width; x += 2) {
+            const timeOffset = (x / width) * 2 
+            const t = elapsedSecs + timeOffset
+            const basePhase = (t * speed * Math.PI * 2) + globalPhaseRad + phaseOffsets[c]
+
+            let yNorm = 0
+            switch (shape) {
+              case 'Sine': case 'Rainbow': yNorm = Math.sin(basePhase); break
+              case 'Triangle': yNorm = 2 * Math.abs(2 * ((basePhase / (2 * Math.PI)) - Math.floor((basePhase / (2 * Math.PI)) + 0.5))) - 1; break
+              case 'Sawtooth': yNorm = 2 * ((basePhase / (2 * Math.PI)) - Math.floor((basePhase / (2 * Math.PI)) + 0.5)); break
+              case 'Pulse': yNorm = Math.sin(basePhase) >= 0 ? 1 : -1; break
+              case 'Random': yNorm = (Math.sin(basePhase * 1.5) + Math.cos(basePhase * 2.3) + Math.sin(basePhase * 4.1)) / 3; break
+              default: yNorm = Math.sin(basePhase); break
+            }
+            
+            const y = (height / 2) - (yNorm * (size / 255) * (height / 2 - 10))
+            if (x === 0) ctx.moveTo(x, y)
+            else ctx.lineTo(x, y)
+          }
+          ctx.stroke()
+        }
+
+        // Draw fixtures on the 1D path
+        for (let i = 0; i < arrIds.length; i++) {
+          const fixturePhase = (elapsedSecs * speed * Math.PI * 2) + globalPhaseRad + (i * spreadRad)
+          let yNorm = 0
+          switch (shape) {
+            case 'Sine': case 'Rainbow': yNorm = Math.sin(fixturePhase); break
+            case 'Triangle': yNorm = 2 * Math.abs(2 * ((fixturePhase / (2 * Math.PI)) - Math.floor((fixturePhase / (2 * Math.PI)) + 0.5))) - 1; break
+            case 'Sawtooth': yNorm = 2 * ((fixturePhase / (2 * Math.PI)) - Math.floor((fixturePhase / (2 * Math.PI)) + 0.5)); break
+            case 'Pulse': yNorm = Math.sin(fixturePhase) >= 0 ? 1 : -1; break
+            case 'Random': yNorm = (Math.sin(fixturePhase * 1.5) + Math.cos(fixturePhase * 2.3) + Math.sin(fixturePhase * 4.1)) / 3; break
+            default: yNorm = Math.sin(fixturePhase); break
+          }
+          
+          const y = (height / 2) - (yNorm * (size / 255) * (height / 2 - 10))
+          const x = 20 + (i * 15) // Spread out on x-axis to be visible
+          
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+          ctx.beginPath()
+          ctx.arc(x, y, 5, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.strokeStyle = '#000'
+          ctx.lineWidth = 1
+          ctx.stroke()
+        }
       }
 
       animationFrameId = requestAnimationFrame(render)

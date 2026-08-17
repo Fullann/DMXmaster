@@ -130,8 +130,12 @@ export class EffectsEngine {
       if (size === 0) continue
 
       // Map ChannelType to the logical state property key
-      const stateKey = channelTypeToStateKey(target)
-      if (!stateKey) continue
+      let stateKey: keyof FixtureLogicalState | null = null
+      if (target !== 'Position') {
+        stateKey = channelTypeToStateKey(target as import('./fixtureTypes').ChannelType)
+      }
+      // If we don't have a valid stateKey AND the target isn't Position or we're not doing a Rainbow Color effect, we can't apply it.
+      if (!stateKey && target !== 'Position' && shape !== 'Rainbow') continue
 
       const globalPhaseRad = (phaseDegrees / 360) * Math.PI * 2
       const spreadRad      = (spreadDegrees / 360) * Math.PI * 2
@@ -142,32 +146,59 @@ export class EffectsEngine {
         // Base phase = time * speed * 2PI + global shift + (index * spread)
         const phase = (fx.runTimeSecs * speedHz * Math.PI * 2) + globalPhaseRad + (i * spreadRad)
 
-        // Generate bipolar value [-1.0, 1.0]
-        let wave = 0
+        // Generate values
+        let wave1D = 0, wavePan = 0, waveTilt = 0, waveR = 0, waveG = 0, waveB = 0
+        
         switch (shape) {
           case 'Sine':
-            wave = Math.sin(phase)
+            wave1D = Math.sin(phase)
             break
           case 'Triangle':
-            // triangle wave between -1 and 1
-            wave = 2 * Math.abs(2 * ((phase / (2 * Math.PI)) - Math.floor((phase / (2 * Math.PI)) + 0.5))) - 1
+            wave1D = 2 * Math.abs(2 * ((phase / (2 * Math.PI)) - Math.floor((phase / (2 * Math.PI)) + 0.5))) - 1
             break
           case 'Sawtooth':
-            // sawtooth wave between -1 and 1
-            wave = 2 * ((phase / (2 * Math.PI)) - Math.floor((phase / (2 * Math.PI)) + 0.5))
+            wave1D = 2 * ((phase / (2 * Math.PI)) - Math.floor((phase / (2 * Math.PI)) + 0.5))
             break
           case 'Pulse':
-            // square wave between -1 and 1
-            wave = Math.sin(phase) >= 0 ? 1 : -1
+            wave1D = Math.sin(phase) >= 0 ? 1 : -1
+            break
+          case 'Circle':
+            wavePan = Math.sin(phase)
+            waveTilt = Math.cos(phase)
+            wave1D = Math.sin(phase) // fallback
+            break
+          case 'Figure8':
+            wavePan = Math.sin(phase)
+            waveTilt = Math.sin(phase * 2)
+            wave1D = Math.sin(phase) // fallback
+            break
+          case 'Rainbow':
+            waveR = Math.sin(phase)
+            waveG = Math.sin(phase + (Math.PI * 2 / 3)) // +120deg
+            waveB = Math.sin(phase + (Math.PI * 4 / 3)) // +240deg
+            wave1D = waveR // fallback
+            break
+          case 'Random':
+            // Smooth pseudo-random noise
+            wave1D = (Math.sin(phase * 1.5) + Math.cos(phase * 2.3) + Math.sin(phase * 4.1)) / 3
+            wavePan = wave1D
+            waveTilt = (Math.cos(phase * 1.7) + Math.sin(phase * 2.1) + Math.cos(phase * 3.9)) / 3
             break
         }
 
-        // Scale to [-size/2, size/2]
-        const amplitude = (size / 2) * wave
+        const amp = (size / 2)
 
-        // Accumulate (so multiple effects on the same attribute stack)
-        const currentVal = (offsets[fixId] as any)[stateKey] ?? 0
-        ;(offsets[fixId] as any)[stateKey] = currentVal + amplitude
+        if (target === 'Position') {
+          offsets[fixId].pan = (offsets[fixId].pan ?? 0) + (wavePan || wave1D) * amp
+          offsets[fixId].tilt = (offsets[fixId].tilt ?? 0) + (waveTilt || wave1D) * amp
+        } else if (shape === 'Rainbow' && (target === 'Color' || stateKey === 'r' || stateKey === 'g' || stateKey === 'b')) {
+          offsets[fixId].r = (offsets[fixId].r ?? 0) + waveR * amp
+          offsets[fixId].g = (offsets[fixId].g ?? 0) + waveG * amp
+          offsets[fixId].b = (offsets[fixId].b ?? 0) + waveB * amp
+        } else if (stateKey) {
+          // Standard 1D accumulation
+          ;(offsets[fixId] as any)[stateKey] = ((offsets[fixId] as any)[stateKey] ?? 0) + wave1D * amp
+        }
       }
     }
 

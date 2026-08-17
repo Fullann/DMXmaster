@@ -4,10 +4,10 @@ import type { ChannelType } from './fixtureTypes'
 // FX Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type Waveform = 'Sine' | 'Triangle' | 'Sawtooth' | 'Pulse'
+export type Waveform = 'Sine' | 'Triangle' | 'Sawtooth' | 'Pulse' | 'Circle' | 'Figure8' | 'Rainbow' | 'Random'
 
-/** Target attributes for an effect. (Usually Pan, Tilt, Intensity, or Colors) */
-export type FxTarget = ChannelType
+/** Target attributes for an effect. (Usually Pan, Tilt, Intensity, or Colors, plus 'Position' for 2D FX) */
+export type FxTarget = ChannelType | 'Position'
 
 export interface FxConfig {
   /** The type of oscillator */
