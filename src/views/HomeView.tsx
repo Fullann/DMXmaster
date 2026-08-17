@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { FilePlus, Upload, Download, FolderOpen, Clock, ChevronRight, Zap } from 'lucide-react'
+import { FilePlus, Upload, Download, FolderOpen, Clock, ChevronRight, Zap, Code, Box, Layers, Cpu } from 'lucide-react'
+import { useFixturesStore } from '@/store/useFixturesStore'
+import { useScenesStore } from '@/store/useScenesStore'
 
 interface RecentShow {
   name: string
@@ -10,6 +12,10 @@ interface RecentShow {
 export function HomeView() {
   const [recentShows, setRecentShows] = useState<RecentShow[]>([])
   const [isLoading, setIsLoading] = useState(true)
+
+  const patchCount = useFixturesStore(s => s.patch.length)
+  const profilesCount = useFixturesStore(s => s.profiles.length)
+  const scenesCount = useScenesStore(s => s.scenes.length)
 
   useEffect(() => {
     async function loadRecent() {
@@ -34,6 +40,10 @@ export function HomeView() {
     }
   }
 
+  const handleOpenGithub = () => {
+    window.open('https://github.com/Fullann', '_blank')
+  }
+
   return (
     <div className="home-view">
       {/* Background Gradients */}
@@ -50,51 +60,84 @@ export function HomeView() {
           <p className="home-subtitle">Bienvenue ! Prêt à illuminer la scène ? 🚀</p>
         </div>
 
+        {/* Dashboard Stats */}
+        <div className="home-stats-grid">
+          <div className="home-stat-card">
+            <div className="home-stat-icon" style={{ color: '#32d74b', background: 'rgba(50, 215, 75, 0.1)' }}>
+              <Box size={24} />
+            </div>
+            <div className="home-stat-info">
+              <span className="home-stat-value">{patchCount}</span>
+              <span className="home-stat-label">Projecteurs Patchés</span>
+            </div>
+          </div>
+          <div className="home-stat-card">
+            <div className="home-stat-icon" style={{ color: '#5E5CE6', background: 'rgba(94, 92, 230, 0.1)' }}>
+              <Layers size={24} />
+            </div>
+            <div className="home-stat-info">
+              <span className="home-stat-value">{scenesCount}</span>
+              <span className="home-stat-label">Scènes Créées</span>
+            </div>
+          </div>
+          <div className="home-stat-card">
+            <div className="home-stat-icon" style={{ color: '#bf5af2', background: 'rgba(191, 90, 242, 0.1)' }}>
+              <Cpu size={24} />
+            </div>
+            <div className="home-stat-info">
+              <span className="home-stat-value">{profilesCount}</span>
+              <span className="home-stat-label">Profils Sauvegardés</span>
+            </div>
+          </div>
+        </div>
+
         {/* Content Grid */}
         <div className="home-grid">
           {/* Left — Actions */}
           <div className="home-actions">
             <h2 className="home-section-title">Get Started</h2>
             
-            <button className="home-action-btn" onClick={() => document.getElementById('tab-dashboard')?.click()}>
-              <div className="home-action-icon" style={{ background: 'rgba(50, 215, 75, 0.1)', borderColor: 'rgba(50, 215, 75, 0.25)' }}>
-                <FolderOpen size={22} color="#32d74b" />
-              </div>
-              <div className="home-action-text">
-                <span className="home-action-title">Continue Current Show</span>
-                <span className="home-action-desc">Resume working on your active workspace</span>
-              </div>
-            </button>
+            <div className="home-actions-list">
+              <button className="home-action-btn" onClick={() => document.getElementById('tab-dashboard')?.click()}>
+                <div className="home-action-icon" style={{ background: 'rgba(50, 215, 75, 0.1)', borderColor: 'rgba(50, 215, 75, 0.25)' }}>
+                  <FolderOpen size={22} color="#32d74b" />
+                </div>
+                <div className="home-action-text">
+                  <span className="home-action-title">Continue Current Show</span>
+                  <span className="home-action-desc">Resume working on your active workspace</span>
+                </div>
+              </button>
 
-            <button className="home-action-btn" onClick={() => window.appAPI.newShow()}>
-              <div className="home-action-icon" style={{ background: 'rgba(10, 132, 255, 0.1)', borderColor: 'rgba(10, 132, 255, 0.25)' }}>
-                <FilePlus size={22} color="var(--accent)" />
-              </div>
-              <div className="home-action-text">
-                <span className="home-action-title">Create New Show</span>
-                <span className="home-action-desc">Start a fresh workspace from scratch</span>
-              </div>
-            </button>
+              <button className="home-action-btn" onClick={() => window.appAPI.newShow()}>
+                <div className="home-action-icon" style={{ background: 'rgba(10, 132, 255, 0.1)', borderColor: 'rgba(10, 132, 255, 0.25)' }}>
+                  <FilePlus size={22} color="var(--accent)" />
+                </div>
+                <div className="home-action-text">
+                  <span className="home-action-title">Create New Show</span>
+                  <span className="home-action-desc">Start a fresh workspace from scratch</span>
+                </div>
+              </button>
 
-            <button className="home-action-btn" onClick={() => window.appAPI.importShow()}>
-              <div className="home-action-icon" style={{ background: 'rgba(94, 92, 230, 0.1)', borderColor: 'rgba(94, 92, 230, 0.25)' }}>
-                <Upload size={22} color="#5E5CE6" />
-              </div>
-              <div className="home-action-text">
-                <span className="home-action-title">Import Show</span>
-                <span className="home-action-desc">Load an existing .dmxshow file</span>
-              </div>
-            </button>
+              <button className="home-action-btn" onClick={() => window.appAPI.importShow()}>
+                <div className="home-action-icon" style={{ background: 'rgba(94, 92, 230, 0.1)', borderColor: 'rgba(94, 92, 230, 0.25)' }}>
+                  <Upload size={22} color="#5E5CE6" />
+                </div>
+                <div className="home-action-text">
+                  <span className="home-action-title">Import Show</span>
+                  <span className="home-action-desc">Load an existing .dmxshow file</span>
+                </div>
+              </button>
 
-            <button className="home-action-btn" onClick={() => window.appAPI.exportShow()}>
-              <div className="home-action-icon" style={{ background: 'rgba(191, 90, 242, 0.1)', borderColor: 'rgba(191, 90, 242, 0.25)' }}>
-                <Download size={22} color="#bf5af2" />
-              </div>
-              <div className="home-action-text">
-                <span className="home-action-title">Export Show</span>
-                <span className="home-action-desc">Save your current project as a file</span>
-              </div>
-            </button>
+              <button className="home-action-btn" onClick={() => window.appAPI.exportShow()}>
+                <div className="home-action-icon" style={{ background: 'rgba(191, 90, 242, 0.1)', borderColor: 'rgba(191, 90, 242, 0.25)' }}>
+                  <Download size={22} color="#bf5af2" />
+                </div>
+                <div className="home-action-text">
+                  <span className="home-action-title">Export Show</span>
+                  <span className="home-action-desc">Save your current project as a file</span>
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* Right — Recent Shows */}
@@ -128,6 +171,12 @@ export function HomeView() {
             </div>
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="home-footer" onClick={handleOpenGithub}>
+          <Code size={16} />
+          <span>Developed by <strong>Fullann</strong></span>
+        </div>
       </div>
 
       <style>{`
@@ -140,7 +189,7 @@ export function HomeView() {
           min-height: 100%;
           padding: var(--space-6);
           position: relative;
-          overflow: hidden;
+          overflow-y: auto;
         }
         .home-bg {
           position: absolute;
@@ -169,24 +218,25 @@ export function HomeView() {
           max-width: 900px;
           display: flex;
           flex-direction: column;
-          gap: var(--space-7);
+          gap: var(--space-5);
         }
         .home-header {
           text-align: center;
+          margin-bottom: var(--space-2);
         }
         .home-logo-icon {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 72px;
-          height: 72px;
+          width: 64px;
+          height: 64px;
           border-radius: var(--radius-xl);
           background: var(--surface-2);
           border: 1px solid var(--border-light);
           margin-bottom: var(--space-4);
         }
         .home-title {
-          font-size: 2.8rem;
+          font-size: 2.4rem;
           font-weight: 800;
           letter-spacing: -0.03em;
           margin-bottom: var(--space-2);
@@ -195,14 +245,73 @@ export function HomeView() {
           -webkit-text-fill-color: transparent;
         }
         .home-subtitle {
-          font-size: var(--text-md);
+          font-size: var(--text-sm);
           color: var(--text-muted);
         }
+        
+        .home-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: var(--space-4);
+        }
+        @media (max-width: 768px) {
+          .home-stats-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        .home-stat-card {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          padding: var(--space-4);
+          display: flex;
+          align-items: center;
+          gap: var(--space-4);
+          transition: transform var(--duration-fast) ease, border-color var(--duration-fast) ease;
+        }
+        .home-stat-card:hover {
+          transform: translateY(-2px);
+          border-color: var(--border-light);
+          background: var(--surface-1);
+        }
+        .home-stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: var(--radius-full);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .home-stat-info {
+          display: flex;
+          flex-direction: column;
+        }
+        .home-stat-value {
+          font-size: 1.8rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          line-height: 1;
+        }
+        .home-stat-label {
+          font-size: var(--text-xs);
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-top: 6px;
+        }
+
         .home-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: var(--space-6);
+          gap: var(--space-5);
         }
+        @media (max-width: 768px) {
+          .home-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        
         .home-section-title {
           font-size: var(--text-md);
           font-weight: 600;
@@ -215,13 +324,23 @@ export function HomeView() {
         .home-actions {
           display: flex;
           flex-direction: column;
+        }
+        .home-actions-list {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
           gap: var(--space-3);
         }
+        @media (max-width: 900px) {
+          .home-actions-list {
+            grid-template-columns: 1fr;
+          }
+        }
+        
         .home-action-btn {
           display: flex;
           align-items: center;
-          gap: var(--space-4);
-          padding: var(--space-4);
+          gap: var(--space-3);
+          padding: var(--space-3);
           background: var(--surface-1);
           border: 1px solid var(--border);
           border-radius: var(--radius-md);
@@ -239,8 +358,8 @@ export function HomeView() {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 44px;
-          height: 44px;
+          width: 38px;
+          height: 38px;
           border-radius: var(--radius-sm);
           border: 1px solid;
           flex-shrink: 0;
@@ -251,13 +370,14 @@ export function HomeView() {
           gap: 2px;
         }
         .home-action-title {
-          font-size: var(--text-md);
+          font-size: var(--text-sm);
           font-weight: 600;
           color: var(--text-primary);
         }
         .home-action-desc {
-          font-size: var(--text-xs);
+          font-size: 0.65rem;
           color: var(--text-muted);
+          line-height: 1.2;
         }
         .home-recent {
           background: var(--surface-1);
@@ -266,6 +386,7 @@ export function HomeView() {
           padding: var(--space-4);
           display: flex;
           flex-direction: column;
+          min-height: 250px;
         }
         .home-recent-list {
           display: flex;
@@ -304,7 +425,7 @@ export function HomeView() {
           overflow: hidden;
         }
         .home-recent-name {
-          font-size: var(--text-md);
+          font-size: var(--text-sm);
           font-weight: 500;
           color: var(--text-primary);
         }
@@ -314,6 +435,23 @@ export function HomeView() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+
+        .home-footer {
+          margin-top: var(--space-4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--space-2);
+          color: var(--text-muted);
+          font-size: var(--text-xs);
+          padding-top: var(--space-4);
+          border-top: 1px solid var(--border);
+          cursor: pointer;
+          transition: color var(--duration-fast) ease;
+        }
+        .home-footer:hover {
+          color: var(--text-primary);
         }
       `}</style>
     </div>
