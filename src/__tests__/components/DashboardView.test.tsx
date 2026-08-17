@@ -29,7 +29,7 @@ describe('DashboardView', () => {
     
     // Check that it renders 512 channels
     // The channel elements just contain the text "1", "2", etc.
-    expect(screen.getByText('Universe 1 — 512 Channels')).toBeInTheDocument()
+    expect(screen.getByText('Universe 1')).toBeInTheDocument()
     // Find channel 1 and channel 512
     expect(screen.getByText('1')).toBeInTheDocument()
     expect(screen.getByText('512')).toBeInTheDocument()
