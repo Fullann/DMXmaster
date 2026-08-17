@@ -444,8 +444,7 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatc
           display: flex;
           align-items: center;
           gap: var(--space-2);
-          min-width: 200px;
-          flex-shrink: 0;
+          width: auto;
         }
         .patch-address-badge {
           font-family: var(--font-mono);
@@ -459,6 +458,7 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatc
           font-family: var(--font-mono);
           font-size: var(--text-xs);
           color: var(--text-muted);
+          white-space: nowrap;
         }
         
         .patch-card-actions {

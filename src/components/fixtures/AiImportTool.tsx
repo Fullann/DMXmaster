@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import type { FixtureProfile } from '@/types/fixtures'
 import { validateFixtureProfile } from '@/types/fixtures'
-import { Lightbulb, AlertTriangle, CheckCircle2, FileJson } from 'lucide-react'
+import { Lightbulb, AlertTriangle, CheckCircle2, FileJson, Copy } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AiImportTool — paste JSON output from an LLM, validate, and save.
@@ -56,6 +56,18 @@ export function AiImportTool({ onSave }: AiImportToolProps) {
 
   const hasJson = jsonText.trim().length > 0
 
+  const handleCopyPrompt = async () => {
+    const promptText = `Generate a DMX fixture profile JSON for the [BRAND] [MODEL] in [N]-channel mode. Use this schema: { manufacturer, model, mode, channels: [{ number, name, type, defaultValue }] }. Valid types: Intensity | Red | Green | Blue | White | Color | Pan | Tilt | Smoke | Shutter | Speed | Effect | Gobo | Prism | Zoom | Focus | Unknown`
+    try {
+      await navigator.clipboard.writeText(promptText)
+      // Visual feedback handled by alert or we can just ignore it for simplicity
+      // But alert is fine for now
+      alert('Prompt copié !')
+    } catch {
+      alert('Erreur de copie.')
+    }
+  }
+
   return (
     <div className="ai-import-tool">
       <div className="fb-header">
@@ -67,8 +79,13 @@ export function AiImportTool({ onSave }: AiImportToolProps) {
 
       {/* Prompt hint */}
       <div className="ai-prompt-hint">
-        <span className="ai-prompt-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Lightbulb size={14} /> Prompt template
+        <span className="ai-prompt-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Lightbulb size={14} /> Prompt template
+          </div>
+          <button className="btn-icon-sm" onClick={handleCopyPrompt} title="Copier le prompt">
+            <Copy size={12} />
+          </button>
         </span>
         <code className="ai-prompt-text">
           "Generate a DMX fixture profile JSON for the [BRAND] [MODEL] in
