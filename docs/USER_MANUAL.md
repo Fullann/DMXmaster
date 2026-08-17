@@ -1,111 +1,97 @@
-# DMX Master - Manuel d'Utilisation
+# Manuel d'Utilisation - DMX Master
 
-Bienvenue dans le manuel d'utilisation de **DMX Master** ! Ce guide vous expliquera comment utiliser les principales fonctionnalités du logiciel pour concevoir, programmer et contrôler vos spectacles lumière.
-
----
-
-## Sommaire
-1. [Introduction](#introduction)
-2. [Premiers Pas](#premiers-pas)
-3. [Le Patch et la Bibliothèque](#le-patch-et-la-bibliothèque)
-4. [L'Écran de Contrôle (Virtual Console)](#lécran-de-contrôle)
-5. [Création de Scènes et Chasers](#création-de-scènes-et-chasers)
-6. [Visualiseur 3D](#visualiseur-3d)
-7. [Réseau et Art-Net](#réseau-et-art-net)
+Bienvenue dans le manuel d'utilisation de **DMX Master**. Ce guide est structuré en fonction du flux de travail naturel de la lumière (Setup, Programmation, et Live).
 
 ---
 
-## 1. Introduction
+## 1. Setup (Configuration)
 
-**DMX Master** est un logiciel professionnel de contrôle d'éclairage DMX. Il a été pensé pour offrir une flexibilité totale lors de spectacles en direct ("Live") tout en gardant une interface intuitive et moderne. 
+L'onglet **Setup** est le cœur de la préparation de votre show. C'est ici que vous définissez quelles machines vous utilisez et comment elles communiquent.
 
-### Concepts clés :
-- **Workspace (Show)** : Votre projet entier contenant le patch, les scènes, la console virtuelle, etc. Vous pouvez sauvegarder et charger des "Shows".
-- **Univers DMX** : Un espace de 512 canaux contrôlant vos projecteurs.
-- **Fixture (Projecteur)** : Un appareil d'éclairage (Lyre, PAR, Laser, etc.) auquel on assigne un "Profil".
+### 1.1 Le Patch
+Le "Patch" consiste à adresser vos projecteurs (Fixtures) et à les faire reconnaître par le logiciel.
+1. Allez dans l'onglet **Patch**.
+2. Parcourez la **Librairie de profils** sur la gauche. Si votre projecteur n'existe pas, vous pouvez créer un profil dans l'onglet "Library".
+3. Faites glisser (drag-and-drop) un profil vers l'univers central, ou cliquez sur "Patch Fixture".
+4. Spécifiez l'adresse de départ de la machine.
+5. Une fois patchées, vous verrez vos machines apparaître avec un numéro `[ID]` unique (User Number).
 
----
+### 1.2 Network & RDM
+Si vous utilisez des interfaces en réseau (Art-Net, sACN) ou du RDM :
+1. Allez dans l'onglet **Network & RDM**.
+2. Vérifiez que la carte réseau adéquate est sélectionnée.
+3. C'est également ici que vous trouverez le **QR Code** de l'Application Compagnon Mobile.
 
-## 2. Premiers Pas
-
-À l'ouverture de l'application, l'écran d'accueil (Home) vous propose un résumé de votre installation (Dashboard) et 4 actions principales :
-- **Continue Current Show** : Reprendre votre travail en cours.
-- **Create New Show** : Partir de zéro pour une nouvelle prestation.
-- **Import Show** / **Export Show** : Charger ou sauvegarder votre projet sous la forme d'un fichier.
-
-L'interface est divisée en plusieurs modes de travail accessibles en haut de l'écran :
-1. **Setup** : Pour configurer vos projecteurs (Patch), le réseau et la bibliothèque.
-2. **Program** : Pour la création d'effets, le matriçage de pixels et la création de palettes.
-3. **Playback** : Pour le contrôle en direct de votre show (Virtual Console, Live Grid, Cuelist).
-
----
-
-## 3. Le Patch et la Bibliothèque
-
-### La Bibliothèque (Library)
-Avant de pouvoir utiliser une machine, DMX Master doit la connaître. Rendez-vous dans **Setup > Library**.
-- Vous y trouverez les profils de projecteurs déjà enregistrés.
-- **Générateur IA** : Vous pouvez générer automatiquement un profil en collant les spécifications de votre projecteur dans la zone de texte prévue. L'IA s'occupera d'écrire la configuration des canaux !
-
-### Le Patch
-Rendez-vous dans **Setup > Patch** pour assigner une adresse DMX à vos projecteurs.
-1. Sélectionnez un profil depuis la liste déroulante.
-2. Entrez l'adresse de départ ou utilisez le bouton **Auto** pour trouver la première adresse libre.
-3. Cliquez sur **Patch Fixture**.
-4. Votre projecteur apparaîtra dans la liste avec des options pour le *Cloner*, le *Morpher* (changer son modèle sans perdre la programmation) ou le supprimer.
+### 1.3 MIDI Mapping (Interface MIDI Learn)
+DMX Master supporte les contrôleurs physiques via "MIDI Learn" :
+1. Connectez votre contrôleur USB MIDI et allez dans **MIDI Mapping**.
+2. Cliquez sur le bouton **MIDI LEARN**.
+3. Allez dans n'importe quel onglet (par exemple, la *Virtual Console*).
+4. Cliquez sur un fader ou un bouton virtuel à l'écran (il se mettra à clignoter).
+5. Touchez le bouton ou bougez le fader correspondant sur votre contrôleur physique. Le lien est fait instantanément !
 
 ---
 
-## 4. L'Écran de Contrôle (Virtual Console)
+## 2. Programmation
 
-La **Virtual Console** (accessible dans *Playback*) est votre espace de jeu pour le direct.
-C'est une interface entièrement personnalisable (Drag & Drop) qui vous permet de disposer les contrôles comme vous le souhaitez.
+Une fois vos machines patchées, passez au mode **Program** pour créer vos états lumineux.
 
-**Comment ajouter des éléments :**
-1. Cliquez sur le bouton "Edit Mode" (l'icône de crayon) en haut à droite.
-2. Le tiroir d'outils (Widgets) apparaît à gauche.
-3. Glissez-déposez un widget sur la grille :
-   - **Bouton (Button)** : Pour lancer des scènes (Flash ou Toggle).
-   - **Slider (Fader)** : Pour contrôler l'intensité de vos groupes ou faire varier une valeur.
-   - **Roue de Couleur (Color Picker)** : Pour changer la couleur de vos machines à la volée.
-   - **Pad X/Y** : Pour contrôler le mouvement (Pan/Tilt) de vos lyres avec votre souris ou doigt.
-4. Quittez le mode "Edit" pour verrouiller votre interface et l'utiliser en live.
+### 2.1 Dashboard & Contrôle Rapide
+- Le **Dashboard** affiche une grille visuelle de tous vos canaux par univers. Cliquez sur un canal pour en forcer la valeur via un curseur local.
+- L'onglet **Control** affiche une vue complète des paramètres de chaque machine sélectionnée (Dimmer, Couleurs, Gobos).
 
----
+### 2.2 Création de Groupes
+Si vous avez beaucoup de machines, regroupez-les !
+1. Allez dans l'onglet **Groups**.
+2. Sélectionnez plusieurs machines.
+3. Créez un nouveau groupe (ex: "Tous les Spots", "Wash de Face").
+4. Les groupes disposent d'un **Submaster** automatique. Baisser le Submaster d'un groupe limite l'intensité lumineuse de toutes les machines de ce groupe, très pratique en live.
 
-## 5. Création de Scènes et Chasers
+### 2.3 Scènes et Palettes
+L'état actuel de votre sélection (le "Programmer") peut être sauvegardé.
+- **Palettes** : Sauvegardez une couleur spécifique (ex: "Rouge Vif") ou une position pour la réappliquer rapidement.
+- **Scènes** : Sauvegardez l'état complet du Programmer dans une Scène (ex: "Intro Sombre"). Vous pourrez la rappeler plus tard. Note : Utilisez le bouton "Clear" (Trash) pour vider votre Programmer avant de créer une nouvelle Scène !
 
-### Scènes
-Une scène est un état d'éclairage figé (ex: Lyres en bleu, pointées vers le centre de la scène).
-- Pour créer une scène, réglez vos projecteurs (depuis *Control* ou la *Virtual Console*).
-- Allez dans **Scenes** et cliquez sur "Save Current State". 
-
-### Chasers
-Un Chaser est une boucle (séquence) de plusieurs scènes.
-- Allez dans **Chasers**.
-- Créez un nouveau Chaser et ajoutez-y les scènes que vous souhaitez faire défiler.
-- Réglez le BPM (battements par minute) pour accélérer ou ralentir l'effet, ou utilisez le bouton "Tap Tempo" en direct.
+### 2.4 FX Generator & Pixel Mapper
+- Allez dans **FX Generator** pour appliquer rapidement des effets oscillants (Sinus, Triangle, Pulse) sur les canaux de Pan/Tilt, Intensité ou Couleur de vos machines sélectionnées.
+- Le **Pixel Mapper** permet de jouer des médias (vidéos, animations) et de projeter l'image sur une grille (Matrix) de LED (ex: Rubans LED, panneaux LED matricés).
 
 ---
 
-## 6. Visualiseur 3D
+## 3. Playback & Live
 
-Le module **3D View** (disponible dans *Setup* et *Playback*) vous permet de pré-programmer vos shows de chez vous, sans avoir le matériel branché.
-- Il génère des faisceaux lumineux volumétriques réalistes (Light beams).
-- Il prend en compte les Gobos virtuels (motifs projetés).
-- Vous pouvez déplacer vos machines virtuellement en sélectionnant un projecteur et en utilisant les flèches de l'axe X/Y/Z.
+C'est l'heure du show !
 
-*(Astuce : DMX Master utilise un rendu natif optimisé pour ne pas saturer votre carte graphique).*
+### 3.1 Virtual Console
+La Console Virtuelle est un tableau de bord entièrement personnalisable que vous construisez vous-même.
+1. Cliquez sur **EDIT** en haut à droite.
+2. Cliquez sur une case vide pour ajouter un Fader, un Bouton, un Pad X/Y ou un sélecteur de couleurs.
+3. Assignez une cible à votre widget (ex: Fader assigné au Submaster du groupe "Face").
+4. Repassez en mode **PLAY** pour piloter le show de façon sécurisée.
+*Note : La Virtual Console est entièrement compatible avec le MIDI Learn.*
+
+### 3.2 Live Grid & Cuelist
+- La **Live Grid** est un pad de type Launchpad (64 boutons) idéal pour l'improvisation et le "busking". Assignez-y des scènes et effets !
+- La **Cuelist** est pour le théâtre et les concerts très scriptés (Cue 1, Cue 2, "Go").
+
+### 3.3 Audio Engine & Tap Tempo
+DMX Master "écoute" pour vous.
+1. Allez dans **Audio Input**.
+2. Activez l'écoute du micro (le graphique sonore apparaîtra).
+3. Le système détectera automatiquement le BPM de la musique et l'enverra à tous les chasers "Sound-to-Light".
+4. Vous pouvez aussi utiliser l'application Mobile ou le bouton **TAP** pour imposer manuellement la cadence à vos effets.
 
 ---
 
-## 7. Réseau et Art-Net
+## 4. L'Application Compagnon Mobile
 
-DMX Master est compatible avec les protocoles réseau standards.
-- Rendez-vous dans **Setup > Network & RDM** (ou utilisez l'icône **Net** dans la barre supérieure).
-- Ajoutez l'adresse IP de votre boîtier Art-Net (ex: un boîtier WLED ou un node DMX standard).
-- Le logiciel enverra directement le signal DMX par le réseau Wi-Fi/Ethernet.
-
----
-**Développé par Fullann**
-*Bon spectacle ! 🚀*
+DMX Master inclut une Remote Control via le navigateur d'un smartphone, parfaite pour s'éloigner de la console pendant le réglage des projecteurs.
+1. Allez dans l'onglet **Network & RDM** de l'application PC/Mac.
+2. Un grand **QR Code** y est affiché. 
+3. Scannez-le avec l'appareil photo de votre smartphone (assurez-vous d'être connecté au même réseau WiFi que l'ordinateur).
+4. Le navigateur web mobile s'ouvrira avec une interface adaptée. Vous pourrez y déclencher :
+   - Le *Tap Tempo*.
+   - Le bouton *Micro Auto* (qui donne l'ordre à l'ordinateur d'écouter la musique).
+   - Les Faders et boutons essentiels de la Virtual Console.
+   
+*(Conçu par Fullann)*

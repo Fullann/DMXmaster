@@ -1,69 +1,58 @@
-# DMX Master 🚀
+# DMX Master 💡
 
-**DMX Master** is a modern, cross-platform lighting control software built with Electron, React, and TypeScript. It is designed to provide professional-grade DMX lighting control for live shows, architectural lighting, and DJ sets with a highly intuitive user interface.
+**DMX Master** est une application professionnelle, moderne et complète de contrôle d'éclairage DMX (Lighting Console) basée sur les technologies Web (Electron, React, Zustand, Vite). Elle est conçue pour être aussi puissante qu'une console physique tout en offrant une interface utilisateur fluide, esthétique et intuitive.
 
-![DMX Master](https://img.shields.io/badge/Status-v1.0.0-success?style=flat-square)
-![Electron](https://img.shields.io/badge/Electron-App-blue?style=flat-square&logo=electron)
-![React](https://img.shields.io/badge/React-UI-61dafb?style=flat-square&logo=react)
+![DMX Master](https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/zap.svg)
 
----
+## 🚀 Fonctionnalités Principales
 
-## 📖 Documentation & Manual
+- **Moteur DMX 8 Univers** : Contrôle fluide jusqu'à 4096 canaux DMX.
+- **Interface par Workspaces** : 
+  - **Setup** : Patch de machines, création de profils, RDM, et Mapping MIDI.
+  - **Program** : Tableau de bord, contrôle précis (Pan/Tilt, Couleurs), Groupes, Palettes, et Générateur de FX.
+  - **Playback** : Live Grid, Cuelist, Console Virtuelle, Mode Audio, et Séquenceur Timeline.
+- **Contrôle Audio & Son-lumière** : Analyseur audio intégré (Beat detection) via micro, Tap Tempo, et synchronisation avec les effets.
+- **Support MIDI Complet** : Protocole "MIDI Learn" permettant de mapper n'importe quel bouton ou fader d'un contrôleur physique (ex: APC40, Launchpad) vers l'interface logicielle. Synchronisation Timecode MTC.
+- **Application Compagnon Mobile (PWA)** : Interface web distante accessible via un QR Code sur le réseau local pour déclencher des actions (Tap Tempo, Micro Auto, Console Virtuelle) depuis un smartphone.
+- **Virtual Console Personnalisable** : Créez votre propre tableau de bord avec des boutons, faders, roues chromatiques et pads X/Y.
+- **Visualiseur 3D Intégré** : Mode fenêtré détachable pour visualiser vos éclairages sans matériel.
 
-If you want to learn how to use DMX Master, please refer to the official User Manual:
-👉 **[Manuel d'Utilisation (Français)](docs/USER_MANUAL.md)**
+## 🛠 Prérequis
 
----
+- Node.js (v18+)
+- npm (v9+)
+- Interface DMX USB (Enttec Pro compatible) ou interface Art-Net réseau.
 
-## ✨ Features
+## 📦 Installation & Lancement
 
-- **Intuitive Patch & Library System**: Easily patch fixtures or create your own fixture profiles.
-- **AI Profile Generator**: Just paste your lighting fixture's manual, and the AI will generate the channel mapping for you.
-- **3D Visualizer**: Real-time volumetric light beams and gobo rendering without crashing your GPU.
-- **Live Virtual Console**: A full drag-and-drop interface. Create your own workspace with buttons, faders, XY Pads, and Color Pickers.
-- **Network & Art-Net**: Send DMX data over the network to any compatible node or WLED controller.
-- **Scenes & Chasers**: Create static looks and dynamic chases with tap-tempo support.
-- **Global Show Export (`.dmxshow`)**: Easily bundle your entire project, including patches and profiles, into a single file to transfer between computers. *(Coming soon)*
-
----
-
-## 🛠️ Development Setup
-
-### Prerequisites
-- Node.js (v18 or higher recommended)
-- npm
-
-### Installation
-
-1. Clone the repository:
+1. Clonez le dépôt :
    ```bash
-   git clone https://github.com/Fullann/DMXmaster.git
+   git clone https://github.com/votre-compte/DMXmaster.git
    cd DMXmaster
    ```
 
-2. Install dependencies:
+2. Installez les dépendances :
    ```bash
    npm install
    ```
 
-3. Run the development server:
+3. Lancez l'application en mode développement :
    ```bash
    npm run dev
    ```
 
-### Build for Production
+4. Pour compiler l'application de production :
+   ```bash
+   npm run build
+   ```
 
-To package the application for your operating system (v1 release):
-```bash
-npm run build
-```
-This will compile the TypeScript, Vite assets, and Electron main process into an executable in the `dist` or `out` directory depending on your configuration.
+## 📚 Documentation
 
----
+La documentation détaillée est disponible dans le dossier `docs/` :
 
-## 👨‍💻 Credits
+- [**Manuel Utilisateur (USER_MANUAL.md)**](./docs/USER_MANUAL.md) : Guide pas-à-pas pour patcher vos premières machines, créer des scènes et utiliser la console en live.
+- [**Architecture (ARCHITECTURE.md)**](./docs/ARCHITECTURE.md) : Vue d'ensemble technique, communication IPC, architecture Zustand et moteur DMX.
 
-Developed with ❤️ by **[Fullann](https://github.com/Fullann)**.
+## 👨‍💻 Développé par
 
----
-*DMX Master - Illuminate your stage.*
+**Developed by Fullann**
