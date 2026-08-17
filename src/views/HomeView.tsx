@@ -190,6 +190,7 @@ export function HomeView() {
           padding: var(--space-6);
           position: relative;
           overflow-y: auto;
+          overflow-x: hidden;
         }
         .home-bg {
           position: absolute;
