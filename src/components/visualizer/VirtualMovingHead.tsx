@@ -26,6 +26,9 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
   const spotLightRef = useRef<THREE.SpotLight>(null)
   const targetRef = useRef<THREE.Object3D>(null)
 
+  const goboTexStar = useLoader(THREE.TextureLoader, GOBO_TEXTURES[1] as string)
+  const goboTexDot = useLoader(THREE.TextureLoader, GOBO_TEXTURES[2] as string)
+
   useEffect(() => {
     if (spotLightRef.current && targetRef.current) {
       spotLightRef.current.target = targetRef.current
@@ -66,6 +69,12 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
       spotLightRef.current.color.copy(colorHex)
       spotLightRef.current.intensity = intensity * 15 // Normal intensity
       spotLightRef.current.visible = intensity > 0
+      
+      let map = null
+      if (goboDmx > 85 && goboDmx <= 170) map = goboTexDot
+      else if (goboDmx > 170) map = goboTexStar
+      
+      spotLightRef.current.map = map
     }
   })
 
@@ -119,7 +128,7 @@ export function VirtualMovingHead({ uIdx, channelMap }: Props) {
             castShadow
             shadow-mapSize-width={1024}
             shadow-mapSize-height={1024}
-            volumetric={false}
+            volumetric={true}
             attenuation={30}
             anglePower={4}
           />

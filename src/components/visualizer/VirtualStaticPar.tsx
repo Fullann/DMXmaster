@@ -71,7 +71,7 @@ export function VirtualStaticPar({ uIdx, channelMap }: Props) {
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
-        volumetric={false}
+        volumetric={true}
         attenuation={25}
         anglePower={2}
       />
