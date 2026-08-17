@@ -16,8 +16,14 @@ export interface FxConfig {
   target:        FxTarget
   /** Speed of the LFO in Hertz (e.g. 0.5Hz = 1 cycle per 2 seconds) */
   speedHz:       number
-  /** Peak-to-peak amplitude (0 to 255) */
+  /** Peak-to-peak amplitude (0 to 255) for 1D targets */
   size:          number
+  /** Peak-to-peak amplitude on X axis (0 to 255) for 2D Position targets */
+  sizeX?:        number
+  /** Peak-to-peak amplitude on Y axis (0 to 255) for 2D Position targets */
+  sizeY?:        number
+  /** Rotation of the 2D shape in degrees (0 to 360) */
+  rotationDegrees?: number
   /** Global phase shift of the entire effect (0 to 360 degrees) */
   phaseDegrees:  number
   /** Phase offset added sequentially per fixture in the group (0 to 360 degrees) */

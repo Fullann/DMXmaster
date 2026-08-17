@@ -20,7 +20,10 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
   const [shape, setShape] = useState<Waveform>('Sine')
   const [target, setTarget] = useState<FxTarget>('Tilt')
   const [speed, setSpeed] = useState(0.5) // Hz
-  const [size, setSize] = useState(128)   // 0-255 amplitude
+  const [size, setSize] = useState(128)   // 0-255 amplitude (1D)
+  const [sizeX, setSizeX] = useState(128) // 0-255 amplitude X
+  const [sizeY, setSizeY] = useState(128) // 0-255 amplitude Y
+  const [rotation, setRotation] = useState(0) // 0-360 degrees
   const [phase, setPhase] = useState(0)   // Global phase
   const [spread, setSpread] = useState(0) // Stagger per fixture
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -44,6 +47,9 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
     setTarget(fx.config.target)
     setSpeed(fx.config.speedHz)
     setSize(fx.config.size)
+    setSizeX(fx.config.sizeX ?? fx.config.size)
+    setSizeY(fx.config.sizeY ?? fx.config.size)
+    setRotation(fx.config.rotationDegrees ?? 0)
     setPhase(fx.config.phaseDegrees)
     setSpread(fx.config.spreadDegrees)
     setSelectedIds(new Set(fx.config.fixtureIds))
@@ -61,6 +67,9 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
       target,
       speedHz: speed,
       size,
+      sizeX: target === 'Position' ? sizeX : undefined,
+      sizeY: target === 'Position' ? sizeY : undefined,
+      rotationDegrees: target === 'Position' ? rotation : undefined,
       phaseDegrees: phase,
       spreadDegrees: spread,
       fixtureIds: Array.from(selectedIds)
@@ -124,8 +133,14 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
               break
             default: xNorm = Math.sin(tPhase); yNorm = xNorm; break
           }
-          const px = (width / 2) + (xNorm * (size / 255) * (height / 2 - 10))
-          const py = (height / 2) - (yNorm * (size / 255) * (height / 2 - 10))
+          const sx = xNorm * (sizeX / 255) * (height / 2 - 10)
+          const sy = yNorm * (sizeY / 255) * (height / 2 - 10)
+          const rotRad = (rotation / 360) * Math.PI * 2
+          const rotX = sx * Math.cos(rotRad) - sy * Math.sin(rotRad)
+          const rotY = sx * Math.sin(rotRad) + sy * Math.cos(rotRad)
+          
+          const px = (width / 2) + rotX
+          const py = (height / 2) - rotY
           if (i === 0) ctx.moveTo(px, py)
           else ctx.lineTo(px, py)
         }
@@ -144,8 +159,14 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
               break
             default: xNorm = Math.sin(fixturePhase); yNorm = xNorm; break
           }
-          const px = (width / 2) + (xNorm * (size / 255) * (height / 2 - 10))
-          const py = (height / 2) - (yNorm * (size / 255) * (height / 2 - 10))
+          const sx = xNorm * (sizeX / 255) * (height / 2 - 10)
+          const sy = yNorm * (sizeY / 255) * (height / 2 - 10)
+          const rotRad = (rotation / 360) * Math.PI * 2
+          const rotX = sx * Math.cos(rotRad) - sy * Math.sin(rotRad)
+          const rotY = sx * Math.sin(rotRad) + sy * Math.cos(rotRad)
+          
+          const px = (width / 2) + rotX
+          const py = (height / 2) - rotY
 
           ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
           ctx.beginPath()
@@ -223,7 +244,7 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
 
     render()
     return () => cancelAnimationFrame(animationFrameId)
-  }, [shape, speed, size, phase, spread, selectedIds.size])
+  }, [shape, speed, size, sizeX, sizeY, rotation, phase, spread, selectedIds.size, target])
 
 
   return (
@@ -339,13 +360,39 @@ export function FxGenerator({ patch, activeEffects, onAddEffect, onUpdateEffect,
               <input type="range" min="0.05" max="5.0" step="0.05" value={speed} onChange={e => setSpeed(parseFloat(e.target.value))} />
             </div>
 
-            <div className="fx-slider-group">
-              <div className="fx-slider-header">
-                <span>Size (Amplitude)</span>
-                <span>{size}</span>
+            {target === 'Position' ? (
+              <>
+                <div className="fx-slider-group">
+                  <div className="fx-slider-header">
+                    <span>Size X (Pan)</span>
+                    <span>{sizeX}</span>
+                  </div>
+                  <input type="range" min="0" max="255" step="1" value={sizeX} onChange={e => setSizeX(parseInt(e.target.value))} />
+                </div>
+                <div className="fx-slider-group">
+                  <div className="fx-slider-header">
+                    <span>Size Y (Tilt)</span>
+                    <span>{sizeY}</span>
+                  </div>
+                  <input type="range" min="0" max="255" step="1" value={sizeY} onChange={e => setSizeY(parseInt(e.target.value))} />
+                </div>
+                <div className="fx-slider-group">
+                  <div className="fx-slider-header">
+                    <span>Rotation</span>
+                    <span>{rotation}°</span>
+                  </div>
+                  <input type="range" min="0" max="360" step="1" value={rotation} onChange={e => setRotation(parseInt(e.target.value))} />
+                </div>
+              </>
+            ) : (
+              <div className="fx-slider-group">
+                <div className="fx-slider-header">
+                  <span>Size (Amplitude)</span>
+                  <span>{size}</span>
+                </div>
+                <input type="range" min="0" max="255" step="1" value={size} onChange={e => setSize(parseInt(e.target.value))} />
               </div>
-              <input type="range" min="0" max="255" step="1" value={size} onChange={e => setSize(parseInt(e.target.value))} />
-            </div>
+            )}
 
             <div className="fx-slider-group">
               <div className="fx-slider-header">

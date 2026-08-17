@@ -124,10 +124,13 @@ export class EffectsEngine {
       const mods = this.modulations.get(fx.id) ?? {}
       const speedHz       = (mods['speedHz']       ?? fx.config.speedHz)
       const size          = (mods['size']           ?? fx.config.size)
+      const sizeX         = (mods['sizeX']         ?? fx.config.sizeX ?? size)
+      const sizeY         = (mods['sizeY']         ?? fx.config.sizeY ?? size)
+      const rotationDeg   = (mods['rotationDegrees'] ?? fx.config.rotationDegrees ?? 0)
       const phaseDegrees  = (mods['phaseDegrees']  ?? fx.config.phaseDegrees)
       const spreadDegrees = (mods['spreadDegrees'] ?? fx.config.spreadDegrees)
 
-      if (size === 0) continue
+      if (size === 0 && sizeX === 0 && sizeY === 0) continue
 
       // Map ChannelType to the logical state property key
       let stateKey: keyof FixtureLogicalState | null = null
@@ -189,8 +192,17 @@ export class EffectsEngine {
         const amp = (size / 2)
 
         if (target === 'Position') {
-          offsets[fixId].pan = (offsets[fixId].pan ?? 0) + (wavePan || wave1D) * amp
-          offsets[fixId].tilt = (offsets[fixId].tilt ?? 0) + (waveTilt || wave1D) * amp
+          // Scale components
+          const sx = (wavePan || wave1D) * (sizeX / 2)
+          const sy = (waveTilt || wave1D) * (sizeY / 2)
+          
+          // Apply 2D Rotation matrix
+          const rotRad = (rotationDeg / 360) * Math.PI * 2
+          const rotatedPan = sx * Math.cos(rotRad) - sy * Math.sin(rotRad)
+          const rotatedTilt = sx * Math.sin(rotRad) + sy * Math.cos(rotRad)
+
+          offsets[fixId].pan = (offsets[fixId].pan ?? 0) + rotatedPan
+          offsets[fixId].tilt = (offsets[fixId].tilt ?? 0) + rotatedTilt
         } else if (shape === 'Rainbow' && (target === 'Color' || stateKey === 'r' || stateKey === 'g' || stateKey === 'b')) {
           offsets[fixId].r = (offsets[fixId].r ?? 0) + waveR * amp
           offsets[fixId].g = (offsets[fixId].g ?? 0) + waveG * amp
