@@ -167,7 +167,7 @@ app.whenReady().then(async () => {
   dmxEngine.setPixelEngine(pixelEngine)
 
   // 4. Register all IPC handlers
-  registerIpcHandlers(dmxEngine, serialManager, fixtureManager, sceneManager, chaserManager, effectsEngine, liveGridManager, audioEngine, networkManager, pixelEngine, timelineManager, showManager, paletteManager, virtualConsoleManager, cuelistManager, rdmManager)
+  registerIpcHandlers(dmxEngine, serialManager, fixtureManager, sceneManager, chaserManager, effectsEngine, liveGridManager, audioEngine, networkManager, pixelEngine, timelineManager, showManager, paletteManager, virtualConsoleManager, cuelistManager, rdmManager, webServerManager)
 
   // 5. Create window + start engine & web server
   const mainWindow = createWindow()

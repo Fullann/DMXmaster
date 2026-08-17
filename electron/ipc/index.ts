@@ -13,6 +13,7 @@ import type { ShowManager }    from '../showManager'
 import type { PaletteManager } from '../paletteManager'
 import type { VirtualConsoleManager } from '../virtualConsoleManager'
 import type { CuelistManager } from '../cuelistManager'
+import type { WebServerManager } from '../webServerManager'
 import type { RdmManager } from '../rdmManager'
 
 import { registerSerialIpc }   from './serialIpc'
@@ -50,7 +51,8 @@ export function registerIpcHandlers(
   paletteManager: PaletteManager,
   virtualConsoleManager: VirtualConsoleManager,
   cuelistManager: CuelistManager,
-  rdmManager: RdmManager
+  rdmManager: RdmManager,
+  webServerManager: WebServerManager
 ): void {
   registerSerialIpc(serial)
   registerDmxIpc(engine, fixture)
@@ -63,7 +65,7 @@ export function registerIpcHandlers(
   registerNetworkIpc(network)
   registerPixelIpc(pixel)
   registerTimelineIpc(timelineManager)
-  registerShowIpc(showManager)
+  registerShowIpc(showManager, webServerManager)
   registerPaletteHandlers(paletteManager)
   registerVirtualConsoleIpc(virtualConsoleManager)
   registerCuelistIpc(cuelistManager)

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { useRdmStore } from '@/store/useRdmStore'
 import { useNetworkStore } from '@/store/useNetworkStore'
-import { Search, Info, Settings2, Power } from 'lucide-react'
+import { Search, Info, Settings2, Power, Smartphone } from 'lucide-react'
 import type { RdmDevice } from '@/types/rdm'
+import { QRCodeSVG } from 'qrcode.react'
 
 export function RdmView() {
   const { isDiscovering, devices, discoverDevices, setDeviceAddress, loadDevices } = useRdmStore()
@@ -11,9 +12,18 @@ export function RdmView() {
   
   const [editingDevice, setEditingDevice] = useState<RdmDevice | null>(null)
   const [newAddress, setNewAddress] = useState<string>('')
+  
+  const [companionInfo, setCompanionInfo] = useState<{ ip: string, port: number, token: string } | null>(null)
 
   useEffect(() => {
     loadDevices()
+    if (window.appAPI && window.appAPI.getCompanionInfo) {
+      window.appAPI.getCompanionInfo().then(res => {
+        if (res.success && res.token && res.ip && res.port) {
+          setCompanionInfo({ ip: res.ip, port: res.port, token: res.token })
+        }
+      })
+    }
   }, [loadDevices])
 
   const handleEdit = (device: RdmDevice) => {
@@ -59,6 +69,37 @@ export function RdmView() {
             RDM requires an ANSI E1.20 compliant DMX interface (like Enttec USB Pro), a bi-directional RDM splitter, 
             and RDM-compatible fixtures. During discovery, DMX transmission may be briefly interrupted.
           </p>
+        </div>
+
+        {/* ── Companion App Server ───────────────────────────────────────── */}
+        <div className="rdm-section">
+          <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Smartphone size={18} /> Mobile Companion App
+          </h3>
+          <div className="companion-card" style={{ display: 'flex', gap: '24px', background: 'var(--surface-1)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            {companionInfo ? (
+              <>
+                <div style={{ background: '#fff', padding: '8px', borderRadius: '8px', flexShrink: 0 }}>
+                  <QRCodeSVG 
+                    value={`http://${companionInfo.ip}:${companionInfo.port}/?token=${companionInfo.token}`}
+                    size={100}
+                    level="L"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '8px' }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Scan this QR Code with your smartphone to open the DMX Master remote control, or navigate manually to:</p>
+                  <code style={{ fontSize: '18px', color: 'var(--accent)', fontWeight: 'bold' }}>
+                    http://{companionInfo.ip}:{companionInfo.port}
+                  </code>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                    <strong>Auth Token:</strong> <span style={{ userSelect: 'all', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>{companionInfo.token}</span>
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p>Loading server info...</p>
+            )}
+          </div>
         </div>
 
         {/* ── DMX-IN Routing ──────────────────────────────────────────── */}

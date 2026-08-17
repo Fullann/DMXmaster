@@ -295,6 +295,7 @@ export interface AppAPI {
   openRecentShow: (filePath: string) => Promise<{ success: boolean; error?: string }>
   openVisualizerWindow: () => Promise<void>
   onBackupComplete: (callback: (timeMs: number) => void) => void
+  getCompanionInfo: () => Promise<{ success: boolean; token?: string; ip?: string; port?: number; error?: string }>
 }
 
 const appAPI: AppAPI = {
@@ -304,7 +305,8 @@ const appAPI: AppAPI = {
   getRecentShows: () => ipcRenderer.invoke('app:getRecentShows'),
   openRecentShow: (filePath) => ipcRenderer.invoke('app:openRecentShow', filePath),
   openVisualizerWindow: () => ipcRenderer.invoke('app:openVisualizer'),
-  onBackupComplete: (callback) => ipcRenderer.on('backup:complete', (_e, timeMs) => callback(timeMs))
+  onBackupComplete: (callback) => ipcRenderer.on('backup:complete', (_e, timeMs) => callback(timeMs)),
+  getCompanionInfo: () => ipcRenderer.invoke('app:getCompanionInfo')
 }
 
 contextBridge.exposeInMainWorld('appAPI', appAPI)
