@@ -15,6 +15,10 @@ interface MidiState {
   midiInputs: any[]
   midiStatus: string
   lastMessage: any | null
+  
+  // MTC
+  mtcTimeMs: number
+  mtcActive: boolean
 
   // Actions
   toggleLearning: () => void
@@ -24,6 +28,10 @@ interface MidiState {
 
   init: () => () => void
   initMidi: () => () => void // alias for old components
+  
+  // Internal for tests/MTC
+  _handleMidiData: (data: Uint8Array) => void
+  _checkMtcActivity: () => void
   
   
   // Runtime callback registration (not persisted)
@@ -37,7 +45,57 @@ export const useMidiStore = create<MidiState>()(
     (set, get) => {
       let midiAccess: any = null
 
+      let mtcBuffer = { f: 0, s: 0, m: 0, h: 0, rate: 25 }
+      let mtcTimeout: any = null
+
+      const _checkMtcActivity = () => {
+        set({ mtcActive: false })
+      }
+
+      const _handleMidiData = (data: Uint8Array) => {
+        if (data[0] === 0xF1) {
+          // Quarter frame MTC
+          const byte = data[1]
+          const msgType = (byte >> 4) & 0x07
+          const val = byte & 0x0F
+
+          switch (msgType) {
+            case 0: mtcBuffer.f = (mtcBuffer.f & 0x10) | val; break;
+            case 1: mtcBuffer.f = (mtcBuffer.f & 0x0F) | (val << 4); break;
+            case 2: mtcBuffer.s = (mtcBuffer.s & 0x30) | val; break;
+            case 3: mtcBuffer.s = (mtcBuffer.s & 0x0F) | (val << 4); break;
+            case 4: mtcBuffer.m = (mtcBuffer.m & 0x30) | val; break;
+            case 5: mtcBuffer.m = (mtcBuffer.m & 0x0F) | (val << 4); break;
+            case 6: mtcBuffer.h = (mtcBuffer.h & 0x10) | val; break;
+            case 7: {
+              mtcBuffer.h = (mtcBuffer.h & 0x0F) | ((val & 0x01) << 4);
+              const rateIdx = (val >> 1) & 0x03;
+              const rates = [24, 25, 29.97, 30];
+              mtcBuffer.rate = rates[rateIdx] || 25;
+              
+              // Frame 7 completes the timecode
+              const ms = (mtcBuffer.h * 3600000) + 
+                         (mtcBuffer.m * 60000) + 
+                         (mtcBuffer.s * 1000) + 
+                         Math.floor((mtcBuffer.f / mtcBuffer.rate) * 1000);
+              
+              set({ mtcTimeMs: ms, mtcActive: true })
+
+              // Auto deactivate if no MTC for 500ms
+              if (mtcTimeout) clearTimeout(mtcTimeout)
+              mtcTimeout = setTimeout(_checkMtcActivity, 500)
+              break;
+            }
+          }
+        }
+      }
+
       const handleMidiMessage = (msg: any) => {
+        // Feed raw data to MTC parser
+        if (msg.data instanceof Uint8Array) {
+          _handleMidiData(msg.data)
+        }
+
         const [status, data1, data2] = msg.data
         const channel = status & 0x0F
         const cmd = status >> 4
@@ -97,6 +155,11 @@ export const useMidiStore = create<MidiState>()(
         midiInputs: [],
         midiStatus: 'unavailable',
         lastMessage: null,
+        mtcTimeMs: 0,
+        mtcActive: false,
+
+        _handleMidiData,
+        _checkMtcActivity,
 
         toggleLearning: () => set(state => {
           if (state.isLearning) return { isLearning: false, learningWidgetId: null }
