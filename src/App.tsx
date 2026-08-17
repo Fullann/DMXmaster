@@ -24,6 +24,7 @@ import { useHistoryStore } from '@/store/useHistoryStore'
 import { useFxStore } from '@/store/useFxStore'
 import { useLiveGridStore } from '@/store/useLiveGridStore'
 import { useNetworkStore } from '@/store/useNetworkStore'
+import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 
 // Views
 import { HomeView }       from '@/views/HomeView'
@@ -101,6 +102,26 @@ const WORKSPACE_TABS: Record<WorkspaceMode, TabGroup[]> = {
       ]
     }
   ]
+}
+
+function GlobalAudioListener() {
+  const { startListening, stopListening, isListening, setAutoBpmEnabled } = useAudioAnalyzer()
+  
+  useEffect(() => {
+    if (window.appAPI && window.appAPI.onToggleMicFromMobile) {
+      window.appAPI.onToggleMicFromMobile((enabled) => {
+        if (enabled) {
+          startListening()
+          setAutoBpmEnabled(true)
+        } else {
+          stopListening()
+          setAutoBpmEnabled(false)
+        }
+      })
+    }
+  }, [startListening, stopListening, setAutoBpmEnabled])
+  
+  return null
 }
 
 export default function App() {
@@ -197,6 +218,7 @@ export default function App() {
       <MidiListener />
       <DmxListener />
       <MidiFeedbackEngine />
+      <GlobalAudioListener />
 
       {/* ── Sidebar Navigation ──────────────────────────────────────────────── */}
       <nav className="tab-nav">

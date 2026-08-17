@@ -228,9 +228,7 @@ function renderVcWidgets(widgets) {
             input.addEventListener('input', (e) => {
                 const val = e.target.value;
                 fill.style.height = `${(val / 255) * 100}%`;
-                // Currently backend doesn't have an endpoint to receive arbitrary DMX channel set from WebServer,
-                // so VC faders on Companion might not work without backend modification.
-                // But we can add it later.
+                sendWebSocketMessage('setVcWidget', { id: w.id, value: parseInt(val) });
             });
             
             trackContainer.appendChild(bg);
@@ -336,7 +334,7 @@ function handleFlashStart(e) {
     
     // Save current GM level
     const gmInput = document.getElementById('gm-fader');
-    previousGmLevel = parseFloat(gmInput.value);
+    if (gmInput) previousGmLevel = parseFloat(gmInput.value);
     
     // Send flash on
     sendWebSocketMessage('flash', 'on');
@@ -350,12 +348,43 @@ function handleFlashEnd(e) {
     sendWebSocketMessage('setGrandMaster', previousGmLevel);
 }
 
-btnFlash.addEventListener('touchstart', handleFlashStart);
-btnFlash.addEventListener('touchend', handleFlashEnd);
-btnFlash.addEventListener('touchcancel', handleFlashEnd);
-btnFlash.addEventListener('mousedown', handleFlashStart);
-btnFlash.addEventListener('mouseup', handleFlashEnd);
-btnFlash.addEventListener('mouseleave', handleFlashEnd);
+if (btnFlash) {
+    btnFlash.addEventListener('touchstart', handleFlashStart);
+    btnFlash.addEventListener('touchend', handleFlashEnd);
+    btnFlash.addEventListener('touchcancel', handleFlashEnd);
+    btnFlash.addEventListener('mousedown', handleFlashStart);
+    btnFlash.addEventListener('mouseup', handleFlashEnd);
+    btnFlash.addEventListener('mouseleave', handleFlashEnd);
+}
+
+// Tap Tempo
+const btnTap = document.getElementById('btn-tap');
+if (btnTap) {
+    btnTap.addEventListener('click', () => {
+        vibrate(10);
+        sendWebSocketMessage('tapTempo', null);
+        btnTap.style.transform = 'scale(0.9)';
+        setTimeout(() => btnTap.style.transform = 'scale(1)', 100);
+    });
+}
+
+// Mic Auto
+const btnMic = document.getElementById('btn-mic');
+let isMicAuto = false;
+if (btnMic) {
+    btnMic.addEventListener('click', () => {
+        vibrate(15);
+        isMicAuto = !isMicAuto;
+        if (isMicAuto) {
+            btnMic.classList.add('active');
+            btnMic.style.background = 'rgba(255, 0, 255, 0.4)';
+        } else {
+            btnMic.classList.remove('active');
+            btnMic.style.background = '';
+        }
+        sendWebSocketMessage('toggleMicAuto', isMicAuto);
+    });
+}
 
 // ── Init ──
 if (!token) {

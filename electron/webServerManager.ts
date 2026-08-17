@@ -155,6 +155,21 @@ export class WebServerManager {
               // or just keep it simple: the frontend restores the GM value itself via setGrandMaster.
             }
           }
+          else if (data.type === 'setVcWidget' && typeof data.payload === 'object') {
+            const { id, value } = data.payload
+            this.virtualConsoleManager?.handleWidgetValue(id, value)
+          }
+          else if (data.type === 'tapTempo') {
+            this.chaserManager?.tapTempo(Date.now())
+          }
+          else if (data.type === 'toggleMicAuto' && typeof data.payload === 'boolean') {
+            // Push event to all open renderer windows
+            for (const win of require('electron').BrowserWindow.getAllWindows()) {
+              if (!win.isDestroyed() && win.webContents) {
+                win.webContents.send('audio:toggleMicFromMobile', data.payload)
+              }
+            }
+          }
         } catch (error) {
           console.error('[WebServerManager] Error parsing WebSocket message', error)
         }
