@@ -6,6 +6,7 @@ import { useScenesStore } from '@/store/useScenesStore'
 import { useChaserStore } from '@/store/useChaserStore'
 import { useFixturesStore } from '@/store/useFixturesStore'
 import { useGroups } from '@/hooks/useGroups'
+import { useMidiStore } from '@/store/useMidiStore'
 import { hexToRgb } from '@/types/fixtures'
 
 const GRID_COLS = 12
@@ -24,10 +25,15 @@ export function VirtualConsoleView() {
 
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingWidget, setEditingWidget] = useState<Partial<ConsoleWidget> | null>(null)
+  
+  // MIDI Integration
+  const { initMidi, isLearning, learningWidgetId, toggleLearning, setLearningWidget, registerCallback, unregisterCallback } = useMidiStore()
+  const [faderValues, setFaderValues] = useState<Record<string, number>>({})
 
   useEffect(() => {
     init()
-  }, [init])
+    initMidi()
+  }, [init, initMidi])
 
   const activePage = pages.find(p => p.id === activePageId)
 
@@ -46,6 +52,12 @@ export function VirtualConsoleView() {
   }
 
   const handleWidgetClick = (e: React.MouseEvent, widget: ConsoleWidget) => {
+    if (isLearning) {
+      e.stopPropagation()
+      setLearningWidget(widget.id)
+      return
+    }
+    
     if (isEditMode) {
       e.stopPropagation()
       setEditingWidget(widget)
@@ -61,6 +73,37 @@ export function VirtualConsoleView() {
       }
     }
   }
+
+  // Register MIDI Callbacks
+  useEffect(() => {
+    if (!activePage) return
+    activePage.widgets.forEach(w => {
+      registerCallback(w.id, (val) => {
+        if (w.type === 'button' && val > 0) {
+          if (w.targetType === 'scene' && w.targetId) window.sceneAPI.recallScene(w.targetId)
+          else if (w.targetType === 'chaser' && w.targetId) window.chaserAPI.start(w.targetId)
+        } else if (w.type === 'fader') {
+          setFaderValues(prev => ({ ...prev, [w.id]: val }))
+          const v = val / 255
+          if (w.targetType === 'submaster' && w.targetId) window.fixtureAPI.setSubmaster(w.targetId, v)
+          else if (w.targetType === 'grandmaster') window.fixtureAPI.setGrandMaster(v)
+          else if (w.targetType === 'blind') fixtures.setBlindCrossfader(v)
+          else if (w.targetType === 'fixture' && w.targetId) window.fixtureAPI.setStates({ [w.targetId]: { intensity: val } })
+          else if (w.targetType === 'group' && w.targetId) {
+            const gObj = groups.find(g => g.id === w.targetId)
+            if (gObj) {
+              const stateObj: any = {}
+              gObj.fixtureIds.forEach(fid => stateObj[fid] = { intensity: val })
+              window.fixtureAPI.setStates(stateObj)
+            }
+          }
+        }
+      })
+    })
+    return () => {
+      activePage.widgets.forEach(w => unregisterCallback(w.id))
+    }
+  }, [activePage, registerCallback, unregisterCallback, groups, fixtures])
 
   const handleSaveWidget = (widget: Partial<ConsoleWidget>) => {
     if (!activePage) return
@@ -156,14 +199,22 @@ export function VirtualConsoleView() {
           
           <div className="vc-mode-toggle">
             <button 
-              className={`vc-mode-btn ${!isEditMode ? 'active-play' : ''}`}
-              onClick={() => setEditMode(false)}
+              className={`vc-mode-btn ${isLearning ? 'active-learn' : ''}`}
+              onClick={() => toggleLearning()}
+              title="MIDI Learn"
             >
-              <Play size={14} fill={!isEditMode ? "currentColor" : "none"} /> PLAY
+              MIDI {isLearning ? 'ON' : 'OFF'}
+            </button>
+            <div style={{ width: '1px', background: 'var(--border)', margin: '4px' }}></div>
+            <button 
+              className={`vc-mode-btn ${!isEditMode && !isLearning ? 'active-play' : ''}`}
+              onClick={() => { setEditMode(false); if(isLearning) toggleLearning() }}
+            >
+              <Play size={14} fill={!isEditMode && !isLearning ? "currentColor" : "none"} /> PLAY
             </button>
             <button 
               className={`vc-mode-btn ${isEditMode ? 'active-edit' : ''}`}
-              onClick={() => setEditMode(true)}
+              onClick={() => { setEditMode(true); if(isLearning) toggleLearning() }}
             >
               <Settings size={14} /> EDIT
             </button>
@@ -213,8 +264,7 @@ export function VirtualConsoleView() {
             if (w.targetType === 'chaser') isMissing = !chasers.some(c => c.id === w.targetId)
 
             const rangeProps: any = {
-              defaultValue: undefined,
-              value: undefined
+              value: faderValues[w.id] ?? 0
             }
             if (w.targetType === 'blind') {
               rangeProps.value = fixtures.blindCrossfader * 255
@@ -222,11 +272,13 @@ export function VirtualConsoleView() {
 
             const widgetBg = w.type === 'button' ? (isMissing ? 'var(--status-error)' : w.color) : 'var(--surface-0)'
             const widgetBorder = w.type === 'button' ? 'rgba(255,255,255,0.2)' : w.color
+            
+            const isThisLearning = learningWidgetId === w.id
 
             return (
               <div 
                 key={w.id}
-                className={`vc-widget ${w.type} ${isEditMode ? 'edit-mode' : ''} ${isMissing && !isEditMode ? 'missing' : ''}`}
+                className={`vc-widget ${w.type} ${isEditMode ? 'edit-mode' : ''} ${isMissing && !isEditMode ? 'missing' : ''} ${isLearning ? 'learn-mode' : ''} ${isThisLearning ? 'is-learning' : ''}`}
                 onClick={(e) => handleWidgetClick(e, w)}
                 draggable={isEditMode}
                 onDragStart={(e) => {
@@ -236,12 +288,17 @@ export function VirtualConsoleView() {
                   gridColumn: `${w.x + 1} / span ${w.width}`,
                   gridRow: `${w.y + 1} / span ${w.height}`,
                   background: widgetBg,
-                  borderColor: widgetBorder,
+                  borderColor: isThisLearning ? '#00ffcc' : widgetBorder,
                 }}
               >
                 {isEditMode && (
                   <div className="vc-edit-badge">
                     <Edit2 size={12} color="white" />
+                  </div>
+                )}
+                {isThisLearning && (
+                  <div className="vc-learn-badge">
+                    WAITING FOR MIDI...
                   </div>
                 )}
                 
@@ -259,9 +316,10 @@ export function VirtualConsoleView() {
                       className="vc-fader-input"
                       min={0} max={255} 
                       {...rangeProps}
-                      disabled={isEditMode}
+                      disabled={isEditMode || isLearning}
                       onChange={(e) => {
                         const val = parseInt(e.target.value)
+                        setFaderValues(prev => ({ ...prev, [w.id]: val }))
                         if (w.targetType === 'submaster' && w.targetId) {
                           window.fixtureAPI.setSubmaster(w.targetId, val / 255)
                         } else if (w.targetType === 'grandmaster') {
@@ -525,6 +583,10 @@ export function VirtualConsoleView() {
           background: var(--status-warn);
           color: #000;
         }
+        .vc-mode-btn.active-learn {
+          background: #00ffcc;
+          color: #000;
+        }
 
         .vc-grid-container {
           flex: 1;
@@ -579,6 +641,15 @@ export function VirtualConsoleView() {
         .vc-widget.fader { justify-content: flex-end; }
         .vc-widget.missing:not(.edit-mode) { opacity: 0.5; }
         .vc-widget.edit-mode { cursor: pointer; }
+        .vc-widget.learn-mode { cursor: pointer; filter: grayscale(50%); transition: all 0.2s; }
+        .vc-widget.learn-mode:hover { filter: grayscale(0%); transform: scale(1.02); }
+        .vc-widget.is-learning { filter: grayscale(0%) brightness(1.2); box-shadow: 0 0 15px rgba(0,255,204,0.6); animation: pulse-border 1.5s infinite; }
+        
+        @keyframes pulse-border {
+          0% { border-color: rgba(0,255,204,0.5); }
+          50% { border-color: rgba(0,255,204,1); }
+          100% { border-color: rgba(0,255,204,0.5); }
+        }
         
         .vc-edit-badge {
           position: absolute;
@@ -587,6 +658,22 @@ export function VirtualConsoleView() {
           background: rgba(0,0,0,0.6);
           border-radius: 4px;
           padding: 4px;
+        }
+
+        .vc-learn-badge {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: #00ffcc;
+          color: black;
+          font-size: 0.7rem;
+          font-weight: bold;
+          padding: 4px 8px;
+          border-radius: 4px;
+          z-index: 20;
+          text-align: center;
+          pointer-events: none;
         }
         
         .vc-button-label {
