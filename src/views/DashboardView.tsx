@@ -39,7 +39,7 @@ const FixtureInnerChannel = React.memo(({ ch, name, onClick }: { ch: number, nam
 })
 
 const FixtureGroup = React.memo(({ fixture, startAddress, setActiveChannel, isSelected }: any) => {
-  const chCount = fixture.profile.channels.length
+  const chCount = fixture.profile?.channels?.length || 1
   return (
     <div 
       className={`dashboard-fixture-group ${isSelected ? 'selected' : ''}`}
@@ -55,7 +55,7 @@ const FixtureGroup = React.memo(({ fixture, startAddress, setActiveChannel, isSe
             <FixtureInnerChannel 
               key={ch} 
               ch={ch} 
-              name={fixture.profile.channels[j]?.name || `CH ${ch}`}
+              name={fixture.profile?.channels?.[j]?.name || `CH ${ch}`}
               onClick={() => setActiveChannel(ch)}
             />
           )
@@ -100,7 +100,7 @@ export function DashboardView() {
       const fixture = patch.find(f => f.startAddress === i)
       if (fixture) {
         items.push({ type: 'fixture', fixture, startAddress: i })
-        i += fixture.profile.channels.length
+        i += fixture.profile?.channels?.length || 1
       } else {
         items.push({ type: 'generic', ch: i })
         i++
