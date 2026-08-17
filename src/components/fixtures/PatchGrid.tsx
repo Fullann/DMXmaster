@@ -412,6 +412,7 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatc
         .patch-card {
           display: flex;
           align-items: center;
+          flex-wrap: wrap;
           gap: var(--space-4);
           background: var(--surface-1);
           border: 1px solid var(--border);
@@ -434,11 +435,23 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatc
         .patch-card-info {
           display: flex;
           flex-direction: column;
-          flex: 1;
-          min-width: 150px;
+          flex: 1 1 150px;
+          min-width: 0;
         }
-        .patch-label { font-weight: 600; font-size: var(--text-base); }
-        .patch-sub { font-size: var(--text-xs); color: var(--text-muted); }
+        .patch-label { 
+          font-weight: 600; 
+          font-size: var(--text-base); 
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .patch-sub { 
+          font-size: var(--text-xs); 
+          color: var(--text-muted); 
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
         
         .patch-address-group {
           display: flex;
