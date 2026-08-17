@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useFixturesStore } from '@/store/useFixturesStore'
-import { Plus, Trash2, ArrowUp, ArrowDown, Save, FileBox } from 'lucide-react'
+import { Plus, Trash2, ArrowUp, ArrowDown, Save, FileBox, Copy, Edit2 } from 'lucide-react'
 import type { FixtureProfile, FixtureChannel, ChannelType } from '@/types/fixtures'
 import { AiImportTool } from '@/components/fixtures/AiImportTool'
 
@@ -108,6 +108,23 @@ export function LibraryView() {
       setMode(res.profile.mode)
       setChannels(res.profile.channels)
       setSuccessMsg('GDTF imported successfully! Review and click Save.')
+    }
+  }
+
+  const handleEditProfile = (p: any) => {
+    setManufacturer(p.profile.manufacturer)
+    setModel(p.profile.model)
+    setMode(p.profile.mode)
+    setChannels(p.profile.channels)
+    setSuccessMsg('Profile loaded for editing.')
+  }
+
+  const handleCopyProfile = async (p: any) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(p.profile, null, 2))
+      setSuccessMsg('Profile JSON copied to clipboard for AI!')
+    } catch (err) {
+      setErrorMsg('Failed to copy text.')
     }
   }
 
@@ -263,13 +280,17 @@ export function LibraryView() {
                     <span className="library-profile-name">{p.profile.manufacturer} {p.profile.model}</span>
                     <span className="library-profile-sub">{p.profile.mode} · {p.profile.channels.length} ch</span>
                   </div>
-                  <button
-                    className="btn-icon-sm danger"
-                    onClick={() => deleteProfile(p.key)}
-                    title="Delete profile"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button className="btn-icon-sm" onClick={() => handleCopyProfile(p)} title="Copy JSON for AI">
+                      <Copy size={14} />
+                    </button>
+                    <button className="btn-icon-sm" onClick={() => handleEditProfile(p)} title="Edit profile">
+                      <Edit2 size={14} />
+                    </button>
+                    <button className="btn-icon-sm danger" onClick={() => deleteProfile(p.key)} title="Delete profile">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

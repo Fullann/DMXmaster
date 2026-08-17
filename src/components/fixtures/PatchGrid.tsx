@@ -444,7 +444,7 @@ export function PatchGrid({ profiles, patch, onPatch, onRemovePatch, onMorphPatc
           display: flex;
           align-items: center;
           gap: var(--space-2);
-          width: 200px;
+          min-width: 200px;
           flex-shrink: 0;
         }
         .patch-address-badge {

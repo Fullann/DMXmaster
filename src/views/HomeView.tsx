@@ -28,7 +28,10 @@ export function HomeView() {
   }, [])
 
   const handleOpenRecent = async (path: string) => {
-    await window.appAPI.openRecentShow(path)
+    const res = await window.appAPI.openRecentShow(path)
+    if (res && !res.success && res.error) {
+      alert(`Could not open recent show:\n${res.error}`)
+    }
   }
 
   return (
@@ -44,7 +47,7 @@ export function HomeView() {
             <Zap size={36} color="var(--accent)" fill="var(--accent)" />
           </div>
           <h1 className="home-title">DMX Master</h1>
-          <p className="home-subtitle">Professional Lighting Control</p>
+          <p className="home-subtitle">Bienvenue ! Prêt à illuminer la scène ? 🚀</p>
         </div>
 
         {/* Content Grid */}
@@ -133,6 +136,7 @@ export function HomeView() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          height: 100%;
           min-height: 100%;
           padding: var(--space-6);
           position: relative;
