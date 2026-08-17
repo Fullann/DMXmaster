@@ -5,6 +5,8 @@ import type { ConsoleWidget, WidgetTargetType } from '@/types/virtualConsole'
 import { useScenesStore } from '@/store/useScenesStore'
 import { useChaserStore } from '@/store/useChaserStore'
 import { useFixturesStore } from '@/store/useFixturesStore'
+import { useGroups } from '@/hooks/useGroups'
+import { hexToRgb } from '@/types/fixtures'
 
 const GRID_COLS = 12
 const GRID_ROWS = 6
@@ -18,6 +20,7 @@ export function VirtualConsoleView() {
   const { scenes, clearProgrammer } = useScenesStore()
   const { chasers } = useChaserStore()
   const fixtures = useFixturesStore()
+  const { groups } = useGroups()
 
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingWidget, setEditingWidget] = useState<Partial<ConsoleWidget> | null>(null)
@@ -74,6 +77,39 @@ export function VirtualConsoleView() {
       removeWidget(activePage.id, editingWidget.id)
     }
     setEditorOpen(false)
+  }
+
+  const handleColorChange = (widget: ConsoleWidget, hex: string) => {
+    const { r, g, b } = hexToRgb(hex)
+    if (widget.targetType === 'fixture' && widget.targetId) {
+      window.fixtureAPI.setStates({ [widget.targetId]: { r, g, b, intensity: 255 } })
+    } else if (widget.targetType === 'group' && widget.targetId) {
+      const gObj = groups.find(g => g.id === widget.targetId)
+      if (gObj) {
+        const stateObj: any = {}
+        gObj.fixtureIds.forEach(fid => stateObj[fid] = { r, g, b, intensity: 255 })
+        window.fixtureAPI.setStates(stateObj)
+      }
+    }
+  }
+
+  const handleXyMove = (e: React.MouseEvent, widget: ConsoleWidget, bounds: DOMRect) => {
+    if (isEditMode) return
+    const xRatio = Math.max(0, Math.min(1, (e.clientX - bounds.left) / bounds.width))
+    const yRatio = Math.max(0, Math.min(1, (e.clientY - bounds.top) / bounds.height))
+    const pan = Math.round(xRatio * 255)
+    const tilt = Math.round((1 - yRatio) * 255)
+    
+    if (widget.targetType === 'fixture' && widget.targetId) {
+      window.fixtureAPI.setStates({ [widget.targetId]: { pan, tilt } })
+    } else if (widget.targetType === 'group' && widget.targetId) {
+      const gObj = groups.find(g => g.id === widget.targetId)
+      if (gObj) {
+        const stateObj: any = {}
+        gObj.fixtureIds.forEach(fid => stateObj[fid] = { pan, tilt })
+        window.fixtureAPI.setStates(stateObj)
+      }
+    }
   }
 
   return (
@@ -155,6 +191,17 @@ export function VirtualConsoleView() {
                   gridRow: y + 1,
                 }}
                 onClick={() => handleCellClick(x, y)}
+                onDragOver={(e) => {
+                  if (isEditMode) e.preventDefault()
+                }}
+                onDrop={(e) => {
+                  if (!isEditMode) return
+                  const id = e.dataTransfer.getData('widgetId')
+                  const widget = activePage?.widgets.find(w => w.id === id)
+                  if (widget) {
+                    updateWidget(activePage.id, id, { ...widget, x, y })
+                  }
+                }}
               />
             )
           })}
@@ -181,6 +228,10 @@ export function VirtualConsoleView() {
                 key={w.id}
                 className={`vc-widget ${w.type} ${isEditMode ? 'edit-mode' : ''} ${isMissing && !isEditMode ? 'missing' : ''}`}
                 onClick={(e) => handleWidgetClick(e, w)}
+                draggable={isEditMode}
+                onDragStart={(e) => {
+                  if (isEditMode) e.dataTransfer.setData('widgetId', w.id)
+                }}
                 style={{
                   gridColumn: `${w.x + 1} / span ${w.width}`,
                   gridRow: `${w.y + 1} / span ${w.height}`,
@@ -210,17 +261,55 @@ export function VirtualConsoleView() {
                       {...rangeProps}
                       disabled={isEditMode}
                       onChange={(e) => {
+                        const val = parseInt(e.target.value)
                         if (w.targetType === 'submaster' && w.targetId) {
-                          window.fixtureAPI.setSubmaster(w.targetId, parseInt(e.target.value) / 255)
+                          window.fixtureAPI.setSubmaster(w.targetId, val / 255)
                         } else if (w.targetType === 'grandmaster') {
-                          window.fixtureAPI.setGrandMaster(parseInt(e.target.value) / 255)
+                          window.fixtureAPI.setGrandMaster(val / 255)
                         } else if (w.targetType === 'blind') {
-                          fixtures.setBlindCrossfader(parseInt(e.target.value) / 255)
+                          fixtures.setBlindCrossfader(val / 255)
+                        } else if (w.targetType === 'fixture' && w.targetId) {
+                          window.fixtureAPI.setStates({ [w.targetId]: { intensity: val } })
+                        } else if (w.targetType === 'group' && w.targetId) {
+                          const gObj = groups.find(g => g.id === w.targetId)
+                          if (gObj) {
+                            const stateObj: any = {}
+                            gObj.fixtureIds.forEach(fid => stateObj[fid] = { intensity: val })
+                            window.fixtureAPI.setStates(stateObj)
+                          }
                         }
                       }}
                     />
                     <span className="vc-fader-label">{w.label}</span>
                   </>
+                )}
+
+                {w.type === 'colorPicker' && (
+                  <div className="vc-color-picker-wrapper">
+                    <input 
+                      type="color" 
+                      className="vc-color-input-native"
+                      defaultValue="#ffffff"
+                      disabled={isEditMode}
+                      onChange={(e) => handleColorChange(w, e.target.value)}
+                    />
+                    <span className="vc-color-label">{w.label}</span>
+                  </div>
+                )}
+
+                {w.type === 'xyPad' && (
+                  <div 
+                    className="vc-xy-pad"
+                    onMouseMove={(e) => {
+                      if (e.buttons === 1) {
+                        handleXyMove(e, w, e.currentTarget.getBoundingClientRect())
+                      }
+                    }}
+                    onMouseDown={(e) => handleXyMove(e, w, e.currentTarget.getBoundingClientRect())}
+                  >
+                    <div className="vc-xy-grid"></div>
+                    <span className="vc-xy-label">{w.label}</span>
+                  </div>
                 )}
               </div>
             )
@@ -248,6 +337,8 @@ export function VirtualConsoleView() {
                   >
                     <option value="button">Button (Trigger)</option>
                     <option value="fader">Fader (Continuous)</option>
+                    <option value="colorPicker">Color Picker</option>
+                    <option value="xyPad">X/Y Pad</option>
                   </select>
                   <span className="select-arrow">▾</span>
                 </div>
@@ -310,6 +401,14 @@ export function VirtualConsoleView() {
                         <option value="submaster">Submaster (Group)</option>
                         <option value="grandmaster">Grand Master</option>
                         <option value="blind">Blind Crossfader</option>
+                        <option value="fixture">Single Fixture (Intensity)</option>
+                        <option value="group">Fixture Group (Intensity)</option>
+                      </>
+                    )}
+                    {['colorPicker', 'xyPad'].includes(editingWidget.type || '') && (
+                      <>
+                        <option value="fixture">Single Fixture</option>
+                        <option value="group">Fixture Group</option>
                       </>
                     )}
                   </select>
@@ -317,7 +416,7 @@ export function VirtualConsoleView() {
                 </div>
               </div>
 
-              {['scene', 'chaser'].includes(editingWidget.targetType || '') && (
+              {['scene', 'chaser', 'fixture', 'group', 'submaster'].includes(editingWidget.targetType || '') && (
                 <div className="form-group">
                   <label className="form-label">Select Target</label>
                   <div className="select-wrapper">
@@ -329,6 +428,8 @@ export function VirtualConsoleView() {
                       <option value="">-- Select --</option>
                       {editingWidget.targetType === 'scene' && scenes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       {editingWidget.targetType === 'chaser' && chasers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {editingWidget.targetType === 'fixture' && fixtures.patch.map(f => <option key={f.id} value={f.id}>{f.label || f.profile.model}</option>)}
+                      {['group', 'submaster'].includes(editingWidget.targetType || '') && groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                     </select>
                     <span className="select-arrow">▾</span>
                   </div>
@@ -528,6 +629,61 @@ export function VirtualConsoleView() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+        
+        .vc-color-picker-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+          gap: 4px;
+        }
+        .vc-color-input-native {
+          width: 80%;
+          height: 60%;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          border-radius: 50%;
+          overflow: hidden;
+        }
+        .vc-color-input-native::-webkit-color-swatch-wrapper { padding: 0; }
+        .vc-color-input-native::-webkit-color-swatch { border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; }
+        
+        .vc-xy-pad {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          position: relative;
+          background: rgba(0,0,0,0.4);
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          cursor: crosshair;
+        }
+        .vc-xy-grid {
+          position: absolute;
+          inset: 0;
+          background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+          background-size: 20% 20%;
+          pointer-events: none;
+        }
+        .vc-color-label, .vc-xy-label {
+          color: white;
+          font-weight: bold;
+          font-size: 0.75rem;
+          text-align: center;
+          background: rgba(0,0,0,0.7);
+          padding: 2px 6px;
+          border-radius: 4px;
+          pointer-events: none;
+          z-index: 2;
+          margin-bottom: 4px;
         }
         
         /* Modal Styles */

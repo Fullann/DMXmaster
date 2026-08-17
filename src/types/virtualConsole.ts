@@ -1,5 +1,5 @@
-export type WidgetType = 'button' | 'fader'
-export type WidgetTargetType = 'scene' | 'chaser' | 'macro' | 'submaster' | 'grandmaster' | 'blind' | 'none'
+export type WidgetType = 'button' | 'fader' | 'colorPicker' | 'xyPad'
+export type WidgetTargetType = 'scene' | 'chaser' | 'macro' | 'submaster' | 'grandmaster' | 'blind' | 'none' | 'fixture' | 'group'
 
 export interface ConsoleWidget {
   id: string
