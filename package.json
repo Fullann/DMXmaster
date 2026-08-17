@@ -1,6 +1,6 @@
 {
   "name": "dmxmaster",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Professional DMX Lighting Control Desktop Application",
   "main": "out/main/index.js",
   "author": "",
