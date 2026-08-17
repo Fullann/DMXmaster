@@ -1,179 +1,357 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const statusDot = document.getElementById('status');
-    const blackoutBtn = document.getElementById('btn-blackout');
-    const scenesContainer = document.getElementById('scenes-container');
-    
-    // Tabs
-    const tabScenesBtn = document.getElementById('tab-scenes');
-    const tabVcBtn = document.getElementById('tab-vc');
-    const sectionScenes = document.getElementById('section-scenes');
-    const sectionVc = document.getElementById('section-vc');
-    const vcPagesNav = document.getElementById('vc-pages-nav');
-    const vcContainer = document.getElementById('vc-container');
+let ws;
+const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('dmxToken');
+if (token) localStorage.setItem('dmxToken', token);
 
-    // Virtual Console Data
-    let vcData = [];
-    let activeVcPageId = null;
+const statusDot = document.getElementById('status');
+const statusText = document.getElementById('status-text');
 
-    // Determine WebSocket URL based on current host
+let isConnected = false;
+let groupsData = [];
+
+// Haptic feedback helper
+function vibrate(ms = 10) {
+    if (navigator.vibrate) {
+        navigator.vibrate(ms);
+    }
+}
+
+// ── WebSocket Connection ──
+function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
+    const wsUrl = `${protocol}//${window.location.host}?token=${token}`;
     
-    let ws;
+    ws = new WebSocket(wsUrl);
 
-    // Tab Navigation
-    tabScenesBtn.addEventListener('click', () => {
-        tabScenesBtn.classList.add('active');
-        tabVcBtn.classList.remove('active');
-        sectionScenes.classList.add('active');
-        sectionVc.classList.remove('active');
-    });
-
-    tabVcBtn.addEventListener('click', () => {
-        tabVcBtn.classList.add('active');
-        tabScenesBtn.classList.remove('active');
-        sectionVc.classList.add('active');
-        sectionScenes.classList.remove('active');
-    });
-
-    function connect() {
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            statusDot.classList.remove('disconnected');
-            statusDot.classList.add('connected');
-            console.log('Connected to DMX Master');
-            fetchScenes();
-            fetchVirtualConsole();
-        };
-
-        ws.onclose = () => {
-            statusDot.classList.remove('connected');
-            statusDot.classList.add('disconnected');
-            console.log('Disconnected from DMX Master. Reconnecting in 3s...');
-            setTimeout(connect, 3000);
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket Error:', error);
-        };
-    }
-
-    // Connect initially
-    connect();
-
-    // Fetch scenes via REST API
-    async function fetchScenes() {
-        try {
-            const res = await fetch('/api/scenes');
-            if (res.ok) {
-                const data = await res.json();
-                renderScenes(data.scenes);
-            }
-        } catch (error) {
-            console.error('Failed to fetch scenes:', error);
-        }
-    }
-
-    function renderScenes(scenes) {
-        scenesContainer.innerHTML = '';
+    ws.onopen = () => {
+        console.log('Connected to DMX Master');
+        statusDot.className = 'status-dot connected';
+        statusText.innerText = 'Connected';
+        isConnected = true;
         
-        if (!scenes || scenes.length === 0) {
-            scenesContainer.innerHTML = '<p style="color: var(--text-secondary)">No scenes available.</p>';
-            return;
-        }
+        fetchScenes();
+        fetchVirtualConsole();
+        fetchGroups();
+    };
 
-        scenes.forEach(scene => {
-            const btn = document.createElement('button');
-            btn.className = 'scene-btn';
-            btn.textContent = scene.name;
-            btn.onclick = () => {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({
-                        type: 'triggerScene',
-                        payload: scene.id
-                    }));
-                }
-            };
-            scenesContainer.appendChild(btn);
+    ws.onclose = () => {
+        console.log('Disconnected. Retrying in 3s...');
+        statusDot.className = 'status-dot disconnected';
+        statusText.innerText = 'Disconnected';
+        isConnected = false;
+        setTimeout(connectWebSocket, 3000);
+    };
+
+    ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+    };
+}
+
+// ── Tab Switching ──
+window.switchTab = function(tabId) {
+    vibrate(10);
+    
+    // Update nav buttons
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+    
+    // Update content sections
+    document.querySelectorAll('.tab-content').forEach(section => section.classList.remove('active'));
+    document.getElementById(`section-${tabId}`).classList.add('active');
+}
+
+// ── Fetching Data ──
+async function fetchScenes() {
+    try {
+        const res = await fetch(`/api/scenes?token=${token}`);
+        if (!res.ok) throw new Error('Auth failed');
+        const data = await res.json();
+        renderScenes(data.scenes);
+    } catch (err) {
+        console.error(err);
+        statusText.innerText = 'Auth Error';
+    }
+}
+
+async function fetchVirtualConsole() {
+    try {
+        const res = await fetch(`/api/virtual-console?token=${token}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderVirtualConsole(data.pages);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function fetchGroups() {
+    try {
+        const res = await fetch(`/api/groups?token=${token}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        groupsData = data.groups || [];
+        renderSubmasters(groupsData);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+
+// ── Rendering ──
+
+function renderScenes(scenes) {
+    const container = document.getElementById('scenes-container');
+    container.innerHTML = '';
+
+    scenes.forEach(scene => {
+        const btn = document.createElement('div');
+        btn.className = 'scene-btn';
+        btn.innerText = scene.name;
+        
+        // Touch events for better mobile feel
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            btn.classList.add('active');
+            vibrate(15);
+            triggerScene(scene.id);
+            // Simulate release after 200ms
+            setTimeout(() => btn.classList.remove('active'), 200);
         });
+        
+        // Mouse fallback
+        btn.addEventListener('mousedown', () => {
+            btn.classList.add('active');
+            triggerScene(scene.id);
+            setTimeout(() => btn.classList.remove('active'), 200);
+        });
+
+        container.appendChild(btn);
+    });
+}
+
+function renderVirtualConsole(pages) {
+    const nav = document.getElementById('vc-pages-nav');
+    const container = document.getElementById('vc-container');
+    nav.innerHTML = '';
+    
+    if (pages.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); grid-column: span 12; text-align:center; margin-top:20px;">No Virtual Console pages found.</div>';
+        return;
     }
 
-    // Fetch Virtual Console via REST API
-    async function fetchVirtualConsole() {
-        try {
-            const res = await fetch('/api/virtual-console');
-            if (res.ok) {
-                const data = await res.json();
-                vcData = data.pages;
-                if (vcData && vcData.length > 0 && !activeVcPageId) {
-                    activeVcPageId = vcData[0].id;
-                }
-                renderVirtualConsole();
-            }
-        } catch (error) {
-            console.error('Failed to fetch Virtual Console:', error);
-        }
-    }
+    pages.forEach((page, index) => {
+        const btn = document.createElement('button');
+        btn.className = `vc-page-btn ${index === 0 ? 'active' : ''}`;
+        btn.innerText = page.name;
+        btn.onclick = () => {
+            vibrate(10);
+            document.querySelectorAll('.vc-page-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderVcWidgets(page.widgets);
+        };
+        nav.appendChild(btn);
+    });
 
-    function renderVirtualConsole() {
-        vcPagesNav.innerHTML = '';
-        vcContainer.innerHTML = '';
+    // Render first page widgets
+    renderVcWidgets(pages[0].widgets);
+}
 
-        if (!vcData || vcData.length === 0) {
-            vcContainer.innerHTML = '<p style="color: var(--text-secondary); padding: 1rem;">No Virtual Console pages configured.</p>';
-            return;
-        }
+function renderVcWidgets(widgets) {
+    const container = document.getElementById('vc-container');
+    container.innerHTML = '';
 
-        // Render Page Nav
-        vcData.forEach(page => {
+    widgets.forEach(w => {
+        const el = document.createElement('div');
+        el.className = 'vc-widget';
+        el.style.gridColumn = `span ${w.width}`;
+        el.style.gridRow = `span ${w.height}`;
+
+        if (w.type === 'button') {
             const btn = document.createElement('button');
-            btn.className = `vc-page-btn ${page.id === activeVcPageId ? 'active' : ''}`;
-            btn.textContent = page.name;
-            btn.onclick = () => {
-                activeVcPageId = page.id;
-                renderVirtualConsole();
-            };
-            vcPagesNav.appendChild(btn);
-        });
-
-        // Render Widgets for active page
-        const activePage = vcData.find(p => p.id === activeVcPageId);
-        if (activePage && activePage.widgets) {
-            activePage.widgets.forEach(widget => {
-                const el = document.createElement('div');
-                el.className = 'vc-widget';
-                el.textContent = widget.label;
+            btn.className = 'vc-button-widget';
+            btn.innerText = w.label || 'Btn';
+            
+            // Touch interactions
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                vibrate(15);
+                if (w.isToggle) btn.classList.toggle('active');
+                else {
+                    btn.classList.add('active');
+                    setTimeout(() => btn.classList.remove('active'), 200);
+                }
                 
-                // Opacity to match desktop aesthetic
-                // In a full implementation, we might parse hex and apply opacity
-                el.style.backgroundColor = widget.color || '#333333';
-                
-                // CSS Grid uses 1-based indexing for columns/rows
-                el.style.gridColumn = `${widget.x + 1} / span ${widget.width}`;
-                el.style.gridRow = `${widget.y + 1} / span ${widget.height}`;
-
-                el.onclick = () => {
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        if (widget.targetType === 'scene' && widget.targetId) {
-                            ws.send(JSON.stringify({ type: 'triggerScene', payload: widget.targetId }));
-                        } else if (widget.targetType === 'chaser' && widget.targetId) {
-                            ws.send(JSON.stringify({ type: 'startChaser', payload: widget.targetId }));
-                        }
-                    }
-                };
-
-                vcContainer.appendChild(el);
+                if (w.targetType === 'scene') triggerScene(w.targetId);
+                else if (w.targetType === 'chaser') toggleChaser(w.targetId, btn.classList.contains('active'));
             });
-        }
-    }
 
-    // Controls
-    blackoutBtn.addEventListener('click', () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-                type: 'softBlackout'
-            }));
+            // Mouse fallback
+            btn.addEventListener('mousedown', () => {
+                if (w.isToggle) btn.classList.toggle('active');
+                else {
+                    btn.classList.add('active');
+                    setTimeout(() => btn.classList.remove('active'), 200);
+                }
+                if (w.targetType === 'scene') triggerScene(w.targetId);
+                else if (w.targetType === 'chaser') toggleChaser(w.targetId, btn.classList.contains('active'));
+            });
+
+            el.appendChild(btn);
+        } else if (w.type === 'fader') {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'vc-fader-wrapper';
+            
+            const trackContainer = document.createElement('div');
+            trackContainer.className = 'vc-fader-track-container';
+            
+            const bg = document.createElement('div');
+            bg.className = 'vc-fader-track-bg';
+            
+            const fill = document.createElement('div');
+            fill.className = 'vc-fader-track-fill';
+            fill.style.height = '100%';
+            
+            const input = document.createElement('input');
+            input.type = 'range';
+            input.min = '0';
+            input.max = '255';
+            input.value = '255';
+            input.className = 'vc-fader-input-vertical';
+            
+            input.addEventListener('input', (e) => {
+                const val = e.target.value;
+                fill.style.height = `${(val / 255) * 100}%`;
+                // Currently backend doesn't have an endpoint to receive arbitrary DMX channel set from WebServer,
+                // so VC faders on Companion might not work without backend modification.
+                // But we can add it later.
+            });
+            
+            trackContainer.appendChild(bg);
+            trackContainer.appendChild(fill);
+            trackContainer.appendChild(input);
+            
+            const label = document.createElement('div');
+            label.className = 'vc-fader-label';
+            label.innerText = w.label || 'Fader';
+            
+            wrapper.appendChild(trackContainer);
+            wrapper.appendChild(label);
+            el.appendChild(wrapper);
+        }
+
+        container.appendChild(el);
+    });
+}
+
+function renderSubmasters(groups) {
+    const container = document.getElementById('groups-container');
+    // Clear everything except the Grand Master which is hardcoded in HTML
+    Array.from(container.children).forEach(child => {
+        if (!child.classList.contains('gm-strip')) {
+            container.removeChild(child);
         }
     });
+
+    groups.forEach(g => {
+        const strip = document.createElement('div');
+        strip.className = 'fader-strip';
+        
+        strip.innerHTML = `
+            <div class="fader-track">
+                <input type="range" class="fader-input" min="0" max="1" step="0.01" value="1">
+                <div class="fader-fill" style="height: 100%"></div>
+            </div>
+            <div class="fader-label">
+                <strong>${g.name}</strong>
+                <span class="val-text">100%</span>
+            </div>
+        `;
+        
+        const input = strip.querySelector('input');
+        const fill = strip.querySelector('.fader-fill');
+        const valText = strip.querySelector('.val-text');
+        
+        input.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            fill.style.height = `${val * 100}%`;
+            valText.innerText = `${Math.round(val * 100)}%`;
+            sendWebSocketMessage('setSubmaster', { groupId: g.id, level: val });
+        });
+        
+        // Insert before Grand Master
+        container.insertBefore(strip, container.lastElementChild);
+    });
+
+    // Grand Master logic
+    const gmInput = document.getElementById('gm-fader');
+    const gmFill = document.getElementById('gm-fill');
+    const gmVal = document.getElementById('gm-val');
+    
+    gmInput.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        gmFill.style.height = `${val * 100}%`;
+        gmVal.innerText = `${Math.round(val * 100)}%`;
+        sendWebSocketMessage('setGrandMaster', val);
+    });
+}
+
+
+// ── Actions ──
+function triggerScene(sceneId) {
+    sendWebSocketMessage('triggerScene', sceneId);
+}
+
+function toggleChaser(chaserId, start) {
+    if (start) sendWebSocketMessage('startChaser', chaserId);
+    else sendWebSocketMessage('stopChaser', chaserId);
+}
+
+function sendWebSocketMessage(type, payload) {
+    if (!isConnected) return;
+    ws.send(JSON.stringify({ type, payload }));
+}
+
+// ── Global Controls ──
+const btnBlackout = document.getElementById('btn-blackout');
+btnBlackout.addEventListener('click', () => {
+    vibrate(30);
+    sendWebSocketMessage('softBlackout', null);
 });
+
+// Flash Button
+const btnFlash = document.getElementById('btn-flash');
+let previousGmLevel = 1.0;
+
+function handleFlashStart(e) {
+    e.preventDefault();
+    vibrate(20);
+    btnFlash.classList.add('active');
+    
+    // Save current GM level
+    const gmInput = document.getElementById('gm-fader');
+    previousGmLevel = parseFloat(gmInput.value);
+    
+    // Send flash on
+    sendWebSocketMessage('flash', 'on');
+}
+
+function handleFlashEnd(e) {
+    e.preventDefault();
+    btnFlash.classList.remove('active');
+    
+    // Restore GM level
+    sendWebSocketMessage('setGrandMaster', previousGmLevel);
+}
+
+btnFlash.addEventListener('touchstart', handleFlashStart);
+btnFlash.addEventListener('touchend', handleFlashEnd);
+btnFlash.addEventListener('touchcancel', handleFlashEnd);
+btnFlash.addEventListener('mousedown', handleFlashStart);
+btnFlash.addEventListener('mouseup', handleFlashEnd);
+btnFlash.addEventListener('mouseleave', handleFlashEnd);
+
+// ── Init ──
+if (!token) {
+    statusText.innerText = 'Missing ?token= in URL';
+} else {
+    connectWebSocket();
+}

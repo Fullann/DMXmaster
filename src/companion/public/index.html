@@ -2,44 +2,109 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DMX Master Companion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+    <title>DMX Master</title>
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Feather Icons for lightweight SVGs -->
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
-    <header>
-        <h1>DMX Master</h1>
-        <div id="status" class="status-dot disconnected"></div>
+    <!-- Top Header -->
+    <header class="app-header">
+        <div class="logo">
+            <i data-feather="zap"></i>
+            <span>DMX Master</span>
+        </div>
+        <div class="status-container">
+            <span id="status-text">Connecting...</span>
+            <div id="status" class="status-dot disconnected"></div>
+        </div>
     </header>
 
-    <div class="tabs">
-        <button id="tab-scenes" class="tab-btn active">Scenes</button>
-        <button id="tab-vc" class="tab-btn">Virtual Console</button>
-    </div>
+    <!-- Main Content Area -->
+    <main class="app-main">
 
-    <main>
-        <section class="controls-section">
-            <button id="btn-blackout" class="btn-danger">SOFT BLACKOUT</button>
-        </section>
-
+        <!-- 1. SCENES TAB -->
         <section id="section-scenes" class="tab-content active">
+            <h2 class="section-title">Scenes & Chasers</h2>
             <div id="scenes-container" class="grid-container">
-                <!-- Scenes will be populated here by app.js -->
+                <!-- Scenes populated by app.js -->
             </div>
         </section>
 
+        <!-- 2. VIRTUAL CONSOLE TAB -->
         <section id="section-vc" class="tab-content">
-            <div id="vc-pages-nav" class="vc-pages-nav">
-                <!-- Page buttons populated by app.js -->
+            <div class="vc-header">
+                <h2 class="section-title">Virtual Console</h2>
+                <div id="vc-pages-nav" class="vc-pages-nav">
+                    <!-- Page buttons populated by app.js -->
+                </div>
             </div>
-            <div class="vc-container-wrapper">
+            <div class="vc-scroll-area">
                 <div id="vc-container" class="vc-container">
                     <!-- Virtual console widgets populated by app.js -->
                 </div>
             </div>
         </section>
+
+        <!-- 3. SUBMASTERS TAB -->
+        <section id="section-submasters" class="tab-content">
+            <div class="submasters-header">
+                <h2 class="section-title">Submasters</h2>
+                <!-- Global Flash Button -->
+                <button id="btn-flash" class="btn-flash" title="Hold for 100% Intensity">
+                    <i data-feather="sun"></i> FLASH
+                </button>
+            </div>
+            <div id="groups-container" class="faders-container">
+                <!-- Faders populated by app.js -->
+                
+                <!-- Grand Master is always here -->
+                <div class="fader-strip gm-strip">
+                    <div class="fader-track">
+                        <input type="range" class="fader-input" id="gm-fader" min="0" max="1" step="0.01" value="1">
+                        <div class="fader-fill" id="gm-fill" style="height: 100%"></div>
+                    </div>
+                    <div class="fader-label">
+                        <strong>GM</strong>
+                        <span id="gm-val">100%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <button id="tab-scenes" class="nav-item active" onclick="switchTab('scenes')">
+            <i data-feather="grid"></i>
+            <span>Scenes</span>
+        </button>
+        <button id="tab-vc" class="nav-item" onclick="switchTab('vc')">
+            <i data-feather="sliders"></i>
+            <span>Console</span>
+        </button>
+        <button id="tab-submasters" class="nav-item" onclick="switchTab('submasters')">
+            <i data-feather="bar-chart-2"></i>
+            <span>Masters</span>
+        </button>
+        <button id="btn-blackout" class="nav-item blackout-btn">
+            <i data-feather="power"></i>
+            <span>B.O.</span>
+        </button>
+    </nav>
+
+    <script>
+        feather.replace(); // Initialize icons
+    </script>
     <script src="app.js"></script>
 </body>
 </html>

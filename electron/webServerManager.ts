@@ -89,6 +89,13 @@ export class WebServerManager {
       }
       res.json({ pages: this.virtualConsoleManager.getPages() })
     })
+
+    this.app.get('/api/groups', (req, res) => {
+      if (!this.fixtureManager) {
+        return res.status(500).json({ error: 'Fixture manager not initialized' })
+      }
+      res.json({ groups: this.fixtureManager.getGroups() })
+    })
   }
 
   private setupWebSockets() {
@@ -129,6 +136,24 @@ export class WebServerManager {
           else if (data.type === 'softBlackout') {
             console.log(`[WebServerManager] Triggering soft blackout`)
             this.fixtureManager?.softBlackout()
+          }
+          else if (data.type === 'setSubmaster' && typeof data.payload === 'object') {
+            const { groupId, level } = data.payload
+            this.fixtureManager?.setSubmaster(groupId, level)
+          }
+          else if (data.type === 'setGrandMaster' && typeof data.payload === 'number') {
+            this.fixtureManager?.setGrandMaster(data.payload)
+          }
+          else if (data.type === 'flash') {
+            // Flash is basically setting Grand Master to 1.0 (or just forcing intensity to max temporarily)
+            // But if we want true flash of all fixtures, we can use a temporary DmxEngine override,
+            // or we just set GM to 1.0 for the duration. The UI will send 'flashOn' and 'flashOff'
+            if (data.payload === 'on') {
+              this.fixtureManager?.setGrandMaster(1.0)
+            } else {
+              // We'll rely on the frontend sending the previous GM value to restore it,
+              // or just keep it simple: the frontend restores the GM value itself via setGrandMaster.
+            }
           }
         } catch (error) {
           console.error('[WebServerManager] Error parsing WebSocket message', error)
