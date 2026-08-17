@@ -102,6 +102,16 @@
         </button>
     </nav>
 
+    <!-- Token Auth Overlay -->
+    <div id="token-overlay" class="token-overlay" style="display: none;">
+        <div class="token-modal">
+            <h2>Authentication Required</h2>
+            <p>Please enter the Auth Token printed in your DMX Master terminal.</p>
+            <input type="text" id="token-input" placeholder="e.g. d3b1ca5a-..." autocomplete="off">
+            <button id="btn-save-token" class="btn-primary" style="margin-top: 16px; width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold;">Connect</button>
+        </div>
+    </div>
+
     <script>
         feather.replace(); // Initialize icons
     </script>

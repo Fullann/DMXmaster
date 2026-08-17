@@ -1,6 +1,14 @@
 let ws;
-const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('dmxToken');
-if (token) localStorage.setItem('dmxToken', token);
+const urlParams = new URLSearchParams(window.location.search);
+let token = urlParams.get('token') || localStorage.getItem('dmxToken');
+
+// If token is in URL but not in localStorage, save it.
+// Or if token is in localStorage but not in URL, we could append it, but we can just use the variable.
+if (token && !urlParams.get('token')) {
+    localStorage.setItem('dmxToken', token);
+} else if (urlParams.get('token')) {
+    localStorage.setItem('dmxToken', urlParams.get('token'));
+}
 
 const statusDot = document.getElementById('status');
 const statusText = document.getElementById('status-text');
@@ -351,7 +359,16 @@ btnFlash.addEventListener('mouseleave', handleFlashEnd);
 
 // ── Init ──
 if (!token) {
-    statusText.innerText = 'Missing ?token= in URL';
+    statusText.innerText = 'Auth Required';
+    document.getElementById('token-overlay').style.display = 'flex';
+    
+    document.getElementById('btn-save-token').addEventListener('click', () => {
+        const val = document.getElementById('token-input').value.trim();
+        if (val) {
+            localStorage.setItem('dmxToken', val);
+            window.location.search = `?token=${val}`;
+        }
+    });
 } else {
     connectWebSocket();
 }
